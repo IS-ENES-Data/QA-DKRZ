@@ -561,8 +561,6 @@ DRS_CV::checkPath(std::string& path, struct DRS_CV_Table& drs_cv_table)
   std::vector<size_t> countCI(enc_sz, 0);
   std::map<std::string, std::string> globMap[enc_sz] ;
   std::map<std::string, std::string>& cvMap = drs_cv_table.cvMap ;
-  std::vector<std::vector<std::string> > text;
-  std::vector<std::vector<std::string> > keys;
 
   for( size_t ds=0 ; ds < enc_sz ; ++ds)
   {
@@ -653,6 +651,10 @@ DRS_CV::checkPath(std::string& path, struct DRS_CV_Table& drs_cv_table)
       }
     }
 
+    if( countCI[ds] == x_e.size() )
+      return;  // check passed
+  }
+
   // find the encoding with maximum number of coincidences
   size_t m=0;
 
@@ -677,7 +679,6 @@ DRS_CV::checkPath(std::string& path, struct DRS_CV_Table& drs_cv_table)
 
   std::string txt;
   findPath_faults(drs, x_e, gM, cvMap, txt) ;
-
   if( txt.size() )
   {
     keys.push_back("1_1a");
