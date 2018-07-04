@@ -659,7 +659,7 @@ def get_name_from_path(path, drs_path_base, path_index):
     # If so, then take the right-most one
     base_ix=0
     for c in range(path_items_len):
-        if path_items[c] == drs_path_base:
+        if path_items[c].lower() == drs_path_base.lower():
             base_ix = c
 
     pIx = []

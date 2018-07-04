@@ -1639,8 +1639,12 @@ getExperimentNameFromPath()
   if [ ${DRS_PATH_BASE} ] ; then
     # for multiple occurrences of the base take the last one
     local base_ix
+    # case-insensitive
+    local ldpb=$( echo "${DRS_PATH_BASE}" | tr "[:lower:]" "[:upper:]" )
+    local lci
     for(( c=0 ; c < N ; ++c )) ; do
-      test "${pcs[c]}" = ${DRS_PATH_BASE} && base_ix=$c
+      lci=$( echo "${pcs[c]}" | tr "[:lower:]" "[:upper:]" )
+      test "$lci" = ${ldpb} && base_ix=$c
     done
 
     # no anchour found
