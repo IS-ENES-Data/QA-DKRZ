@@ -32,3 +32,6 @@ PROJECT-name (as single parameter)
 \- -shipped
     internet-free installation. (in preparation)
 
+Note that ``qa-dkrz`` acts a wrapper for conda both for python and the bash script.
+However when running from the GitHub repository, the direct call is preferable.
+
