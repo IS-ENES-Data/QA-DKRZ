@@ -4016,7 +4016,7 @@ CF::chap23_reco(void)
         std::string text("Found " + what[i]);
 
         (void) notes->operate(capt, text) ;
-        notes->setCheckStatus( n_CF, fail );
+        notes->setCheckStatus( n_CF );
       }
    }
 
@@ -4138,7 +4138,7 @@ CF::chap24_reco(void)
             capt += "should be T,Z,Y,X" ;
 
             (void) notes->operate(capt) ;
-            notes->setCheckStatus( n_CF, fail );
+            notes->setCheckStatus( n_CF );
           }
 
           break;
@@ -4161,7 +4161,7 @@ CF::chap24_reco(void)
           text += var.getDimNameStr(true);
 
           (void) notes->operate(capt, text) ;
-          notes->setCheckStatus( n_CF, fail );
+          notes->setCheckStatus( n_CF );
         }
       }
 */
@@ -4198,7 +4198,7 @@ CF::chap251(void)
           std::string text("Note that this recommendation is only given for CF-1.4");
 
           (void) notes->operate(capt) ;
-          notes->setCheckStatus( n_CF, fail );
+          notes->setCheckStatus( n_CF );
         }
       }
 
@@ -4279,7 +4279,7 @@ CF::chap251(void)
                           + var.attValue[jxVRange][1]);
 
                (void) notes->operate(capt) ;
-               notes->setCheckStatus( n_CF, fail );
+               notes->setCheckStatus( n_CF );
              }
            }
 
@@ -4299,7 +4299,7 @@ CF::chap251(void)
                  text += ", " + hdhC::tf_assign(n_valid_max, var.attValue[jxVMax][0]) + "]" ;
 
                  (void) notes->operate(capt, text) ;
-                 notes->setCheckStatus( n_CF, fail );
+                 notes->setCheckStatus( n_CF );
                }
              }
            }
@@ -4319,7 +4319,7 @@ CF::chap251(void)
                  text += ", " + hdhC::tf_assign(n_valid_max, var.attValue[jxVMax][0]) ;
 
                  (void) notes->operate(capt, text) ;
-                 notes->setCheckStatus( n_CF, fail );
+                 notes->setCheckStatus( n_CF );
                }
              }
            }
@@ -4338,7 +4338,7 @@ CF::chap251(void)
                  text += ", " + hdhC::tf_assign(n_valid_min, var.attValue[jxVMin][0]) ;
 
                  (void) notes->operate(capt, text) ;
-                 notes->setCheckStatus( n_CF, fail );
+                 notes->setCheckStatus( n_CF );
                }
              }
            }
@@ -4389,7 +4389,7 @@ CF::chap251(void)
       capt += " should be replaced by _FillValue";
 
       (void) notes->operate(capt) ;
-      notes->setCheckStatus( n_CF, fail );
+      notes->setCheckStatus( n_CF );
     }
   }
 
@@ -4689,7 +4689,7 @@ CF::chap3_reco(void)
             capt += "Use "  + n_standard_name + " and/or " + n_long_name;
 
             (void) notes->operate(capt) ;
-            notes->setCheckStatus( n_CF, fail );
+            notes->setCheckStatus( n_CF );
           }
         }
      }
@@ -5201,7 +5201,7 @@ CF::chap35_reco(void)
                     capt += "should equal the flag_values entry";
 
                     (void) notes->operate(capt) ;
-                    notes->setCheckStatus( n_CF, fail );
+                    notes->setCheckStatus( n_CF );
                  }
                  break;
               }
@@ -5972,7 +5972,7 @@ CF::chap432_deprecatedUnits(Variable& var, std::string &units)
         capt += "is deprecated";
 
         (void) notes->operate(capt) ;
-        notes->setCheckStatus( n_CF, fail );
+        notes->setCheckStatus( n_CF );
       }
     }
 
@@ -6620,7 +6620,7 @@ CF::chap5_reco(void)
              capt += hdhC::tf_val(dimensions[i]) ;
 
              (void) notes->operate(capt) ;
-             notes->setCheckStatus( n_CF, fail );
+             notes->setCheckStatus( n_CF );
            }
         }
       }
@@ -6644,7 +6644,7 @@ CF::chap5_reco(void)
               capt += "should not match the name of any of its " + n_dimension + "s" ;
 
               (void) notes->operate(capt) ;
-              notes->setCheckStatus( n_CF, fail );
+              notes->setCheckStatus( n_CF );
             }
           }
         }
@@ -6990,7 +6990,7 @@ CF::chap56_gridMappingVar(Variable& var, std::string &s, std::string gmn)
           capt += " should not have " + n_dimension + "s" ;
 
           (void) notes->operate(capt) ;
-          notes->setCheckStatus( n_CF, fail );
+          notes->setCheckStatus( n_CF );
         }
      }
    }
@@ -7998,7 +7998,7 @@ CF::chap73(void)
                capt += "should be replaced by area:";
 
                (void) notes->operate(capt) ;
-               notes->setCheckStatus( n_CF, fail );
+               notes->setCheckStatus( n_CF );
              }
 
              // replace by area:
@@ -8459,7 +8459,7 @@ CF::chap73_inqBounds(Variable& var,
         capt += "-" + n_variable;
 
         (void) notes->operate(capt) ;
-        notes->setCheckStatus( n_CF, fail );
+        notes->setCheckStatus( n_CF );
       }
     }
   }
@@ -8564,7 +8564,7 @@ CF::chap73b_reco(Variable& var, std::vector<std::string> &cm_name )
       }
 
       (void) notes->operate(capt) ;
-      notes->setCheckStatus( n_CF, fail );
+      notes->setCheckStatus( n_CF );
     }
   }
 */
@@ -8974,7 +8974,7 @@ CF::chap734b(Variable& var,
           capt += "> with bounds" ;
 
           (void) notes->operate(capt) ;
-          notes->setCheckStatus( n_CF, fail );
+          notes->setCheckStatus( n_CF );
         }
       }
     }
@@ -9846,7 +9846,7 @@ CF::chap9(void)
             capt += "should have " + hdhC::tf_att(n_cf_role);
 
             (void) notes->operate(capt) ;
-            notes->setCheckStatus( n_CF, fail );
+            notes->setCheckStatus( n_CF );
           }
         }
       }
@@ -9943,7 +9943,7 @@ CF::chap9(void)
           capt += hdhC::tf_att(n_featureType) ;
 
           (void) notes->operate(capt) ;
-          notes->setCheckStatus( n_CF, fail );
+          notes->setCheckStatus( n_CF );
         }
       }
       else

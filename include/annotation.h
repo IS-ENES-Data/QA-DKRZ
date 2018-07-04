@@ -131,7 +131,7 @@ class Annotation : public IObj
   void readConf(void);
 
   //int: rank; -1 not provided
-  void setCheckStatus(std::string id, std::string s, bool add=false);
+  void setCheckStatus(std::string id, std::string s="PASS", bool add=false);
 
   void setConfVector(std::string txt, std::string brace);
   void setConstraintValue(std::string s){ constraintValue=s;}
