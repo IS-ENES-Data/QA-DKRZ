@@ -61,7 +61,7 @@ class GetVersion(object):
             vStr += branch + '-' + curr_id
 
             f=os.path.join(self.p_projects, prj, "CMIP6_MIP_tables.xlsx")
-            if not os.path.isdir(f):
+            if not os.path.isfile(f):
                 self.no_such_table(prj, f)
 
             cmd="ls -l --time-style='+%F' " + f + "| awk '{print $6}'"
@@ -113,7 +113,7 @@ class GetVersion(object):
                 vStr += self.opts["CF_STD_NAME_VERSION"]
             else:
                 f=os.path.join(self.p_projects, prj, "standard-names.html")
-                if not os.path.isdir(f):
+                if not os.path.isfile(f):
                     self.no_such_table(prj, f)
 
                 if os.path.isfile(f):
