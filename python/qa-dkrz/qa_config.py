@@ -125,7 +125,9 @@ class QaConfig(object):
         for i in range(len(llArgv)):
             str0=llArgv[i]
 
-            if str0[0:2] == '-e' or str0[0:2] == '-E':
+            if str0[0:7] == 'install':
+                str0 = '--' + str0
+            elif str0[0:2] == '-e' or str0[0:2] == '-E':
                 # conversion to '-eabc=xyz'
                 if str0 == '-e' or str0 == '-E':
                    # indicates the next one
@@ -250,12 +252,19 @@ class QaConfig(object):
 
         # plain nc-files and/or something like install="arg1 arg2=asdf,arg3"
         # at first, decompose items of install and then, items themselves.
-        inst_args=[] # if any, then reversely, because of del
-        for i in range(len(args.NC_FILE)-1,-1,-1):
+        inst_args=[]
+        for i in range(len(args.NC_FILE)):
+            if i >= len(args.NC_FILE):
+                continue
+
             arg = args.NC_FILE[i]
 
-            if arg[0:8] == 'install=':
-                x = arg[8:].split(' ')
+            if arg[0:7] == 'install':
+                if len(arg) == 7:
+                    x = arg[8:].split(' ')
+                else:
+                    x=[]
+
                 x_s=[]
                 for y in x:
                     x_s.extend(y.split(','))
@@ -280,7 +289,6 @@ class QaConfig(object):
                 if arg.upper() in self.prjs_avail:
                     # note: multiple assignments possible for install, but
                     # only a single one for operation.
-                    qa_util.add_unique(arg.upper(), inst_args)
                     _ldo['PROJECT'] = arg.upper()
                 else:
                     qa_util.add_unique(arg, inst_args)
@@ -300,17 +308,18 @@ class QaConfig(object):
             self.lSelect.append(args.NC_FILE[0])
 
         # regular --install='args'
-        if args.INSTALL:
-            l_0 = args.INSTALL.split(',')
-            l_1=[]
-            for l in l_0:
-                l_1.extend(args.INSTALL.split(' '))
+        if args.INSTALL != None:
+            for inst in args.INSTALL:
+                l_0 = inst.split(',')
+                l_1=[]
+                for l in l_0:
+                    l_1.extend(l.split(' '))
 
-            for val in l_1:
-                if val == '--':
-                    val=val[2:]
+                for val in l_1:
+                    if val == '--':
+                        val=val[2:]
 
-                qa_util.add_unique(val, inst_args)
+                    qa_util.add_unique(val, inst_args)
 
         if args.QA_TABLES != None:
             qa_util.add_unique('qa_tables=' + args.QA_TABLES, inst_args)
@@ -409,7 +418,7 @@ class QaConfig(object):
         parser.add_argument('--freeze', action="store_true", dest='FREEZE',
             help="Freeze QA, externals and tables.")
 
-        parser.add_argument('--install', dest='INSTALL',
+        parser.add_argument('--install', nargs='*', dest='INSTALL',
             help="Comma-sep-list passed to the install script.")
 
         parser.add_argument('-L', '--lock', dest='CL_L',

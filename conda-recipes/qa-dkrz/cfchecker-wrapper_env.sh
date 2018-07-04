@@ -36,4 +36,19 @@ get_QA_path
 unset LD_LIBRARY_PATH
 #export LD_LIBRARY_PATH=${QA_PATH}/lib
 
-exec ${QA_PATH}/opt/qa-dkrz/scripts/dkrz-cf-checker $@
+args=( $* )
+if [ "${args[0]%%=*}" = 'install' -o "${args[0]%%=*}" = '--install' ] ; then
+  if [ "${args[0]#*=}" != "${args[0]}" ] ; then
+     args[0]="${args[0]#*=}"
+  else
+     args[0]=
+  fi
+  isInstall=t
+fi
+
+if [ ${isInstall:-f} = t ] ; then
+  #exec ${QA_PATH}/opt/qa-dkrz/install $*
+  exec ${QA_PATH}/opt/qa-dkrz/install ${args[*]}
+else
+  exec ${QA_PATH}/opt/qa-dkrz/scripts/dkrz-cf-checker $@
+fi
