@@ -568,26 +568,26 @@ DRS_CV::checkNetCDF(NcAPI* p_nc)
   if( fm == 1 )
   {
     is=true;
-    s = "3, NC_FORMAT_CLASSIC";
+    s = "NC_FORMAT_CLASSIC";
   }
   else if( fm == 2 )
   {
     is=true;
-    s = "3, NC_FORMAT_64BIT";
+    s = "NC_FORMAT_64BIT";
   }
   else if( fm == 3 )
   {
     is=true;
-    s = "4, ";
+    s = "FORMAT_NETCDF4";
   }
   else if( fm == 4 )
-    s = "4, classic";
+    s = "FORMAT_NETCDF4_CLASSIC";
 
   if( fm > 2 )
   {
     if( ! nc.inqDeflate())
     {
-      s+= " deflated (compressed)";
+      s+= ", deflated (compressed)";
       is=true;
     }
   }
