@@ -784,7 +784,6 @@ if [ "${CFG_UPDATE}" = frozen ] ; then
     exit 1
   fi
 elif [ ${isUpdate:-f} = f -a ${CFG_UPDATE:-f} != f ] ; then
-  isUpdate
   UPDATE=${CFG_UPDATE}
 fi
 
