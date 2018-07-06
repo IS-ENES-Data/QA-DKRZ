@@ -1262,7 +1262,7 @@ QA_Data::checkFinally(Variable *var)
      std::string key=("R200");
      if( notes->inq( key, name) )
      {
-       std::string capt("data record totally with constant value ");
+       std::string capt("Warning: Data record totally with constant value ");
        capt += hdhC::tf_val(constValueRecord[0]);
 
        std::string text;
@@ -1305,7 +1305,7 @@ QA_Data::checkFinally(Variable *var)
        }
 
        (void) notes->operate(capt, text) ;
-       notes->setCheckStatus(pQA->n_data, pQA->n_fail);
+       notes->setCheckStatus(pQA->n_data);
      }
    }
 
