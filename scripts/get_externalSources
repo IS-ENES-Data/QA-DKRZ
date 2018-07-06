@@ -412,7 +412,7 @@ ges_cmip6_mip()
 
    wget --timeout=${WGET_TOUT} -l1 -N -np  \
       http://proj.badc.rl.ac.uk/svn/exarch/CMIP6dreq/tags/latest/dreqPy/docs/CMIP6_MIP_tables.xlsx \
-      &>> log_cmip6_tables.txt
+      >> log_cmip6_tables.txt 2>&1
 
    if [ $? -gt 0 ] ; then
       err[${#err[*]}]="wget CMIP6_MIP_tables.xlsx from http://proj.badc.rl.ac.uk"
@@ -436,9 +436,9 @@ ges_cmip6_mip()
        git checkout master &> /dev/null
      fi
 
-     git fetch && git reset --hard origin/master &>> log_cmip6_tables.txt
+     git fetch && git reset --hard origin/master >> log_cmip6_tables.txt 2>&1
    else
-     git clone https://github.com/WCRP-CMIP/CMIP6_CVs &>> log_cmip6_tables.txt
+     git clone https://github.com/WCRP-CMIP/CMIP6_CVs >> log_cmip6_tables.txt 2>&1
    fi
 
    local status=$?
@@ -473,15 +473,15 @@ ges_cordex()
 
      remote=( $( git remote -v ) )
      if [ ${remote[1]##*/} = 'IS-ENES-Data.github.io' ] ; then
-       git fetch &>> log_cordex_tables.txt \
-       && git reset --hard origin/master &>> log_cordex_tables.txt
+       git fetch >> log_cordex_tables.txt 2>&1 \
+       && git reset --hard origin/master >> log_cordex_tables.txt 2>&1
        status=$?
      fi
 
      cd - &> /dev/null
    else
      git clone https://github.com/IS-ENES-Data/IS-ENES-Data.github.io \
-       &>> log_cordex_tables.txt
+       >> log_cordex_tables.txt 2>&1
      status=$?
 
    fi
@@ -566,7 +566,7 @@ ges_xlsx2csv()
       fi
       cd $QA_TABLES &> /dev/null
 
-      git clone http://github.com/dilshod/xlsx2csv &>> log_install_xlsx2csv.txt
+      git clone http://github.com/dilshod/xlsx2csv >> log_install_xlsx2csv.txt 2>&1
 
       if [ $? -gt 0 ] ; then
         err[${#err[*]}]="git failed for xlsx2csv"
