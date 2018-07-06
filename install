@@ -778,7 +778,7 @@ if [ ${isUnfreeze} ] ; then
 fi
 
 if [ "${CFG_UPDATE}" = frozen ] ; then
-  if [ ! \( ${isForce:-f} = f -o ${isShip:-f} = f \) ] ; then
+  if [ ${isForce:-f} = f -a ${isShip:-f} = f ] ; then
     echo "currently frozen; use install --unfreeze to re-enable updates unconditionally"
     echo "                  or with --force for a single update, but keeping frozen enabled."
     exit 1
