@@ -632,7 +632,7 @@ callQaExecutor()
           QA_SRC \
           REATTEMPT_LIMIT \
           REPLICATED_RECORD \
-          RUN_CMOR3_LLNL \
+          RUN_PrePARE \
           SESSION \
           SESSION_LOGDIR \
           SHOW_CALL \

@@ -1312,7 +1312,7 @@ FS data directory: ${PROJECT_DATA[*]}
 
 setKWL()
 {
-  test ${DEBUG_CONF} && voidX
+#  test ${DEBUG_CONF} && voidX
 
   local key item value i val isAdd
   item="$*"
@@ -1450,7 +1450,7 @@ setKWL()
   # add key to the list
   keyWordList[${#keyWordList[*]}]=$key
 
-  test ${DEBUG_CONF} && voidX
+#  test ${DEBUG_CONF} && voidX
 
   if [ ${ONLY_SUMMARY:-f} != f -a "${ONLY_SUMMARY}" != all ] ; then
     test ${ONLY_SUMMARY} != t && setKWL LOG_FNAMES=${ONLY_SUMMARY#*=}

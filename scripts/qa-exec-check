@@ -1099,11 +1099,11 @@ run()
   ans=$(<out_${name}.txt)
 
   # run CMOR (D.Nadeau, LLNL)
-  if [ ${RUN_CMOR3_LLNL} ] ; then
+  if [ ${RUN_PrePARE:-f} = t ] ; then
     declare -a annot_CMOR_LLNL
 
     # streams into ans
-    run_CMOR_LLNL
+    run_PrePARE
   fi
 
 #trace \
@@ -1113,7 +1113,7 @@ run()
   test ${LOG_CPU_TIME:-f} = t && logTime $realTime $cpuTime $status
 }
 
-run_CMOR_LLNL()
+run_PrePARE()
 {
   export UVCDAT_ANONYMOUS_LOG=no
 
