@@ -420,7 +420,7 @@ Ensemble::getTimes(std::string &str, bool isFNameAlignment)
     {
         if( i < ens_sz )
         {
-          // this mode doesn't need a target, even if there were one.
+          // this mode doesn't need a target, even if there was one.
           retVal = getTimes_FName(mmb) ;
 
           if( retVal == -1 )
@@ -619,8 +619,9 @@ Ensemble::getTimes_NC(Member &mmb)
 
     // time values: fist and last
     MtrxArr<double> ma_t;
-    double tBegin, tEnd;
-    if( (tBegin=mmb.nc.getData(ma_t, vName,0,-1)) == MAXDOUBLE )
+    double tBegin, tEnd ;
+
+    if( (tBegin=mmb.nc.getData(ma_t, vName,0)) == MAXDOUBLE )
     {
         if( sz > 1 )
         {
@@ -658,7 +659,12 @@ Ensemble::getTimes_NC(Member &mmb)
 
     mmb.setBegin( mmb.refDate.getDate(tBegin) );
 
-    tEnd=ma_t[ma_t.size()-1];
+    size_t sz=mmb.nc.getNumOfRows(vName) ;
+    if(sz)
+        --sz;
+
+    tEnd=mmb.nc.getData(ma_t, vName, -1);
+
     if( ! mmb.refDate.isValid(tEnd))
     {
        mmb.putState("invalid data, found " + hdhC::double2String(tEnd), false);

@@ -116,11 +116,12 @@ class QA_Time
   void   getDate(Date& , double t);
   void   getDRSformattedDateRange(std::vector<Date> &,
                    std::vector<std::string> &);
-  void   getTimeBoundsValues(double *pair, size_t rec, double offset=0.);
   std::string
          getName(void){ return name; }
   std::string
          getBoundsName(void){ return boundsName; }
+  double getTimeValue(int rec);
+  void   getTimeBoundsValues(double *pair, size_t rec);
 
   bool   init(std::vector<std::string>& optStr);
 
@@ -135,7 +136,7 @@ class QA_Time
   //! Initialisiation of a resumed session.
   void   initResumeSession(void);
 
-  bool   initTimeBounds(double offset=0.) ;
+  bool   initTimeBounds(void) ;
   void   initTimeTable(void);
 
   void   openQA_NcContrib(NcAPI*);
@@ -189,10 +190,6 @@ class QA_Time
 
   //! Check time steps
   bool   testTimeStep(void);
-
-  MtrxArr<double> ma_tb;
-  MtrxArr<double> ma_t;
-  double** m2D;
 
   // Time Table: hold the state over a record
   size_t tt_block_rec ;

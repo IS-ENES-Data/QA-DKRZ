@@ -271,11 +271,27 @@ QA_Time::getDRSformattedDateRange(std::vector<Date> &period,
   return;
 }
 
-void
-QA_Time::getTimeBoundsValues(double* pair, size_t rec, double offset)
+double
+QA_Time::getTimeValue(int rec)
 {
-  pair[0]=m2D[rec][0] + offset;
-  pair[1]=m2D[rec][1] + offset;
+  double tv;
+  MtrxArr<double> ma_t;
+
+  if( (tv=pIn->nc.getData(ma_t, name, rec)) < MAXDOUBLE)
+      tv += refTimeOffset;
+
+  return tv;
+}
+
+void
+QA_Time::getTimeBoundsValues(double* pair, size_t rec)
+{
+  MtrxArr<double> ma_tb;
+  (void) pIn->nc.getData(ma_tb, boundsName, rec);
+  double** m2D = ma_tb.getM();
+
+  pair[0]=m2D[0][0] + refTimeOffset;
+  pair[1]=m2D[0][1] + refTimeOffset;
 
   return ;
 }
@@ -440,14 +456,11 @@ QA_Time::initAbsoluteTime(std::string &units)
      }
   }
 
-  if( pIn->nc.getData(ma_t, name, 0, 1) == MAXDOUBLE)
+  if( (firstTimeValue = getTimeValue(0)) == MAXDOUBLE )
      return true;
 
-  currTimeValue += refTimeOffset;
-  firstTimeValue = currTimeValue;
-
   size_t recSz = pIn->nc.getNumOfRows(name) ;
-  lastTimeValue = ma_t[recSz-1] + refTimeOffset ;
+  lastTimeValue = getTimeValue(-1) ;
 
   if( prevTimeValue == MAXDOUBLE )
   {
@@ -459,12 +472,12 @@ QA_Time::initAbsoluteTime(std::string &units)
      if( recSz > 1 )
      {
        if( pIn->currRec < recSz )
-         prevTimeValue = ma_t[1] + refTimeOffset ;
+         prevTimeValue = getTimeValue(1) ;
 
        // an arbitrary setting that would pass the first test;
        // the corresponding results is set to FillValue
        Date prevDate(prevTimeValue, calendar);
-       Date currDate(currTimeValue, calendar);
+       Date currDate(firstTimeValue, calendar);
        refTimeStep=fabs(prevDate.getJulianDay() - currDate.getJulianDay());
        prevDate.addTime( -2.*refTimeStep ) ;
 
@@ -486,17 +499,19 @@ QA_Time::initAbsoluteTime(std::string &units)
 
      if( isTimeBounds )
      {
-       getTimeBoundsValues(currTimeBoundsValue, pIn->currRec, refTimeOffset) ;
-       double dtb = currTimeBoundsValue[1] - currTimeBoundsValue[0] ;
-       prevTimeBoundsValue[0] = currTimeBoundsValue[0] - dtb ;
-       prevTimeBoundsValue[0] = currTimeBoundsValue[1] ;
+       double tb[2];
+       getTimeBoundsValues(tb, pIn->currRec) ;
+
+       double dtb = tb[1] - tb[0] ;
+       prevTimeBoundsValue[0] = tb[0] - dtb ;
+       prevTimeBoundsValue[0] = tb[1] ;
      }
   }
 
   if( isTimeBounds )
   {
-    getTimeBoundsValues( firstTimeBoundsValue, 0, refTimeOffset ) ;
-    getTimeBoundsValues( lastTimeBoundsValue, recSz-1, refTimeOffset ) ;
+    getTimeBoundsValues(firstTimeBoundsValue, 0) ;
+    getTimeBoundsValues(lastTimeBoundsValue, recSz-1) ;
   }
 
   return false;
@@ -573,11 +588,10 @@ QA_Time::initRelativeTime(std::string &units)
    }
    refDate.setDate( units );
 
-   if( (currTimeValue=pIn->nc.getData(ma_t, name, 0, -1)) == MAXDOUBLE)
+   if( (firstTimeValue = getTimeValue(0)) == MAXDOUBLE )
       return true;
 
-   currTimeValue += refTimeOffset;
-   firstTimeValue = currTimeValue ;
+   currTimeValue = firstTimeValue;
 
    size_t recSz = pIn->nc.getNumOfRows(name) ;
 
@@ -590,17 +604,14 @@ QA_Time::initRelativeTime(std::string &units)
      // 1) out of two time values within a file
      if( recSz > 1 )
      {
-       double t1=2.*currTimeValue;
+       double t1=2.*firstTimeValue;
 
        if( pIn->currRec < recSz )
-       {
-         if( ma_t.getDimSize() == 1 && ma_t.size() > (pIn->currRec +1) )
-           t1=ma_t[pIn->currRec+1] + refTimeOffset ;
-       }
+          t1 = getTimeValue(1) ;
 
        // an arbitrary setting that would pass the first test;
        // the corresponding results is set to FillValue
-       refTimeStep=fabs(t1 - currTimeValue);
+       refTimeStep=fabs(t1 - firstTimeValue);
      }
 
      // 2) guess
@@ -631,15 +642,15 @@ QA_Time::initRelativeTime(std::string &units)
      }
 
      if(recSz)
-       lastTimeValue = ma_t[recSz-1] + refTimeOffset ;
+       lastTimeValue = getTimeValue(-1);
      else
-       lastTimeValue = ma_t[0] + refTimeOffset ;
+       lastTimeValue = firstTimeValue ;
 
-     prevTimeValue = currTimeValue - refTimeStep ;
+     prevTimeValue = firstTimeValue - refTimeStep ;
 
      if( isTimeBounds )
      {
-       if( initTimeBounds(refTimeOffset) )
+       if( initTimeBounds() )
        {
          double dtb = firstTimeBoundsValue[1] - firstTimeBoundsValue[0];
 
@@ -722,7 +733,7 @@ QA_Time::initResumeSession(void)
 }
 
 bool
-QA_Time::initTimeBounds(double offset)
+QA_Time::initTimeBounds(void)
 {
   if( timeBounds_ix == -1 )
   {
@@ -733,24 +744,13 @@ QA_Time::initTimeBounds(double offset)
     return false;
   }
 
-  // -1: all records
-  (void) pIn->nc.getData(ma_tb, boundsName, 0, -1 );
-
-  // check for empty data
-  if( ! ma_tb.validRangeBegin.size() )
-    return false;
-
-  m2D = ma_tb.getM();
-
-  firstTimeBoundsValue[0]=m2D[0][0] + offset;
-  firstTimeBoundsValue[1]=m2D[0][1] + offset;
+  getTimeBoundsValues(firstTimeBoundsValue, 0);
 
   size_t sz = pIn->nc.getNumOfRows(boundsName);
   if(sz)
       --sz;
 
-  lastTimeBoundsValue[0]=m2D[sz][0] + offset;
-  lastTimeBoundsValue[1]=m2D[sz][1] + offset;
+  getTimeBoundsValues(lastTimeBoundsValue, sz);
 
   ANNOT_ACCUM="ACCUM";
 
@@ -1211,7 +1211,7 @@ QA_Time::sync(void)
   // scanning time
   for( int i=0 ; i < inRecNum ; ++i )
   {
-    double t_in = ma_t[i] + refTimeOffset ;
+    double t_in = getTimeValue(i) ;
 
     if( t_in < t_qa_eps )
       continue;
@@ -1236,10 +1236,11 @@ QA_Time::sync(void)
   {
      std::string capt("renewal of a file?") ;
 
+     double t = getTimeValue(0) ;
+
      std::ostringstream ostr(std::ios::app);
      ostr << "\nlast time of previous QA=" << t_qa;
-     ostr << "\nfirst time in file="
-          << (ma_t[0] + refTimeOffset) ;
+     ostr << "\nfirst time in file=" << t ;
 
      if( notes->operate(capt, ostr.str()) )
      {
@@ -1263,7 +1264,8 @@ QA_Time::testTimeBounds(NcAPI &nc)
     return ;
   }
 
-  getTimeBoundsValues(currTimeBoundsValue, pIn->currRec, refTimeOffset);
+  double currTimeBoundsValue[2];
+  getTimeBoundsValues(&currTimeBoundsValue[0], pIn->currRec);
 
   double diff;
 
@@ -1448,7 +1450,7 @@ QA_Time::testTimeBounds(NcAPI &nc)
 void
 QA_Time::testDate(NcAPI &nc)
 {
-  currTimeValue = ma_t[pIn->currRec] + refTimeOffset ;
+  currTimeValue = getTimeValue(pIn->currRec) ;
 
   // is current time reasonable?
   (void) testTimeStep() ;

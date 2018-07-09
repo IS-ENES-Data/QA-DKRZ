@@ -682,13 +682,12 @@ Outlier::test(QA_Data *pQAD)
         ostr.setf(std::ios::scientific, std::ios::floatfield);
 
         double cT;
-        MtrxArr<int> ma_t;
         for( size_t k=0 ; k < outRec.size() ; ++k )
         {
           // adjust coded flags
           pQAD->sharedRecordFlag.adjustFlag(errNum[i], outRec[k] ) ;
 
-          if( (cT=pQA->nc->getData(ma_t, pQA->qaTime.name, outRec[k], 1)) < MAXDOUBLE)
+          if( (cT=pQA->qaTime.getTimeValue(outRec[k])) < MAXDOUBLE)
           {
             ostr << "\nrec#=" << outRec[k];
             ostr << ", time=" << cT;
@@ -733,7 +732,7 @@ ReplicatedRecord::getRange(size_t i, size_t bufferCount, size_t recNum,
   if( arr_1st_bool[i] )
   {
     range.push_back( hdhC::double2String(ix_1st) );
-    cT_1st = pQA->qaTime.ma_t[ix_1st] ;
+    cT_1st = pQA->qaTime.getTimeValue(ix_1st) ;
   }
   else
   {
@@ -743,7 +742,7 @@ ReplicatedRecord::getRange(size_t i, size_t bufferCount, size_t recNum,
 
   if( arr_rep_bool[i] )
   {
-    cT_rep = pQA->qaTime.ma_t[ix_rep] ;
+    cT_rep = pQA->qaTime.getTimeValue(ix_rep) ;
     range.push_back( hdhC::double2String(ix_rep) );
   }
   else
@@ -900,13 +899,12 @@ ReplicatedRecord::test(int nRecs, size_t bufferCount, size_t nextFlushBeg,
 
   std::pair<int,int> readRange(0,0);
   MtrxArr<double> ma_chks;
-  MtrxArr<double> ma_t;
 
   // reading by chunks
   while( readRange.second < recNum )
   {
     // time and checksum array are synchronised
-    (void) pQA->qaTime.ma_t[readRange.second] ;
+    (void) pQA->qaTime.getTimeValue(readRange.second) ;
     (void) pQA->nc->getData(ma_chks, name_chks, readRange.second, -1) ;
 
     readRange = pQA->nc->getDataIndexRange(name_chks) ;
@@ -1278,7 +1276,7 @@ QA_Data::checkFinally(Variable *var)
            text += hdhC::tf_val( hdhC::double2String(constValueRecordStartRec[i]) );
 
            double cT0;
-           cT0 = pQA->qaTime.ma_t[ constValueRecordStartRec[0] ] ;
+           cT0 = pQA->qaTime.getTimeValue(constValueRecordStartRec[0]) ;
 
            std::string date0(pQA->qaTime.refDate.getDate(cT0).str());
 
@@ -1293,8 +1291,8 @@ QA_Data::checkFinally(Variable *var)
                          hdhC::double2String(constValueRecordEndRec[0]) );
 
            double cT0, cT1;
-           cT0 = pQA->qaTime.ma_t[ constValueRecordStartRec[0] ] ;
-           cT1 = pQA->qaTime.ma_t[ constValueRecordEndRec[0] ] ;
+           cT0 = pQA->qaTime.getTimeValue(constValueRecordStartRec[0]);
+           cT1 = pQA->qaTime.getTimeValue(constValueRecordEndRec[0]) ;
 
            std::string date0(pQA->qaTime.refDate.getDate(cT0).str());
            std::string date1(pQA->qaTime.refDate.getDate(cT1).str());

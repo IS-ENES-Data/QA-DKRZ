@@ -421,17 +421,17 @@ void
     Return value: index of x corresponding to rec; -1 for invalid rec */
   template <typename ToT>
     ToT
-      getData(MtrxArr<ToT> &x, std::string vName, size_t rec=0, int leg=1 );
+      getData(MtrxArr<ToT> &x, std::string vName, int rec=0, int leg=1 );
 
 //! Access of a record by a MtrxArr object.
 /*! Note that data is sliced according to an internally specified maximum
     range.*/
     template <typename ToT>
      ToT
-      getData(MtrxArr<ToT> &x, int varid, size_t rec=0, int leg=1);
+      getData(MtrxArr<ToT> &x, int varid, int rec=0, int leg=1);
 
     void
-      getData(std::vector<std::string> &,std::string, size_t rec=0);
+      getData(std::vector<std::string> &,std::string, int rec=0);
 
     std::pair<int, int>
       getDataIndexRange(std::string vName)

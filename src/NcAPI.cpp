@@ -2832,8 +2832,14 @@ NcAPI::getData(int varid, size_t rec, int leg)
 
 template <typename ToT>
 ToT
-NcAPI::getData(MtrxArr<ToT> &x, std::string vName, size_t rec, int leg)
+NcAPI::getData(MtrxArr<ToT> &x, std::string vName, int r, int leg)
 {
+   size_t rec;
+   if( r < 0 )
+      r += static_cast<int>(getNumOfRecords(vName));
+
+   rec = static_cast<size_t>(r);
+
    // rec==0 is ok for the unlimited case
    if( rec && getNumOfRecords(vName) < rec )
      return 0;
@@ -2843,12 +2849,18 @@ NcAPI::getData(MtrxArr<ToT> &x, std::string vName, size_t rec, int leg)
 
 template <typename ToT>
 ToT
-NcAPI::getData(MtrxArr<ToT> &to, int varid, size_t rec, int leg)
+NcAPI::getData(MtrxArr<ToT> &to, int varid, int r, int leg)
 {
   // Get netCDF data and store in a MtrxArr object.
   // The first value is returned.
   if( varid < 0 )
     return 0;
+
+  size_t rec;
+  if( r < 0 )
+     r += static_cast<int>(getNumOfRecords());
+
+  rec = static_cast<size_t>(r);
 
   layout.rec_leg_begin[varid] = rec;
 
@@ -2939,8 +2951,15 @@ NcAPI::getData(MtrxArr<ToT> &to, int varid, size_t rec, int leg)
 }
 
 void
-NcAPI::getData(std::vector<std::string> &v, std::string varName, size_t rec )
+NcAPI::getData(std::vector<std::string> &v, std::string varName, int r )
 {
+  /*
+  if( r < 0 )
+     r += static_cast<int>(getNumOfRecords(varName));
+
+  size_t rec = static_cast<size_t>(r);
+  */
+
   v.clear();
   if( layout.varMap.count(varName) == 0 )
     return ;  // if var does not exist, return empty vector
