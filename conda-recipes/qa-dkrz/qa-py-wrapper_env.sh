@@ -13,7 +13,7 @@ get_QA_path()
       # works for any OS
 
       items=( $(ls -l $p) )
-      i=$((${#items[*]}-1))
+      i=$((${#items[*]}-1))ls
       p=${items[i]}
    done
 
@@ -32,6 +32,7 @@ get_QA_path()
 }
 
 args=( $* )
+
 if [ "${args[0]%%=*}" = 'install' -o "${args[0]%%=*}" = '--install' ] ; then
   if [ "${args[0]#*=}" != "${args[0]}" ] ; then
      args[0]="${args[0]#*=}"
@@ -47,9 +48,8 @@ unset LD_LIBRARY_PATH
 #export LD_LIBRARY_PATH=${QA_PATH}/lib
 
 if [ ${isInstall:-f} = t ] ; then
-  #exec ${QA_PATH}/opt/qa-dkrz/install $*
   exec ${QA_PATH}/opt/qa-dkrz/install ${args[*]}
 else
-  exec ${QA_PATH%envs/*}/bin/python ${QA_PATH}/opt/qa-dkrz/python/qa-dkrz/qa-dkrz.py $*
+  exec ${QA_PATH%/envs/*}/bin/python ${QA_PATH}/opt/qa-dkrz/python/qa-dkrz/qa-dkrz.py $*
 fi
 

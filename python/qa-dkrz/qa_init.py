@@ -375,116 +375,16 @@ def run(log, g_vars, qaConf):
     return
 
 
-def run_install(qaConf):
-    update=''
+def run_install(qa_src):
 
-    p = os.path.join(qaConf.qa_src, 'install')
-    p_args=[]
-
-    is_force=False
-    x_install=[]
-    if qaConf.isOpt('INSTALL'):
-        install = qaConf.getOpt('INSTALL')
-        x_install = install.split(',')
-
-    # works for both comma and blank separation, e.g.: "arg0 arg1,arg2"
-    # note that '--' is stripped in qa_config.commandLineOpts()
-    x_i0=qaConf.getOpt("INSTALL").split(',')
-    for x_i in x_i0:
-        x_install = x_i.split(' ')
-
-    if 'force' in x_install or qaConf.isOpt('FORCE'):
-        is_force=True
-        qa_util.add_unique('force', p_args)
-
-    # from ~/.qa-dkrz/config.txt
-    if qaConf.isOpt("UPDATE"):
-        up=qaConf.getOpt("UPDATE")
-        if up == 'frozen':
-            if qaConf.isOpt('UNFREEZE'):
-                update = 'up'
-            elif not ( is_force or 'ship' in x_install):
-                return  # still frozen
-        elif up[0:4] == 'auto' or up == 'daily':
-            update='up'
-        elif up[0:6] == 'enable':  # conversion of former usage
-            update='daily'
-
-    else:
-        # convert because of a missing UPDATE in the config-file
-        update='up'
-        if not is_force:
-            qa_util.add_unique('freeze', p_args)
-
-    # from the command-line by --up
-    if qaConf.isOpt("CMD_UPDATE"):
-        x_cu = qaConf.getOpt("CMD_UPDATE").split('=')
-        if len(x_cu) == 2:
-            update = x_cu[1]
-        else:
-            update = 'up'
-
-    # from the command-line within install=str, already split
-    if qaConf.isOpt("INSTALL"):
-        for x_i in x_install:
-            if x_i[0:2] == '--':
-                x_i=x_i[2:]
-            if x_i.lower() == 'up':
-                x_u = update.split('=')
-                if len(x_u) == 1:
-                    update='up'
-                else:
-                    update = x_u[1]
-            else:
-                qa_util.add_unique(x_i, p_args)
-
-    if qaConf.isOpt("QA_TABLES"):
-        qa_util.add_unique('qa_tables=' + qaConf.getOpt("QA_TABLES"), p_args )
-    # else: solved in qa_config.run()
-
-    if update == 'up':
-        qa_util.add_unique(update, p_args)
-    elif len(update):
-        qa_util.add_unique('up=' + update, p_args)
-
-    if len(update) or len(p_args):
-        if qaConf.isOpt("FREEZE"):
-            qa_util.add_unique('freeze', p_args)
-
-    if qaConf.isOpt("FREEZE"):
-      qa_util.add_unique('freeze', p_args)
-
-    if len(p_args) == 0:
+    if not ( sys.argv[1] == 'install' or sys.argv[1] == '--install'):
         return
 
-    if qaConf.isOpt("PROJECT"):
-        qa_util.add_unique(qaConf.getOpt("PROJECT"), p_args)
+    p = os.path.join(qa_src, 'install --no-progress-wheel')
 
-    #firstly, options
-    isHelp=False
-    for pa in p_args:
+    for pa in sys.argv[2:]:
         if len(pa):
-            if pa == 'install':
-                continue
-            elif pa == '-h' or pa == 'help':
-                isHelp=True
-            elif not pa.upper() in qaConf.prjs_avail:
-                if pa[0] == '-' and pa[1] != '-':
-                    p += ' ' + pa  # preserve short options
-                else:
-                    p += ' --' + pa
-
-    # followed by projects
-    for pa in p_args:
-        if len(pa):
-            if pa.upper() in qaConf.prjs_avail:
-                p += ' ' + pa
-
-    # checksum of the current qa_dkrz.py
-    # list of python scripts
-    if not isHelp:
-        (p5, f) = os.path.split(sys.argv[0])
-        md5_0 = qa_util.get_md5sum( glob.glob(p5 + '/*.py'))
+            p += ' ' + pa
 
     try:
         subprocess.check_call(p, shell=True)
@@ -493,15 +393,7 @@ def run_install(qaConf):
             sys.exit(41)
 
         print '\ncould not run install.'
-        sys.exit(1)
 
-    md5_1 = qa_util.get_md5sum( glob.glob(p5 + '/*.py'))
-
-    if md5_0 != md5_1:
-        print '\nat least one of the py scripts was updated; please, restart.'
-        sys.exit(1)
-
-    if 'ship' in p_args or 'unship' in p_args:
-        sys.exit(1)
+    sys.exit(0)
 
     return

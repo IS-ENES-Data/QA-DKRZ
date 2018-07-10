@@ -1,10 +1,10 @@
 getCondaPath()
 {
-  if [ ${CONDA_QA_PATH} ] ; then
+  if [ ${CONDA_PATH} ] ; then
     return
   else
-    if . $QA_SRC/scripts/parseConfigFile CONDA_QA_PATH ] ; then
-      export CONDA_QA_PATH
+    if . $QA_SRC/scripts/parseConfigFile CONDA_PATH ] ; then
+      export CONDA_PATH
       return
     fi
 
@@ -31,11 +31,11 @@ getCondaPath()
   done
 
   if [ ${i} -lt ${sz} ] ; then
-     export CONDA_QA_PATH="${pth}"
-     . $QA_SRC/scripts/parseConfigFile CONDA_QA_PATH=${CONDA_QA_PATH}
+     export CONDA_PATH="${pth}"
+     . $QA_SRC/scripts/parseConfigFile CONDA_PATH=${CONDA_PATH}
   fi
 
-  # CONDA_QA_PATH could be empty, if conda is neither referenced
+  # CONDA_PATH could be empty, if conda is neither referenced
   # by PATH nor by alias.
 
   return

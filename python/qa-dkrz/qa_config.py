@@ -214,7 +214,7 @@ class QaConfig(object):
 
         # special: long-opts
         if args.PROJECT     != None:
-            _ldo['PROJECT']    = args.PROJECT
+            _ldo['PROJECT']    =  args.PROJECT
             self.project = args.PROJECT
         if args.PROJECT_AS  != None:
             _ldo['PROJECT_AS'] = args.PROJECT_AS
@@ -242,6 +242,8 @@ class QaConfig(object):
         if args.SHOW_CONF:           _ldo['SHOW_CONF']      = args.SHOW_CONF
         if args.SHOW_EXP:            _ldo['SHOW_EXP']       = args.SHOW_EXP
         if args.SHOW_VERSION:        _ldo['SHOW_VERSION']   = True
+        if args.VERBOSE:             _ldo['VERBOSE']        = True
+
         if args.STATUS_LINE:
             _ldo['STATUS_LINE'] = args.STATUS_LINE
             _ldo['STATUS_LINE_SZ'] = 0
@@ -252,46 +254,14 @@ class QaConfig(object):
 
         # plain nc-files and/or something like install="arg1 arg2=asdf,arg3"
         # at first, decompose items of install and then, items themselves.
-        inst_args=[]
         for i in range(len(args.NC_FILE)):
             if i >= len(args.NC_FILE):
                 continue
 
             arg = args.NC_FILE[i]
 
-            if arg[0:7] == 'install':
-                if len(arg) == 7:
-                    x = arg[8:].split(' ')
-                else:
-                    x=[]
-
-                x_s=[]
-                for y in x:
-                    x_s.extend(y.split(','))
-
-                for x in x_s:
-                    if x[0:2] == '--':
-                        x=x[2:]
-
-                    if x.upper() in self.prjs_avail:
-                        # note: multiple assignments possible for install, but
-                        # only a single one for operation.
-                        qa_util.add_unique(x.upper(), inst_args)
-                        _ldo['PROJECT'] = arg.upper()
-                    else:
-                        qa_util.add_unique(x, inst_args)
-
-                    if 'ship' in x and not 'unship' in x:
-                        qa_util.add_unique('force', inst_args)
-            else:
-                # this allows for something like 'install up PROJECTS'
-                # Note that --arg is caught elsewhere by the parser
-                if arg.upper() in self.prjs_avail:
-                    # note: multiple assignments possible for install, but
-                    # only a single one for operation.
-                    _ldo['PROJECT'] = arg.upper()
-                else:
-                    qa_util.add_unique(arg, inst_args)
+            if arg.upper() in self.prjs_avail:
+                _ldo['PROJECT'] = arg
 
             if arg[-3:] != '.nc':
                 del args.NC_FILE[i]
@@ -306,49 +276,6 @@ class QaConfig(object):
                 self.lSelect.append(self.setSelLock(s.replace(' ','') ) )
         else:
             self.lSelect.append(args.NC_FILE[0])
-
-        # regular --install='args'
-        if args.INSTALL != None:
-            for inst in args.INSTALL:
-                l_0 = inst.split(',')
-                l_1=[]
-                for l in l_0:
-                    l_1.extend(l.split(' '))
-
-                for val in l_1:
-                    if val == '--':
-                        val=val[2:]
-
-                    qa_util.add_unique(val, inst_args)
-
-        if args.QA_TABLES != None:
-            qa_util.add_unique('qa_tables=' + args.QA_TABLES, inst_args)
-
-        if args.AUTO_UP != None:
-            qa_util.add_unique('auto-up', inst_args)
-
-        if args.FORCE:
-            qa_util.add_unique('force', inst_args)
-
-        if args.FREEZE:
-            qa_util.add_unique('freeze', inst_args)
-
-        if args.SHIP != None and len(args.SHIP):
-            qa_util.add_unique('ship=' + args.SHIP, inst_args)
-            qa_util.add_unique('force', inst_args)
-
-        if args.UNFREEZE:
-            qa_util.add_unique('unfreeze', inst_args)
-
-        if args.UNSHIP:
-            qa_util.add_unique('unship', inst_args)
-
-        if inst_args:
-            str0=''
-            for s in inst_args:
-                str0 += s + ' '
-
-            _ldo['INSTALL']=str0
 
         return _ldo
 
@@ -479,8 +406,10 @@ class QaConfig(object):
             nargs='?',  const='freeze',
             help='auto | [freeze] | daily : Run with qa-dkrz install.')
 
-        parser.add_argument('--version',
-            action="store_true", dest='SHOW_VERSION',
+        parser.add_argument('-v', '--verbose', dest='VERBOSE', action="store_true",
+            help='Display version information of QA_DKRZ and tables.')
+
+        parser.add_argument('--version', dest='SHOW_VERSION', action="store_true",
             help='Display version information of QA_DKRZ and tables.')
 
         parser.add_argument( '--work', dest='WORK',
@@ -1162,13 +1091,13 @@ class CfgFile(object):
                             ny_sect=line[0:sz1] # rm ':'
                             self.rCP.add_section(ny_sect)
                         else:
-                            k, v = line.split('=')
+                            k = line.split('=', 1)
 
                             # some backward compatibility
-                            if k == "QA_HOME":
-                                k = "QA_TABLES"
+                            if k[0] == "QA_HOME":
+                                k[0] = "QA_TABLES"
 
-                            self.rCP.set(ny_sect, k, repr(v))
+                            self.rCP.set(ny_sect, k[0], k[1])
         else:
             # read a file created by a self.rCP instance
             self.rCP.read(self.file)

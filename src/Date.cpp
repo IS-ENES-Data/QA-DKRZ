@@ -1380,34 +1380,31 @@ Date::julian2ModelDate( const Date::Julian &j,
   double resid;
   long double jd=j.jdn + j.time ;
 
-  *mo = *d = 1.;
+  *mo = *d = 0. ;
   *h = *mi = *s = 0.;
 
   if( currCalendarEnum == EQUAL_MONTHS )
   {
-     // this kind of julian day starts at 0000-00-00T00:00:00
      *y = static_cast<double>
           (  static_cast<long long int> (jd / 360. ) )  ;
 
      resid = static_cast<double>(jd - *y*360.) ;
-     *y += 1.;
 
-     if( resid == 0. )
-       return;
+     if( resid != 0. )
+     {
+       *mo = static_cast<double>( static_cast<int>(resid / 30.) )  ;
+       resid -= *mo*30. ;
 
-     *mo = static_cast<double>( static_cast<int>(resid / 30.) )  ;
-     resid -= *mo*30 ;
-     *mo += 1. ;
-
-     *d = static_cast<double>( static_cast<int>(resid) ) ;
-     resid -= *d ;
-     *d += 1.;
+       *d = static_cast<double>( static_cast<int>(resid) ) ;
+       resid -= *d ;
+     }
   }
   else
   {
     // explicitly: months and/or leap year and/or leap_month
     // For calender: NO_LEAP, ALL_LEAP, UNDEF and not provided
     long double yrDays;
+
     if( currCalendarEnum == ALL_LEAP )
     {
       yrDays = 366. ;
@@ -1430,33 +1427,32 @@ Date::julian2ModelDate( const Date::Julian &j,
         (  static_cast<long long int> (jd / yrDays ) ) ;
 
     resid = static_cast<double>( jd - *y*yrDays ) ;
-    *y += 1.;
 
-    if( resid == 0. )
-        return;
-
-    bool isCurrLY = false;
-    if( lY_is )
-      if( (static_cast<int>(*y) - lY_start) % 4  == 0 )
-        isCurrLY = true;
-
-    // we are looking for the current month
-    double tmp=0. ;
-    for(int imon=0 ; imon < 12 ; ++imon)
+    if( resid != 0. )
     {
-      double cMon = regularMonthDays[imon];
-      if( isCurrLY && imon == lY_month )
-        cMon += 1.;
+      bool isCurrLY = false;
+      if( lY_is )
+        if( (static_cast<int>(*y) - lY_start) % 4  == 0 )
+          isCurrLY = true;
 
-      tmp += cMon;
-
-      if( tmp > resid )
+      // we are looking for the current month
+      double tmp=0. ;
+      for(int imon=0 ; imon < 12 ; ++imon)
       {
-         *mo = static_cast<double>(imon) ;  //the previous month is indicated by imon
-         resid -= (tmp - cMon);
-         *d=static_cast<double>( static_cast<int>(resid) ) ;
-         resid -= *d;
-         break;
+        double cMon = regularMonthDays[imon];
+        if( isCurrLY && imon == lY_month )
+          cMon += 1.;
+
+        tmp += cMon;
+
+        if( tmp > resid )
+        {
+           *mo = static_cast<double>(imon) ;  //the previous month is indicated by imon
+           resid -= (tmp - cMon);
+           *d=static_cast<double>( static_cast<int>(resid) ) ;
+           resid -= *d;
+           break;
+        }
       }
     }
   }
@@ -1468,8 +1464,8 @@ Date::julian2ModelDate( const Date::Julian &j,
   // convert from numerical to date representation
   // y=1900, mo=11, d=30, h=24 <--> 1901-01-01 00:00:00
   //*y  += 1. ;
-  //*mo += 1. ;
-  //*d  += 1. ;
+  *mo += 1. ;
+  *d  += 1. ;
 
   return ;
 }
@@ -1536,7 +1532,7 @@ Date::modelDate2Julian( double y, double mo, double d, double h,
    // convert from calendar to numerical representation
    d  -= 1. ;  // cal: [1-31] + h' --> num.: [0-30] + h'
    mo -= 1.;
-   y  -= 1.;
+   //y  -= 1.;
 
    // note: reference date is 0000-01-01 00:00:00,
    // decimal numbers are supported.
@@ -1559,12 +1555,13 @@ Date::modelDate2Julian( double y, double mo, double d, double h,
    }
 
 
-   d += ( h + mi/60. + s/3600.) / 24. ;
-   int id = static_cast<int>(d) ;
-   d -= static_cast<double>(id) ;
+   double fd = ( h + mi/60. + s/3600.) / 24. ;
+   int id = static_cast<int>(fd);
+   d += static_cast<double>(id) ;
+   fd -= static_cast<double>(id);
 
-   j.jdn += static_cast<double>(id) ;
-   j.time = d ;
+   j.jdn += d ;
+   j.time = fd ;
 
    isDateSet=true;
 
@@ -1584,6 +1581,11 @@ Date::parseISO_8601(std::string str0)
   hour=0.;
 
   Split x_str0(str0, " T", true);
+
+  // negative year?
+  double negYr=1.;
+  if( x_str0[0][0] == '-' )
+      negYr=-1.;
 
   Split x_d(x_str0[0],"-");
 
@@ -1634,6 +1636,7 @@ Date::parseISO_8601(std::string str0)
 
   }
 
+  year *= negYr;
   currYr = year;
   currMon = month;
   currDay = day;

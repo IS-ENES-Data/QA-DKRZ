@@ -1803,8 +1803,8 @@ do
   OPTVAL=${UOPTARG#*=}
 
   case $option in
-  e|E)  if [ ${OPTNAME} = 'CONDA_QA_PATH' ] ; then
-          setKWL CONDA_QA_PATH=${OPTVAL}
+  e|E)  if [ ${OPTNAME} = 'CONDA_PATH' ] ; then
+          setKWL CONDA_PATH=${OPTVAL}
         elif [ ${OPTNAME:0:7} = 'DEBUG_C' ] ; then
           DEBUG_CONF=t
           set -x

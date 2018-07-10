@@ -39,7 +39,7 @@ ges_cf_html()
     vd="${vd%)*}"
     vd="${vd// /}"
 
-    . $QA_SRC/scripts/parseConfigFile CF_STD_NAME_VERSION=${vd}
+    # . $QA_SRC/scripts/parseConfigFile CF_STD_NAME_VERSION=${vd}
 
     if ! ges_parse_html 'Standard Name Table' xml ; then
       return $?
@@ -289,7 +289,7 @@ ges_cmip6_cmor()
    local status=$?
 
    if [ $status -gt 0 ] ; then
-     cat log_cmip6-cmor-tables.txt > ${TTY}
+     cat log_cmip6-cmor-tables.txt # > ${TTY}
    fi
 
    return $status
@@ -297,84 +297,111 @@ ges_cmip6_cmor()
 
 ges_cmip6_conda()
 {
-  local conda_env
+  local conda_env cmp
   local action isNewConda
 
-  # at least PrePARE could be set in the config file
-  local isAvail
-  if . $QA_SRC/scripts/parseConfigFile CONDA_CMOR_PATH ; then
-    isAvail=t
-  elif . $QA_SRC/scripts/parseConfigFile PrePARE ; then
-    CONDA_CMOR_PATH=${PrePARE%/bin/PrePARE}
-    . $QA_SRC/scripts/parseConfigFile CONDA_CMOR_PATH=${CONDA_CMOR_PATH}
-    CONDA_CMOR_ENV=${CONDA_CMOR_PATH##*/}
-    isAvail=t
+  test ${#CONDA_CMOR_ENV} -gt 0 -a ${#PrePARE} -gt 0 && action=update
+
+  if [ ! ${action} ] ; then
+    . $QA_SRC/scripts/parseConfigFile CONDA_CMOR_ENV
+    . $QA_SRC/scripts/parseConfigFile PrePARE
+
+    test ${#CONDA_CMOR_ENV} -gt 0 -a ${#PrePARE} -gt 0 && action=update
   fi
 
-  if [ ${isAvail} ] ; then
-    if [ ${PrePARE} ] ; then
-       action=update
+  if [ ! ${action} ] ; then
+    if [ ${CONDA_PATH} ] ; then
+      cmp=${CONDA_PATH%/bin/conda}
+      if [ -d $cmp/envs/cmor ] ; then
+         CONDA_CMOR_ENV=$cmp/envs/cmor
+         test -f $CONDA_CMOR_ENV/bin/PrePARE && \
+            PrePARE=$CONDA_CMOR_ENV/bin/PrePARE
+      fi
     else
-       action=create
+       . $QA_SRC/scripts/parseConfigFile CONDA_PATH
+
+       if [ ! ${CONDA_PATH} ] ; then
+          # try the configuration file for matches
+          local prep=( $( grep PrePARE= ~/.qa-dkrz/config.txt ) )
+          prep=${prep[0]#PrePARE=}
+          if [ ${#prep[*]} -gt 0 ] ; then
+             if [ -f ${prep} ] ; then
+                . $QA_SRC/scripts/parseConfigFile PrePARE=${prep}
+                PrePARE=${prep}
+             fi
+
+             local cce=${PrePARE%/bin/PrePARE}
+             if [ -f ${CONDA_CMOR_ENV} ] ; then
+                . $QA_SRC/scripts/parseConfigFile CONDA_CMOR_ENV=${cce}
+                CONDA_CMOR_ENV=$cce
+             fi
+
+             local cp=${CONDA_CMOR_ENV%/envs/cmor}/bin/conda
+             if [ -f ${CONDA_PATH} ] ; then
+                . $QA_SRC/scripts/parseConfigFile CONDA_PATH=${cp}
+                CONDA_PATH=$cp
+             fi
+          else
+            echo "please, install conda"
+            exit
+          fi
+       fi
+    fi
+  fi
+
+  if [ ${CONDA_PATH} ] ; then
+    if [ ! ${CONDA_CMOR_ENV} ] ; then
+      cmp=${CONDA_PATH%/bin/conda}
+
+      if [ -d $cmp/envs/cmor ] ; then
+         CONDA_CMOR_ENV=$cmp/envs/cmor
+         test -f $CONDA_CMOR_ENV/bin/PrePARE && \
+             PrePARE=$CONDA_CMOR_ENV/bin/PrePARE
+      fi
     fi
 
-  elif [ ${CONDA_QA_PATH:-f} != f -a ${CONDA_CMOR_PATH:-f} = f ] ; then
     # look for existing miniconda with a cmor installation
     . ${QA_SRC}/scripts/inqRunEnv funct=iRE_scanCondaEnv PrePARE
-    # . ${QA_SRC}/scripts/inqRunEnv funct=iRE_scanCondaEnv udunits2.xml
-
-    #if [ ${#PrePARE} -gt 0 -a ${#UDUNITS2_XML_PATH} -gt 0 ] ; then
-    if [ ${#PrePARE} -gt 0 ] ; then
-      action=update
-      conda_env=${CONDA_CMOR_ENV}
-    else
-      action=create
-    fi
-
-    CONDA_CMOR_PATH=${CONDA_QA_PATH}
 
   else
-    test ! ${CONDA_CMOR_PATH} \
-        && CONDA_CMOR_PATH=${QA_TABLES}/miniconda/bin/conda
+    isNewConda=t
+  fi
 
-    # e.g. for a conda-less instantiation;
-    # sets CONDA_CMOR_PATH
-    action=create
-#    ges_make_miniconda ${QA_TABLES}/miniconda
-
-#    isNewConda=t
+  if [ ${PrePARE} ] ; then
+     action=update
+  else
+     action=create
   fi
 
   if [ ${action} = create ] ; then
      local prompt_text
-     echo -e "\nCMIP6 requires conda for running CMOR." > ${TTY}
+     echo -e "\nCMIP6 requires conda for running CMOR." # > ${TTY}
      if [ ${isNewConda} ] ; then
-       prompt_text=" <yes: in ${CONDA_CMOR_PATH%/bin/*}, [no]>: "
+       prompt_text=" <yes: in ${CONDA_CMOR_ENV%/bin/*}, [no]>: "
      else
-       echo -e "\nDifferent installation modes are available:" > ${TTY}
-       echo    "    <a> environment of its own (original) " > ${TTY}
-       echo    "    <b> environment of qa-dkrz " > ${TTY}
-       echo    "    <c> a separate miniconda instantiated in the user-space" > ${TTY}
+       echo -e "\nDifferent installation modes are available:" # > ${TTY}
+       echo    "    <a> environment of its own (original) " # > ${TTY}
+       echo    "    <b> environment of qa-dkrz " # > ${TTY}
+       echo    "    <c> a separate miniconda instantiated in the user-space" # > ${TTY}
        echo    "    <no> exit"
-       prompt_text="Select: <a, b, c: in [${QA_TABLES}/miniconda], or user-defined-path, [no]>: "
+       prompt_text="Select: <a, b, user-defined-path, [no]>: "
      fi
 
      local quest
 
      while : ; do
-       read -p "${prompt_text}"  quest 2> ${TTY}
+       read -p "${prompt_text}"  quest # 2> ${TTY}
 
        case ${quest:0:1} in
          ( n |  '') exit 41  ;;
          (       a) conda_env=cmor  ;;
          (       b) conda_env=qa-dkrz  ;;
-         (       c) CONDA_CMOR_PATH=${QA_TABLES}/miniconda
-                    conda_env=cmor
-                    isNewConda=t
-                    ;;
          *) if [ ${quest:0:1} != '/' ] ; then
-              echo "Please, provide absolute path (in case of no typo)" > ${TTY}
+              echo "Please, provide absolute path (in case of no typo)" # > ${TTY}
               continue
+            else
+              CONDA_CMOR_ENV=$quest
+              isNewConda=t
             fi
             ;;
        esac
@@ -384,15 +411,15 @@ ges_cmip6_conda()
   fi
 
   if [ ${isNewConda} ] ; then
-    if ges_make_miniconda ${CONDA_CMOR_PATH} ; then
-      CONDA_CMOR_PATH=${CONDA_CMOR_PATH}/bin/conda
-      . $QA_SRC/scripts/parseConfigFile CONDA_CMOR_PATH=${CONDA_CMOR_PATH}
+    if ges_make_miniconda ${CONDA_CMOR_ENV} ; then
+      CONDA_CMOR_ENV=${CONDA_CMOR_ENV}/bin/conda
+      . $QA_SRC/scripts/parseConfigFile CONDA_CMOR_ENV=${CONDA_CMOR_ENV}
     fi
   fi
 
-  if [ ${CONDA_CMOR_PATH} ] ; then
-    if update_CONDA "${CONDA_CMOR_NAME}" "${CONDA_CMOR_CHANNELS}" \
-                    "${CONDA_CMOR_PATH}" ${conda_env:-cmor} ${action} ; then
+  if [ ${CONDA_CMOR_ENV} ] ; then
+    if update_CONDA_env "${CONDA_CMOR_NAME}" "${CONDA_CMOR_CHANNELS}" \
+          "${CONDA_CMOR_ENV}" ${conda_env:-cmor} ${action} ; then
 
       return 0
     fi
@@ -508,13 +535,13 @@ ges_make_miniconda()
    path=${1}
 
    # look for a conda installation. Is conda in PATH?
-   echo    "miniconda: 'yes' would approve the '3-clause BSD License'!" > ${TTY}
+   echo    "miniconda: 'yes' would approve the '3-clause BSD License'!" # > ${TTY}
 
    local isRead
 
    while : ; do
      read -p "  <yes: in ${path}/miniconda, r: read license, [no]>: " \
-          quest 2> ${TTY}
+          quest # 2> ${TTY}
 
      case $quest in
        ( y | yes)  ;;
@@ -535,7 +562,8 @@ ges_make_miniconda()
      fi
 
      if [ ${isRead:-f} = t ] ; then
-       bash Miniconda-latest-Linux-x86_64.sh  > ${TTY} << EOF
+       #bash Miniconda-latest-Linux-x86_64.sh  > ${TTY} << EOF
+       bash Miniconda-latest-Linux-x86_64.sh << EOF
 
 no
 EOF
@@ -545,7 +573,7 @@ EOF
      if ! bash Miniconda-latest-Linux-x86_64.sh -b -p ${path} \
            &> /dev/null ; then
 
-         err[${#err[*]}]="failed bash Miniconda-latest-Linux-x86_64.sh -b -p ${CONDA_CMOR_PATH}/miniconda"
+         err[${#err[*]}]="failed bash Miniconda-latest-Linux-x86_64.sh -b -p ${CONDA_CMOR_ENV}/miniconda"
          return 41
      fi
 

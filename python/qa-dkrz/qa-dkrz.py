@@ -366,27 +366,35 @@ def get_next_variable(data_path, fBase, fNames):
 
 def get_version(qaConf):
 
-    com_line_opts={}
-
     # this is mandatory
-    com_line_opts["SECTION"] = qaConf.getOpt("QA_SRC")
+    isVerbose=False  # directly from the tables
 
-    if qaConf.isOpt('SHOW_VERSION'):
-        com_line_opts["SHOW_VERSION"]=True
+    if qaConf.isOpt('VERBOSE'):
+        isVerbose=True
+    elif qaConf.isOpt("QA_VERSION"):
+        rev=qaConf.dOpts["QA_VERSION"]
+        rev += '|' + qaConf.dOpts["CF_VERSION"]
 
-    '''
-    if not qaConf.dOpts['SHOW_VERSION'] == 't':
-        com_line_opts["VERBOSE"] = True
+        prj = qaConf.getOpt('PROJECT')
+        if qaConf.isOpt(prj + '_VERSION'):
+            rev += '|' + qaConf.dOpts[prj + '_VERSION']
+        else:
+            isVerbose=True
+    else:
+        print 'Incomplete installation.'
+        print 'Please, run: qa-dkrz install --up --force PROJECT-name'
 
-    if qaConf.isOpt('PROJECT'):
-        com_line_opts["PROJECT"] = qaConf.getOpt("PROJECT")
+        sys.exit(1)
 
-    if qaConf.isOpt('CONDA_PATH'):
-        com_line_opts["IS_CONDA"] = True
-    '''
+    if isVerbose:
+        com_line_opts = ["--section=" + qaConf.getOpt("QA_SRC")]
 
-    rev = qa_version.get_version( opts=qaConf.dOpts,
-                                  com_line_opts=com_line_opts)
+        try:
+            rev = qa_version.get_version( opts=qaConf.dOpts,
+                                        com_line_opts=com_line_opts)
+        except:
+            print 'please, run: qa-dkrz install --force --up ' + prj
+            sys.exit(1)
 
     if qaConf.isOpt('SHOW_VERSION'):
         print rev
@@ -602,10 +610,10 @@ def testLock(t_vars, fBase):
 if __name__ == '__main__':
     (isCONDA, QA_SRC) = qa_util.get_QA_SRC(sys.argv[0])
 
+    qa_init.run_install(QA_SRC)  # exit after processing, if any
+
     # for options on the command-line as well as in configuration files
     qaConf=QaConfig(QA_SRC)
-
-    qa_init.run_install(qaConf)
 
     g_vars = GlobalVariables()
     t_vars = ThreadVariables()
@@ -632,6 +640,7 @@ if __name__ == '__main__':
         sys.exit(0)
 
     try:
+        # get from ~/.qa-dkrz/config.txt; also a check for incomplete installation
         get_version(qaConf)
     except:
         sys.exit(1)

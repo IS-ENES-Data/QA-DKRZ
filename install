@@ -202,38 +202,46 @@ ship()
         . $QA_SRC/scripts/parseConfigFile --ship
 
         # conda or github repo
-        if [ ${CONDA_QA_PATH} ] ; then
-          local bp=${CONDA_QA_PATH%/bin/conda}
+        if [ ${CONDA_PATH} ] ; then
+          local bp=${CONDA_PATH%/bin/conda}
           cd ${bp%/*} &> /dev/null
           echo  "tar cf ${pth}/QA-DKRZ.tar ${bp##*/} "
-          progress_wheel &
-          job_id=$!
+          if [ ! ${isNoPW} ] ; then
+            progress_wheel &
+            job_id=$!
+          fi
           tar cf ${pth}/QA-DKRZ.tar ${bp##*/}
-          kill -TERM $job_id
+          test ! ${isNoPW} && kill -TERM $job_id
         else
           cd ${QA_SRC%/*} &> /dev/null
           echo -e "\rtar cf ${pth}/QA-DKRZ.tar QA-DKRZ "
-          progress_wheel &
-          job_id=$!
+          if [ ! ${isNoPW} ] ; then
+            progress_wheel &
+            job_id=$!
+          fi
           tar cf ${pth}/QA-DKRZ.tar QA-DKRZ
-          kill -TERM $job_id
+          test ! ${isNoPW} && kill -TERM $job_id
         fi
 
         . $QA_SRC/scripts/parseConfigFile QA_TABLES
         cd ${QA_TABLES%/*} &> /dev/null
         echo -e "\rtar cf ${pth}/QA-DKRZ.tar $QA_TABLES "
-        progress_wheel &
-        job_id=$!
+        if [ ! ${isNoPW} ] ; then
+          progress_wheel &
+          job_id=$!
+        fi
         tar rf ${pth}/QA-DKRZ.tar $QA_TABLES
-        kill -TERM $job_id
+        test ! ${isNoPW} && kill -TERM $job_id
 
         if . $QA_SRC/scripts/parseConfigFile PrePARE ; then
           local bp=${PrePARE%/envs/cmor/bin/PrePARE}
           cd ${bp%/*} &> /dev/null
           echo -e "\rtar rf ${pth}/QA-DKRZ.tar PrePARE-package"
-          progress_wheel &
-          job_id=$!
-          if [ CONDA_QA_PATH} ] ; then
+          if [ ! ${isNoPW} ] ; then
+            progress_wheel &
+            job_id=$!
+          fi
+          if [ CONDA_PATH} ] ; then
              tar rf ${pth}/QA-DKRZ.tar ${bp##*/}
           else
              tar --exclude="${bp##*/}/envs/qa-dkrz" --exclude="${bp##*/}/qa-dkrz*" \
@@ -241,7 +249,7 @@ ship()
           fi
 
           tar rf ${pth}/QA-DKRZ.tar ${bp##*/}
-          kill -TERM $job_id
+          test ! ${isNoPW} && kill -TERM $job_id
         fi
     else
         echo "please, provide a destination path with option --ship=DEST"
@@ -344,21 +352,24 @@ update()
   fi
 
   # search updates after a specified number of days; default: once a day
-  if [ ${CONDA_QA_PATH} ] ; then
+  if [ ${CONDA_PATH} ] ; then
       test ! ${CONDA_QA_ENV} && \
         . ${QA_SRC}/scripts/parseConfigFile CONDA_QA_ENV
 
       if [ ${isForce:-f} = t ] || \
            ! . ${QA_SRC}/scripts/parseConfigFile NEXT_QA_UPDATE --inquire
       then
-        if update_CONDA "${CONDA_QA_NAME}" "${CONDA_QA_CHANNELS}" \
-                      "${CONDA_QA_PATH}"   "${CONDA_QA_ENV:-qa-dkrz}" ; then
+        if update_CONDA_env "${CONDA_QA_NAME}" "${CONDA_QA_CHANNELS}" \
+                      "${CONDA_PATH}"   "${CONDA_QA_ENV:-qa-dkrz}" ; then
 
           . ${QA_SRC}/scripts/parseConfigFile NEXT_QA_UPDATE ${isForce:+--force}
-          . ${QA_SRC}/scripts/parseConfigFile CONDA_QA_ENV=${CONDA_QA_ENV:-qa.dkrz}
+          . ${QA_SRC}/scripts/parseConfigFile \
+                 CONDA_QA_ENV=${CONDA_QA_ENV:-${CONDA_PATH%/bin/conda}/envs/qa-dkrz}
 
           # updates the QA_CONDA_REVISION entry in the config-file
-          $QA_SRC/scripts/getVersion --force ${DEBUG} &> /dev/null
+          # $QA_SRC/scripts/getVersion --force ${DEBUG} &> /dev/null
+          . ${QA_SRC}/scripts/parseConfigFile \
+               QA_VERSION=$( python $QA_SRC/python/qa-dkrz/qa_version.py )
         fi
       fi
   elif [ -d ${QA_SRC}/.git ] ; then
@@ -386,12 +397,12 @@ update()
   return 0
 }
 
-update_CONDA()
+update_CONDA_env()
 {
   local conda_name=$1      # is always defined
   local conda_channels=$2  # is always defined
   local conda_path=$3      # is always defined
-  local conda_env=$4       # could be empty
+  local conda_env=${4##*/} # could be empty
   local action=$5          # could be empty
 
   test ${conda_env:-none} = none && conda_env=cmor
@@ -406,10 +417,12 @@ update_CONDA()
     #exit 1
   elif [ ${action} = update ] ; then
     # look for a new conda-built package
-    echo "searching ${conda_name} updates" > ${TTY}
+    echo "searching ${conda_name} updates" # > ${TTY}
 
-    progress_wheel &
-    job_id=$!
+    if [ ! ${isNoPW} ] ; then
+      progress_wheel &
+      job_id=$!
+    fi
 
     set -f
     ${conda_path} ${action} ${conda_env:+-n ${conda_env}} \
@@ -418,13 +431,13 @@ update_CONDA()
 y
 EOF
 
-    kill -TERM $job_id
+    test ! ${isNoPW} && kill -TERM $job_id
 
     set +f
   else
     # only CMOR could here be created
     ${conda_path} ${action} ${conda_env:+-n ${conda_env}} \
-            ${CONDA_CMOR_CHANNELS//,/ } ${CONDA_CMOR_NAME} > ${TTY}
+            ${CONDA_CMOR_CHANNELS//,/ } ${CONDA_CMOR_NAME} # > ${TTY}
 
     if [ $? -eq 0 ] ; then
       if [ ${CONDA_CMOR_ENV} ] ; then
@@ -438,7 +451,7 @@ EOF
       . $QA_SRC/scripts/parseConfigFile \
          PrePARE=${conda_path}/envs/cmor/bin/PrePARE
 
-      echo "Please, note that activation/deactivation is not required in this place." > $TTY
+      echo "Please, note that activation/deactivation is not required in this place." # > $TTY
     fi
   fi
 
@@ -538,7 +551,6 @@ update_QA_SRC()
 }
 
 # ----- main ------
-
 zeroArg=$0
 initialArgs=($*)
 
@@ -579,14 +591,10 @@ if [ $# -gt 0 ] ; then
     elif [ "${A}" = UNFREEZE ] ; then
       sArgs[${i}]=--${sArgs[${i}]}
     fi
-
-    if [ "${A%=*}" = 'DEBUG' ] ; then
-      test ${A} = 'DEBUG' -o ${A#*=} = ${0##*/} && set -x
-    fi
   done
 fi
 
-while getopts BdhT:-: option ${sArgs[*]}
+while getopts :BdhT:-: option ${sArgs[*]}
 do
   UOPTARG="${OPTARG}"
   tr_option UOPTARG
@@ -643,7 +651,7 @@ CFG_UPDATE=$UPDATE
 UPDATE=
 
 OPTIND=
-while getopts BdhT:-: option ${sArgs[*]}
+while getopts :BdhT:-: option ${sArgs[*]}
 do
   UOPTARG="${OPTARG}"
   tr_option UOPTARG
@@ -665,21 +673,14 @@ do
           isForce=t
         elif [ "${OPTNAME}" = CONDA_BUILD ] ; then
           isCondaBuild=t
-        elif [ "${OPTNAME}" = CONDA_CMOR_ENV -o "${OPTNAME}" = CCE ] ; then
-          export CONDA_CMOR_ENV=${OPTVAL}
-          . ${QA_SRC}/scripts/parseConfigFile CONDA_CMOR_ENV=${OPTVAL}
 
         elif [ "${OPTNAME}" = CONDA_CMOR_PATH -o "${OPTNAME}" = CCP ] ; then
           export CONDA_CMOR_PATH=${OPTVAL}
           . ${QA_SRC}/scripts/parseConfigFile CONDA_CMOR_PATH=${OPTVAL}
 
-        elif [ "${OPTNAME}" = CONDA_QA_ENV -o "${OPTNAME}" = CQE ] ; then
-          export CONDA_QA_ENV=${OPTVAL}
-          . ${QA_SRC}/scripts/parseConfigFile CONDA_QA_ENV=${OPTVAL}
-
-        elif [ "${OPTNAME}" = CONDA_QA_PATH -o "${OPTNAME}" = CQP ] ; then
-          export CONDA_QA_PATH=${OPTVAL}
-          . ${QA_SRC}/scripts/parseConfigFile CONDA_QA_PATH=${OPTVAL}
+        elif [ "${OPTNAME}" = CONDA_PATH -o "${OPTNAME}" = CQP ] ; then
+          export CONDA_PATH=${OPTVAL}
+          . ${QA_SRC}/scripts/parseConfigFile CONDA_PATH=${OPTVAL}
 
         elif [ "${OPTNAME}" = FORCE ] ; then
           isForce=t
@@ -704,6 +705,8 @@ do
           fi
           INTERNET=f
 #          . ${QA_SRC}/scripts/parseConfigFile INTERNET=${OPTVAL}
+        elif [ "${OPTNAME}" = NO_PROGRESS_WHEEL ] ; then
+           isNoPW=t
         elif [ "${OPTNAME:0:6}" = ONLY_Q ] ; then
           :  # for backward compatibilty
         elif [ "${OPTNAME}" = PROJECT -a ${#OPTVAL} -gt 0 ] ; then
@@ -762,9 +765,9 @@ do
         # collect options, which have not been processed above
         coll[${#coll[*]}]=--${UOPTARG}
         ;;
-   \?)  descript
-        echo $*
-        exit 1 ;;
+   \?)  # descript
+        ;; # echo $*
+        # exit 1 ;;
   esac
 done
 
@@ -787,9 +790,9 @@ elif [ ${isUpdate:-f} = f -a ${CFG_UPDATE:-f} != f ] ; then
   UPDATE=${CFG_UPDATE}
 fi
 
-if [ ! "${TTY}" ] ; then
-  if tty -s ; then TTY=$(tty) ; fi
-fi
+#if [ ! "${TTY}" ] ; then
+#  if tty -s ; then TTY=$(tty) ; fi
+#fi
 
 for pck in $* ; do
   PCK="${pck}"
@@ -838,7 +841,7 @@ if [ ${isUpdate} ] ; then
     fi
 
     if [ ${#next_update_cycle[*]} -gt 0 ] ; then
-      NEXT_U_CYCLE=(QA CONDA_CMOR)
+      NEXT_U_CYCLE=(QA CMOR)
       for(( i=0 ; i < ${#projects[*]} ; ++i )) ; do
         NEXT_U_CYCLE[${#NEXT_U_CYCLE[*]}]=${projects[i]}
       done

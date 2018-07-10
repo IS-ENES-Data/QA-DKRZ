@@ -14,13 +14,14 @@ class GetVersion(object):
     '''
     classdocs
     '''
-    def __init__(self, extern=False, opts={}, com_line_opts={}):
+    def __init__(self, opts={}, com_line_opts=[]):
         self.opts = opts
-        if extern:
-            self.opts.update( commandLineOpts( create_parser() ) )
+
+        if len(com_line_opts):
+            self.opts.update( commandLineOpts( create_parser(), com_line_opts=com_line_opts ) )
             self.construct_cfg()
         else:
-            self.opts.update( com_line_opts )
+            self.opts.update( opts )
 
         self.p_projects=''
 
@@ -32,7 +33,7 @@ class GetVersion(object):
 
         home = os.path.join( os.environ['HOME'], '.qa-dkrz')
         self.cfg_file=os.path.join(home, 'qa.cfg')
-        self.cfg = CfgFile()
+        self.cfg = CfgFile(self)
         self.cfg.read_file( self.cfg_file, section=self.opts["SECTION"])
         self.opts.update( self.cfg.getOpts() )
 
@@ -40,7 +41,7 @@ class GetVersion(object):
 
 
     def get_external_version(self, prj):
-        if self.isOpt("SHOW_VERSION"):
+        if self.isOpt("VERBOSE"):
             sep0='\n'
             sep1='\n   '
         else:
@@ -214,7 +215,7 @@ class GetVersion(object):
                             break
 
 
-        if self.isOpt("SHOW_VERSION"):
+        if self.isOpt("VERBOSE"):
             rev = "QA version:"
             if len(tag):
                 rev += '\n   tag: ' + tag
@@ -222,9 +223,10 @@ class GetVersion(object):
             rev += '\n   branch: ' + branch
             rev += '\n   commit-SHA: ' + id
         else:
-            rev=''
             if len(tag):
                 rev = tag + ','
+            else:
+                rev = 'untagged,'
             rev += branch + '-' + id
 
         return rev
@@ -255,6 +257,7 @@ class GetVersion(object):
         print 'Is ' + path + ' installed?'
         print 'If not, then run: install --up [--force] [--freeze] ' + prj
 
+        sys.exit(1)
         return
 
 
@@ -291,8 +294,8 @@ class GetVersion(object):
                                 ny_sect=line[0:sz1] # rm ':'
                                 self.rCP.add_section(ny_sect)
                             else:
-                                k, v = line.split('=')
-                                self.rCP.set(ny_sect, k, repr(v))
+                                k = line.split('=', 1)
+                                self.rCP.set(ny_sect, k[0], k[1])
         return
 
     def run(self):
@@ -314,7 +317,7 @@ class GetVersion(object):
             if type(self.opts["PROJECT"]) == StringType:
                 lprj.append( self.opts["PROJECT"] )
             else:
-                lprj.extend( self.opts["PROJECT"].split() )
+                lprj.extend( self.opts["PROJECT"] )
 
         for prj in lprj:
             s = self.get_external_version(prj)
@@ -325,10 +328,13 @@ class GetVersion(object):
 
 
 
-def commandLineOpts(parser):
+def commandLineOpts(parser, com_line_opts=[]):
 
     # let's parse
-    args = parser.parse_args(sys.argv[1:])
+    if len(com_line_opts):
+      args = parser.parse_args(com_line_opts)
+    else:
+      args = parser.parse_args(sys.argv[1:])
 
     # post-processing: namespace --> dict
     _ldo = {}
@@ -338,7 +344,10 @@ def commandLineOpts(parser):
     if args.is_get_branch:       _ldo['GET_BRANCH']    = True
     if args.PROJECT    != None:  _ldo['PROJECT']       = args.PROJECT.split(',')
     if args.SECTION    != None:  _ldo['SECTION']       = args.SECTION
-    if args.SHOW_VERSION:        _ldo['SHOW_VERSION']  = True
+    if args.VERBOSE:             _ldo['VERBOSE']  = True
+
+    if len(args.POSIT_PARAM):
+      _ldo["PROJECT"] = args.POSIT_PARAM
 
     return _ldo
 
@@ -366,8 +375,11 @@ def create_parser():
         action="store_true",
         help="The config-file of QA-DKRZ")
 
-    parser.add_argument( '--verbose' , '-v', dest='SHOW_VERSION',
+    parser.add_argument( '--verbose' , '-v', dest='VERBOSE',
         action="store_true", help="verbose")
+
+    parser.add_argument('POSIT_PARAM', nargs='*',
+        help= "NetCDF files [file1.nc[, file2.nc[, ...]]].")
 
     return parser
 
@@ -388,10 +400,10 @@ def getOpt(self, key, dct={}, bStr=False):
 
     return ''
 
-def get_version(extern=False, opts={}, com_line_opts={}):
+def get_version(opts={}, com_line_opts={}):
     # 1st param: CfgFile object, imported from qa_config
     # 2nd param: command-line options {}
-    gv = GetVersion(extern=False, opts=opts, com_line_opts=com_line_opts)
+    gv = GetVersion(opts=opts, com_line_opts=com_line_opts)
     rev = gv.run()
 
     return rev
@@ -399,7 +411,14 @@ def get_version(extern=False, opts={}, com_line_opts={}):
 
 
 if __name__ == '__main__':
-    sys.argv.append("--verbose")
+    (isCONDA, QA_SRC) = qa_util.get_QA_SRC(sys.argv[0])
 
-    rev = get_version(extern=True)
+    opts={'QA_SRC': QA_SRC, 'CONDA': isCONDA}
+
+    clo=[]
+    clo.append('--section=' + QA_SRC)
+    clo.extend(sys.argv[1:])
+
+    rev = get_version(opts=opts, com_line_opts=clo)
+    #rev = get_version(extern=True, opts={'QA_SRC': QA_SRC} )
     print rev

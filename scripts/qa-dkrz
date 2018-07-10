@@ -482,8 +482,9 @@ callQaConfig()
   fi
 
   if [ ${DISPLAY_VERSION} ] ; then
-    ${QA_SRC}/scripts/getVersion --verbose \
-        --config-file=${CONFIG_FILE} ${PROJECT} ${DEBUG_MANAGER:+--debug}
+    python ${QA_SRC}/python/qa-dkrz/qa_version.py
+#    ${QA_SRC}/scripts/getVersion --verbose \
+#        --config-file=${CONFIG_FILE} ${PROJECT} ${DEBUG_MANAGER:+--debug}
     exit 0
   fi
 
@@ -508,7 +509,7 @@ callQaConfig()
     SHOW_CLEAR=t
   fi
 
-  if [ ! ${CONDA_QA_PATH} ] ; then
+  if [ ! ${CONDA_PATH} ] ; then
     local lib
     lib=$( grep '^[[:space:]]*LIB=' ${QA_SRC}/install_configure )
     export LD_LIBRARY_PATH=${lib#*=}
@@ -2990,7 +2991,7 @@ init()
 
         local p=${0%/*}
         echo -e "\nMissing external tables/executabels."  > $TTY
-        echo "Please, run: ${p%/*}/install up PROJECT"  > $TTY
+        echo "Please, run: ${p%/*}/install --up --force PROJECT"  > $TTY
         exit 1
       fi
 
@@ -3637,10 +3638,12 @@ log()
   sp[8]='        '
 
   if [ "$1" = '--start' ] ; then
-    QA_REVISION="$(${QA_SRC}/scripts/getVersion ${DEBUG_MANAGER:+--debug} ${PROJECT})"
+    #QA_VERSION="$(${QA_SRC}/scripts/getVersion ${DEBUG_MANAGER:+--debug} ${PROJECT})"
+    QA_VERSION=$(python ${QA_SRC}/python/qa-dkrz/qa_version.py)
+    . $QA_SRC/scripts/parseConfigFile QA_VERSION=${QA_VERSION}
 
     s_out="start:\n${sp[1]}date: $( date +'%FT%T' )"
-    s_out="${s_out}\n${sp[1]}qa-revision: ${QA_REVISION}"
+    s_out="${s_out}\n${sp[1]}qa-version: ${QA_VERSION}"
     echo -e "$s_out" >> ${SESSION_LOGDIR}/session.prmbl
 
     cp ${SESSION_LOGDIR}/session.prmbl ${SESSION_LOGDIR}/session.log
@@ -5231,7 +5234,6 @@ for OPTARG in $* ; do
        set -x
     elif [ "${OPTNAME}" = EXAMPLE ] ; then
       QA_EXAMPLE=t
-
     elif [ ${OPTNAME} = CONFIG_FILE ] ; then
       export CONFIG_FILE=${OPTARG#*=}
     elif [ ${OPTNAME} = QA_CONFIG ] ; then

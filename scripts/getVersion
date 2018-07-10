@@ -32,7 +32,7 @@ getGitBranch()
 
 getFromConda()
 {
-   if [ ${CONDA_QA_PATH} ] ; then
+   if [ ${CONDA_PATH} ] ; then
      if tmp=( $(cat ${QA_SRC}/install.log 2> /dev/null) ) ; then
        branch=${tmp[0]#*=}
        currIdent=${tmp[1]#*=}
@@ -142,7 +142,7 @@ getExternalVersion()
                    | awk '{print $6}')
 
        if [ ! ${PrePARE} ] ; then
-          if ! Prepare=${QA_SRC}/scripts/which_cmd_alias -q PrePARE ; then
+          if ! Prepare=$( ${QA_SRC}/scripts/which_cmd_alias -q PrePARE ) ; then
                . ${QA_SRC}/scripts/parseConfigFile PrePARE
             fi
        fi
@@ -214,11 +214,11 @@ getExternalVersion()
 
 getCondaPath()
 {
-  if [ ${CONDA_QA_PATH} ] ; then
+  if [ ${CONDA_PATH} ] ; then
     return
   else
-    if . $QA_SRC/scripts/parseConfigFile CONDA_QA_PATH ] ; then
-      export CONDA_QA_PATH
+    if . $QA_SRC/scripts/parseConfigFile CONDA_PATH ] ; then
+      export CONDA_PATH
       return
     fi
 
@@ -245,11 +245,11 @@ getCondaPath()
   done
 
   if [ ${i} -lt ${sz} ] ; then
-     export CONDA_QA_PATH="${pth}"
-     . $QA_SRC/scripts/parseConfigFile CONDA_QA_PATH=${CONDA_QA_PATH}
+     export CONDA_PATH="${pth}"
+     . $QA_SRC/scripts/parseConfigFile CONDA_PATH=${CONDA_PATH}
   fi
 
-  # CONDA_QA_PATH could be empty, if conda is neither referenced
+  # CONDA_PATH could be empty, if conda is neither referenced
   # by PATH nor by alias.
 
   return

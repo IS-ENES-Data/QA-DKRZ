@@ -45,7 +45,7 @@ pC_ship()
        last=$(( ${#x_itm[*]} -1 ))
        arr[ai]="${name}=SUBST/${x_itm[last]}"
 
-    elif [ ${name} = CONDA_QA_PATH ] ; then
+    elif [ ${name} = CONDA_PATH ] ; then
        x_itm=( ${val//\// } )
        for((j=0 ; j < ${#x_itm[*]} ; ++j )) ; do
           if [ ${x_itm[j]} = 'bin' -a ${x_itm[$((j+1))]} = 'conda' ] ; then
@@ -74,7 +74,7 @@ pC_ship()
           arr[ai]="${arr[ai]}/${x_itm[k]}"
        done
 
-    elif [ ${name} = CONDA_CMOR_PATH ] ; then
+    elif [ ${name} = CONDA_CMOR_ENV ] ; then
        x_itm=( ${val//\// } )
        for((j=0 ; j < ${#x_itm[*]} ; ++j )) ; do
           if [ ${x_itm[j]} = 'envs' ] ; then
@@ -349,8 +349,12 @@ updateConfFile()
    return $status
 }
 
-
 # main
+if [ ${DEBUG} ] ; then
+   set +x
+   pC_debug=t
+fi
+
 declare -a pC_Args
 pC_Args=()
 pC_freq=
@@ -394,8 +398,17 @@ if [ ${pC_isShip:-f} = t ] ; then
   pC_ship
   return 0
 fi
-test ${#pC_Args[*]} -eq 0 && return 0
 
+
+if [ ${#pC_Args[*]} -eq 0 ] ; then
+  test ${pC_debug} && set -x
+  return 0
+fi
+
+retVal=$?
 updateConfFile ${pC_Args[*]}
+retVal=$?
 
-return $?
+test ${pC_debug} && set -x
+
+return $retVal

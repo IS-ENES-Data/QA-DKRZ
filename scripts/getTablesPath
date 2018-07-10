@@ -35,13 +35,16 @@ getTablesPath()
      done
      qts=()
 
-     if [ ${#TTY} -gt 0 ] ; then
-        local  dpath=${QA_SRC}/QA_Tables
+     local  dpath=${QA_SRC}/QA_Tables
+
+     if [ ! -w $dpath ] ; then
+       dpath=${HOME}/.qa-dkrz/QA_TABLES
+     fi
 
         test ${DEBUG} && set +x
 
-        echo -e "\nPlease, specify variable QA_TABLES [default: ${dpath}], " > ${TTY}
-        read -p "the spot for external tables and programs: " QA_TABLES 2> ${TTY}
+        echo -e "\nPlease, specify variable QA_TABLES [default: ${dpath}], " # > ${TTY}
+        read -p "the spot for external tables and programs: " QA_TABLES # 2> ${TTY}
 
         test ${DEBUG} && set -x
 
@@ -75,7 +78,6 @@ getTablesPath()
            echo "please, restart with added option --qa-tables=path"
            exit 41
         fi
-     fi
 
      if [ ${QA_TABLES} ] ; then
         . $QA_SRC/scripts/parseConfigFile QA_TABLES=${QA_TABLES}
