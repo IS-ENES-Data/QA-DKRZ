@@ -759,6 +759,7 @@ def get_QA_SRC(path):
     # the root of QA_SRC contains
     #   a) scripts/qa-dkrz
     #   b) python/qa-dkrz/qa-dkrz.py
+    # return: isConda, QA_SRC
 
     # is argv[0] called by a plain name?
     head, tail = os.path.split(path)
@@ -766,15 +767,24 @@ def get_QA_SRC(path):
         target=os.path.join(os.getcwd(), tail)
         return get_QA_SRC(target)
 
-    p, name = os.path.split(path)
-    pp, tail_b = os.path.split(p)
-    ppp, tail_p = os.path.split(pp)
+    pItems=path.split('/')
+    if 'envs' in pItems and 'opt' in pItems:
+        isConda=True
+    else:
+        isConda=False
+
+    if 'python' in pItems:
+        # a python script was called
+        p, t = os.path.split(head)
+        p, t = os.path.split(p)
+    else:
+        # a bash script was called
+        p, t = os.path.split(head)
+        if t == 'scripts' :
+            p, t = os.path.split(head)
 
     if not p[0] == '.':
-        if tail_b == 'scripts':
-            return (False, pp)
-        elif tail_p == 'python':
-            return (True, ppp)
+        return (isConda, p)
 
     target=path
 
