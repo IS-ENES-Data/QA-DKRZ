@@ -2044,7 +2044,7 @@ QA_Data::testInfNaN(hdhC::FieldData &fA)
     {
       sharedRecordFlag.currFlag += 6400;
 
-      std::string capt("Inf or NaN value(s), found rec#");
+      std::string capt("Inf or NaN value(s) found in rec#");
       capt += hdhC::tf_val( hdhC::itoa(pIn->currRec));
 
       (void) notes->operate(capt) ;
