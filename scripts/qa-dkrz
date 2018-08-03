@@ -2911,6 +2911,12 @@ init()
 
   local prj=${PROJECT}
 
+  if [ ! "${INSTALL_ARGS}" ] ; then
+    if ! . ${QA_SRC}/scripts/parseConfigFile AUTO_UPDATE ; then
+       INSTALL_ARGS="--up,${prj}"
+    fi
+  fi
+
   if [ "${INSTALL_ARGS}" ] ; then
     # checksum of current qa-dkrz
     local md5_0
