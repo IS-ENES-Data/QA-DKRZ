@@ -75,25 +75,34 @@ descript()
   return
 }
 
+exit_fnct()
+{
+   test $1 -gt ${exitVal:-0} && exitVal=$1
+   exit $exitVal
+}
+
 freeze()
 {
-    if [ ${UPDATE} ] ; then
-       if [ ${UPDATE} != "${CFG_UPDATE}" ] ; then
-          if [ ${isForce} ] ; then
-             . $QA_SRC/scripts/parseConfigFile UPDATE=${UPDATE}
-          elif [ "${CFG_UPDATE}" != frozen ] ; then
-             . $QA_SRC/scripts/parseConfigFile UPDATE=${UPDATE}
-          fi
-       fi
-    else
-       test ${isForce} && . $QA_SRC/scripts/parseConfigFile UPDATE=frozen
+    if [ ${isFreeze} ] ; then
+       test "${CFG_UPDATE}" != frozen && . $QA_SRC/scripts/parseConfigFile UPDATE=frozen
+
+       # before freezing, updating would be possible
+       return
+
+    elif [ ${isForce} ] ; then
+       isUpdate=t
+       return
+
     fi
 
-    test ${isForce} && return
+    test ${isUpdate} && return
+    test ${isShip} && return
     test "${CFG_UPDATE}" != frozen && return
-    test "${UPDATE}" != freeze && return
 
-    exit 0
+    echo "currently frozen; use --unfreeze to re-enable updates unconditionally"
+    echo "                  or with --force for a single update, but keeping frozen enabled."
+
+    exit_fnct 0
 }
 
 getSrcPath()
@@ -189,12 +198,12 @@ ship()
 
     if [ ! ${pth} ] ; then
       echo "--ship requires a path"
-      exit 41
+      exit_fnct 41
     fi
 
     if ! mkdir -p $pth ; then
       echo "--ship=${pth}: could not mkdir/open path"
-      exit 41
+      exit_fnct 41
     fi
 
     if [ ${pth} ] ; then
@@ -339,60 +348,85 @@ unship()
 
 update()
 {
-  local prj
+  local prj isUp
 
-  if [ ${isForce:-f} = f ] ; then
-    for prj in $* ; do
-      if ! . ${QA_SRC}/scripts/inqRunEnv ${prj} ; then
-        isForce=t  # search updates
-        break
-      fi
-    done
-    test ${DEBUG} && end_of_inq=t  # just a mark
+  local prjs
+  declare -a prjs
+  prjs=( $* )
+  test ${#prjs[*]} -gt 0 && prjs[${#prjs[*]}]=CF
+
+  if [ ${isForce} ] ; then
+    isUp=t
+    isUpQA=t
+  elif [ ${isUpdate} ] ; then
+    isUp=t
   fi
 
-  # search updates after a specified number of days; default: once a day
-  if [ ${CONDA_PATH} ] ; then
-      test ! ${CONDA_QA_ENV} && \
-        . ${QA_SRC}/scripts/parseConfigFile CONDA_QA_ENV
+  for prj in $* ; do
+    if ! . ${QA_SRC}/scripts/inqRunEnv ${prj} ; then
+      isUp=t  # incomplete
+    elif . ${QA_SRC}/scripts/parseConfigFile AUTO_UPDATE ; then
+      if [ ! ${isUpQA} ] ; then
+        if ! . ${QA_SRC}/scripts/parseConfigFile NEXT_QA_UPDATE --inquire ; then
+          isUpQA=t
+        fi
 
-      if [ ${isForce:-f} = t ] || \
-           ! . ${QA_SRC}/scripts/parseConfigFile NEXT_QA_UPDATE --inquire
-      then
-        if update_CONDA_env "${CONDA_QA_NAME}" "${CONDA_QA_CHANNELS}" \
+        continue
+      fi
+    else
+      continue
+    fi
+
+    eval isUp_${prj}=t
+  done
+  test ${DEBUG} && end_of_inq=t  # just a mark
+
+  if [ ${isUpQA} ] ; then
+    # search updates after a specified number of days; default: once a day
+    if [ ${CONDA_PATH} ] ; then
+       test ! ${CONDA_QA_ENV} && \
+         . ${QA_SRC}/scripts/parseConfigFile CONDA_QA_ENV
+
+       if [ ${isUpQA} ] ; then
+          if update_CONDA_env "${CONDA_QA_NAME}" "${CONDA_QA_CHANNELS}" \
                       "${CONDA_PATH}"   "${CONDA_QA_ENV:-qa-dkrz}" ; then
 
-          . ${QA_SRC}/scripts/parseConfigFile NEXT_QA_UPDATE ${isForce:+--force}
-          . ${QA_SRC}/scripts/parseConfigFile \
+            . ${QA_SRC}/scripts/parseConfigFile NEXT_QA_UPDATE ${isForce:+--force}
+            . ${QA_SRC}/scripts/parseConfigFile \
                  CONDA_QA_ENV=${CONDA_QA_ENV:-${CONDA_PATH%/bin/conda}/envs/qa-dkrz}
 
-          # updates the QA_CONDA_REVISION entry in the config-file
-          # $QA_SRC/scripts/getVersion --force ${DEBUG} &> /dev/null
-          . ${QA_SRC}/scripts/parseConfigFile \
-               QA_VERSION=$( python $QA_SRC/python/qa-dkrz/qa_version.py )
+            # updates the QA_CONDA_REVISION entry in the config-file
+            # $QA_SRC/scripts/getVersion --force ${DEBUG} &> /dev/null
+            . ${QA_SRC}/scripts/parseConfigFile \
+                 QA_VERSION=$( python $QA_SRC/python/qa-dkrz/qa_version.py )
+          fi
         fi
-      fi
-  elif [ -d ${QA_SRC}/.git ] ; then
-     test ${isForce} && \
-          $QA_SRC/scripts/getVersion --force ${DEBUG} &> /dev/null
-
-     test -w ${QA_SRC} && update_QA_SRC
-  fi
-
-  # now for project related tables and programs
-  for prj in $* ; do
-    if ! update_external $prj ; then
-      return $?
+    elif [ -d ${QA_SRC}/.git ] ; then
+      test -w ${QA_SRC} && update_QA_SRC
     fi
-  done
-
-  if ! mkdir -p ${QA_TABLES}/tables  ; then
-    echo "failure: mkdir -p ${QA_TABLES}/tables"
-    exit 1
   fi
 
-  # note that QA_TABLES points to .qa-dkrz wherever it is located
-  rsync -auz --exclude '*~' $QA_SRC/tables ${QA_TABLES} &> /dev/null
+  if [ ${isUp} ] ; then
+     # now for project related tables and programs
+     for prj in $* ; do
+        eval isPRJ=isUp_${prj}
+        if [ ${isPRJ} ] ; then
+          if ! update_external $prj ; then
+             local isSyncTables=t
+          fi
+        fi
+      done
+  fi
+
+  if [ ${isSyncTables} ] ; then
+    if ! mkdir -p ${QA_TABLES}/tables  ; then
+      echo "failure: mkdir -p ${QA_TABLES}/tables"
+      exit_fnct 1
+    fi
+
+    # note that QA_TABLES points to .qa-dkrz wherever it is located
+    rsync -auz --exclude '*~' $QA_SRC/tables ${QA_TABLES} &> /dev/null
+  fi
 
   return 0
 }
@@ -414,7 +448,7 @@ update_CONDA_env()
   if [ ! -w "${QA_SRC}" ] ; then
     return
     #echo "no write-permission for ${QA_SRC}"
-    #exit 1
+    #exit_fnct 1
   elif [ ${action} = update ] ; then
     # look for a new conda-built package
     echo "searching ${conda_name} updates" # > ${TTY}
@@ -468,20 +502,22 @@ update_external()
   # check it here in order to prevent an update of the config-file in case
   # that the installation failed or was terminated.
 
-  if [ ${isForce:-f} = t ] || \
-         ! . ${QA_SRC}/scripts/parseConfigFile NEXT_${prj}_UPDATE --inquire
-  then
+  if ! . ${QA_SRC}/scripts/parseConfigFile NEXT_${prj}_UPDATE --inquire ; then
      . ${QA_SRC}/scripts/get_externalSources \
          -P $prj --qa-src=${QA_SRC} \
          --qa-tables=${QA_TABLES} --config_file=${CONFIG_FILE} \
          ${isUpdate:+--update} ${isForce:+--force-update}
 
-     test $? -gt 0 && exit 1
+     if [ $? -gt 0 ] ; then
+        echo "could not make install.update_external for $prj"
+        exit_fnct 1
+     fi
 
      local nextUpdate
      eval nextUpdate=\$NEXT_${prj}_UPDATE
 
-  . ${QA_SRC}/scripts/parseConfigFile NEXT_${prj}_UPDATE ${isForce:+--force}
+     . ${QA_SRC}/scripts/parseConfigFile NEXT_${prj}_UPDATE ${isForce:+--force}
+     return 1
   fi
 
   return 0
@@ -538,9 +574,7 @@ update_QA_SRC()
 
         . ${QA_SRC}/scripts/parseConfigFile NEXT_QA_UPDATE ${isForce:+--force}
 
-        # update of the QA_GitHub_REVISION entry in the config-file
-        $QA_SRC/scripts/getVersion --config-file=$CONFIG_FILE --force ${DEBUG} \
-            &> /dev/null
+        $QA_SRC/scripts/getVersion --force ${DEBUG} &> /dev/null
 
         . ${QA_SRC}/scripts/parseConfigFile --read
       fi
@@ -556,6 +590,16 @@ initialArgs=($*)
 
 # resolve symbolic links and realtive paths
 getSrcPath
+
+# is it in a conda built?
+. ${QA_SRC}/scripts/getCondaPath
+
+# freeze after first install; except --auto was set
+if ! . $QA_SRC/scripts/getConfigFile ; then
+  if ! . ${QA_SRC}/scripts/parseConfigFile AUTO_UPDATE ; then
+     isFreeze=t
+  fi
+fi
 
 if [ $# -gt 0 ] ; then
   # safe arguments
@@ -604,9 +648,17 @@ do
         OPTNAME=${UOPTARG%%=*}
         test ${OPTVAL} = ${OPTARG%%=*} && OPTVAL=
 
-        if [ "${OPTNAME}" = CONFIG_FILE ] ; then
+        if [ "${OPTNAME:0:4}" = AUTO ] ; then
+          if [ "${OPTVAL:0:1}" = D -o "${OPTVAL:0:1}" = d ] ; then
+            . ${QA_SRC}/scripts/parseConfigFile AUTO_UPDATE=delete
+            . ${QA_SRC}/scripts/parseConfigFile UPDATE=frozen
+          else
+            AUTO_UPDATE=enabled
+            . ${QA_SRC}/scripts/parseConfigFile AUTO_UPDATE=${AUTO_UPDATE}
+            isFreeze=t
+          fi
+        elif [ "${OPTNAME}" = CONFIG_FILE ] ; then
           CONFIG_FILE=${OPTVAL}
-
         elif [ "${OPTNAME}" = CF ] ; then
             CONFIG_FILE=${OPTVAL}
         elif [ ${UOPTARG:0:5} = DEBUG -o ${UOPTARG} = 'DEBUG=INSTALL' ] ; then
@@ -616,6 +668,13 @@ do
           export QA_TABLES=${OPTVAL}
         elif [ "${OPTNAME}" = QA_TABLES ] ; then
           export QA_TABLES=${OPTVAL}
+        elif [ "${OPTNAME}" = UNFREEZE ] ; then
+           if . ${QA_SRC}/scripts/parseConfigFile UPDATE ; then
+              if [ ${UPDATE} = frozen ] ; then
+                UPDATE=daily
+                . ${QA_SRC}/scripts/parseConfigFile UPDATE=${UPDATE}
+              fi
+           fi
         elif [ "${OPTNAME}" = WORK ] ; then
           export QA_RESULTS=${OPTVAL}
         fi
@@ -624,30 +683,20 @@ do
   esac
 done
 
-if ! . $QA_SRC/scripts/getConfigFile ; then
-  isFreeze=t
-fi
+. ${QA_SRC}/scripts/parseConfigFile UPDATE
+CFG_UPDATE=$UPDATE
 
-# is it in a conda built?
-. ${QA_SRC}/scripts/getCondaPath
-
-# convert AUTO_UPDATE --> UPDATE=daily
-if . ${QA_SRC}/scripts/parseConfigFile AUTO_UPDATE ; then
-   . ${QA_SRC}/scripts/parseConfigFile AUTO_UPDATE=delete
-   . ${QA_SRC}/scripts/parseConfigFile UPDATE=daily
+# convert UPDATE=auto --> UPDATE=daily
+if [ "${CFG_UPDATE}" = auto ] ; then
+    . ${QA_SRC}/scripts/parseConfigFile UPDATE=daily
+    CFG_UPDATE=daily
 fi
 
 # delete obsolete config-options
 . ${QA_SRC}/scripts/parseConfigFile QA_REVISION=delete
 . ${QA_SRC}/scripts/parseConfigFile DEFAULT_PROJECT=delete
 
-if ! . ${QA_SRC}/scripts/parseConfigFile UPDATE ; then
-  # after the first installation or when UPDATE is missing
-  isFreeze=t
-  isForce=t
-fi
-
-CFG_UPDATE=$UPDATE
+# unset for command-line usage
 UPDATE=
 
 OPTIND=
@@ -660,13 +709,15 @@ do
     B)  coll[${#coll[*]}]=-B ;;
     d)  coll[${#coll[*]}]=-d ;;
     h)  descript
-        exit 41 ;;
+        exit_fnct 41 ;;
     T)  TTY="${OPTARG}" ;;
     -)  OPTVAL=${OPTARG#*=}
         OPTNAME=${UOPTARG%%=*}
         test ${OPTARG/=/} = ${OPTARG} && OPTVAL=''
 
-        if [ "${OPTNAME}" = BUILD ] ; then
+        if [ "${OPTNAME:0:4}" = AUTO ] ; then
+          continue # done before
+        elif [ "${OPTNAME}" = BUILD ] ; then
           isBuild=t
         elif [ "${OPTNAME}" = COMPILE ] ; then
           FORCE_COMPILE=-B
@@ -684,11 +735,16 @@ do
 
         elif [ "${OPTNAME}" = FORCE ] ; then
           isForce=t
+          isUpdate=t
         elif [ "${OPTNAME}" = FREEZE ] ; then
           isFreeze=t
+
+          if . ${QA_SRC}/scripts/parseConfigFile AUTO_UPDATE ; then
+             . ${QA_SRC}/scripts/parseConfigFile AUTO_UPDATE=delete
+          fi
         elif [ "${OPTNAME}" = HELP ] ; then
           descript
-          exit 41
+          exit_fnct 41
         elif [ "${OPTNAME}" = HOME ] ; then
           continue
         elif [ "${UOPTARG:0:4}" = LINK ] ; then
@@ -715,29 +771,31 @@ do
           export QA_SRC=${OPTVAL}
         elif [ "${OPTNAME}" = QA_TABLES ] ; then
           continue
-#    elif [ "${OPTNAME}" = SET_DEFAULT_PROJECT ] ; then
-#    test "${OPTVAL}" && . ${QA_SRC}/scripts/parseConfigFile DEFAULT_PROJECT=${OPTVAL}
-#    continue
+#       elif [ "${OPTNAME}" = SET_DEFAULT_PROJECT ] ; then
+#         test "${OPTVAL}" && . ${QA_SRC}/scripts/parseConfigFile DEFAULT_PROJECT=${OPTVAL}
+#         continue
         elif [ "${OPTNAME}" = SHIP ] ; then
           shipOpt=${OPTVAL}
           isShip=t
         elif [ "${OPTNAME}" = SRC ] ; then
           :  # for backward compatibilty
         elif [ "${OPTNAME}" = UNFREEZE ] ; then
-          isFreeze=
-          isUnfreeze=t
+          continue
         elif [ "${OPTNAME}" = UNSHIP ] ; then
           unship  # function
           . ${QA_SRC}/scripts/parseConfigFile UPDATE=frozen
-          exit 0
+          exit_fnct 0
         elif [ "${OPTNAME:0:2}" = UP ] ; then
           if [ "${OPTVAL}" = FREEZE ] ; then
             isFreeze=t
           else
             isUpdate=t
-            if [ "${OPTVAL}" ] ; then
-               . ${QA_SRC}/scripts/parseConfigFile UPDATE=${OPTVAL}
-               UPDATE=${OPTVAL}
+
+            if [ "${OPTVAL}" = force ] ; then
+               isForce=t
+            elif [ "${OPTVAL:0:4}" = auto ] ; then
+               . ${QA_SRC}/scripts/parseConfigFile AUTO_UPDATE=${AUTO_UPDATE}
+               . ${QA_SRC}/scripts/parseConfigFile UPDATE=daily
             fi
           fi
           continue
@@ -765,29 +823,20 @@ do
         # collect options, which have not been processed above
         coll[${#coll[*]}]=--${UOPTARG}
         ;;
-   \?)  # descript
-        ;; # echo $*
-        # exit 1 ;;
+   \?)  # indicate that there is something left for a regular check
+        exitVal=25;;
   esac
 done
 
 shift $(( $OPTIND - 1 ))
 
-if [ ${isUnfreeze} ] ; then
-    test ${UPDATE} = frozen && UPDATE=daily
+# check for freezing or being frozen
+freeze
 
-    # could be empty for a single update
-    test ${UPDATE} && . $QA_SRC/scripts/parseConfigFile UPDATE=$UPDATE
-fi
-
-if [ "${CFG_UPDATE}" = frozen ] ; then
-  if [ ${isForce:-f} = f -a ${isShip:-f} = f ] ; then
-    echo "currently frozen; use install --unfreeze to re-enable updates unconditionally"
-    echo "                  or with --force for a single update, but keeping frozen enabled."
-    exit 1
+if [ ! ${isUpdate} ] ; then
+  if . ${QA_SRC}/scripts/parseConfigFile AUTO_UPDATE ; then
+     isUpdate=t
   fi
-elif [ ${isUpdate:-f} = f -a ${CFG_UPDATE:-f} != f ] ; then
-  UPDATE=${CFG_UPDATE}
 fi
 
 #if [ ! "${TTY}" ] ; then
@@ -833,7 +882,6 @@ if ! . ${QA_SRC}/scripts/getTablesPath ; then
 fi
 
 if [ ${isUpdate} ] ; then
-
   # also ensures that all names in the config.files are defined in this program
   if [ ! ${isCondaBuild} ] ; then
     if [ ! ${isBuild} ] ; then
@@ -867,12 +915,12 @@ fi
 
 if [ ${isShip} ] ; then
    ship ${shipOpt}
-   exit 41
+   exit_fnct 41
 fi
 
 if [ ${isBuild:-f} = t -a ${isLink:-f} = t ] ; then
   echo "scripts/install.sh: options --build and --link exclude each other"
-  exit 1
+  exit_fnct 1
 elif [ ${isBuild:-f} = t -o ${isLink:-f} = t ] ; then
   pcks="--zlib=$zlib --hdf5=$hdf5 --netcdf=$netcdf --udunits=$udunits"
   log ${initialArgs[*]}
@@ -880,11 +928,9 @@ else
   pcks=
 fi
 
-freeze
-
 if [ ${#projects[*]} -eq 0 ] ; then
    echo "$0 ${initialArgs[*]}:  at least one PROJECT name is required"
-   exit 1
+   exit_fnct 1
 fi
 
 exec ${QA_SRC}/scripts/install.sh ${debug} --pack=${package} \

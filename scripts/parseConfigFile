@@ -385,6 +385,7 @@ if [ "${CONFIG_FILE}" ] ; then
     touch ${CONFIG_FILE}
   fi
 else
+  test ${pC_debug} && set -x
   return 1 # no config file
 fi
 
@@ -396,6 +397,7 @@ fi
 
 if [ ${pC_isShip:-f} = t ] ; then
   pC_ship
+  test ${pC_debug} && set -x
   return 0
 fi
 

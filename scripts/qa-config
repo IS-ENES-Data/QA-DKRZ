@@ -1312,7 +1312,7 @@ FS data directory: ${PROJECT_DATA[*]}
 
 setKWL()
 {
-#  test ${DEBUG_CONF} && voidX
+  test ${DEBUG_CONF} && voidX
 
   local key item value i val isAdd
   item="$*"
@@ -1450,7 +1450,7 @@ setKWL()
   # add key to the list
   keyWordList[${#keyWordList[*]}]=$key
 
-#  test ${DEBUG_CONF} && voidX
+  test ${DEBUG_CONF} && voidX
 
   if [ ${ONLY_SUMMARY:-f} != f -a "${ONLY_SUMMARY}" != all ] ; then
     test ${ONLY_SUMMARY} != t && setKWL LOG_FNAMES=${ONLY_SUMMARY#*=}
@@ -1831,7 +1831,6 @@ do
     T)  TTY=${OPTARG} ;;
     x)  set -x
         DEBUG_CONF=t
-        installArgs+="--debug,"
         setKWL DEBUG_MANAGER
         DEBUG_CONF=t
         ;;
@@ -1840,7 +1839,6 @@ do
 
         elif [ "${OPTNAME}" = DEBUG ] ; then
           set -x
-          installArgs+="--debug,"
           setKWL DEBUG_MANAGER
           DEBUG_CONF=t
 
@@ -1961,10 +1959,13 @@ do
         setKWL DEBUG_EXECUTOR=t
         ;;  # already done for this script
     -)  if [ "${UOPTARG:0:7}" = AUTO_UP ] ; then
-          setKWL CMD_UP=automatic
+          installArgs+="${OPTARG},"
+
+        elif [ "${OPTNAME}" = FORCE ] ; then
+          installArgs+="${--OPTARG},"
 
         elif [ "${OPTNAME}" = FREEZE ] ; then
-            setKWL CMD_UP=freeze
+          installArgs+="${--OPTARG},"
 
         elif [ "${OPTNAME}" = INSTALL ] ; then
           opts=( ${OPTVAL//,/ } )
@@ -1979,14 +1980,12 @@ do
                 fi
              done
 
-             test ${opt:0:2} != '--' && opt='--'"${opt}"
+             test ${opt:0:2} != '--' && opt="--${opt}"
              installArgs+="${opt},"
           done
 
-          setKWL CMD_UP=t
-
         elif [ "${OPTNAME}" = NET ] ; then
-          installArgs+="${OPTARG},"
+          installArgs+="--${OPTARG},"
 
 		elif [ "${OPTNAME}" = NEXT ] ; then
           setKWL NEXT=${OPTVAL:-t}
@@ -2002,18 +2001,16 @@ do
           setKWL PROJECT_AS=${OPTVAL}
 
         elif [ "${OPTNAME}" = SHIP ] ; then
-          installArgs="--ship=${OPTVAL}"
+          installArgs+="--ship=${OPTVAL}"
 
         elif [ "${OPTNAME}" = UNSHIP ] ; then
-          installArgs="--unship"
+          installArgs+="--unship"
 
         elif [ "${OPTNAME:0:2}" = UP ] ; then
-          setKWL CMD_UP=t
-          installArgs+="up,"
+          installArgs+="--up,"
 
         elif [ "${OPTNAME}" = VERSION ] ; then
             setKWL DISPLAY_VERSION${OPTVAL:+=}${OPTVAL}
-
         fi
         ;;
    \?)  #  . $QA_SRC/scripts/qa-help
@@ -2021,11 +2018,23 @@ do
   esac
 done
 
-test ${installArgs} && setKWL INSTALL_ARGS="${installArgs}"
-
 shift $(( $OPTIND - 1 ))
-PROVIDED_FILES="$*"
-setKWL PROVIDED_FILES=${PROVIDED_FILES// /,}
+
+for p_f in $* ; do
+   if [ ${p_f##*.} = nc ] ; then
+     PROVIDED_FILES[${#PROVIDED_FILES[*]}]=$p_f
+   else
+     # a project for passing to install
+     installArgs="${installArgs},$p_f"
+   fi
+done
+
+test ${#PROVIDED_FIELS[*]} -gt 0 && setKWL PROVIDED_FILES=${PROVIDED_FILES[*]// /,}
+
+if [ ${installArgs} ] ; then
+   test ${DEBUG_CONF} && installArgs="--debug,${installArgs}"
+   setKWL INSTALL_ARGS="${installArgs}"
+fi
 
 # for downward compatibility
 test ${QA_DATA_ROOT} && setKWL QA_RESULTS=${QA_DATA_ROOT}

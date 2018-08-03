@@ -2909,59 +2909,14 @@ init()
     fi
   fi
 
-  # this file indicates freezing
-  . $QA_SRC/scripts/parseConfigFile UPDATE
+  local prj=${PROJECT}
 
-  if [ "${UPDATE}" != frozen ] ; then
-    # convert AUTO_UPDATE --> UPDATE=automatic
-    if . $QA_SRC/scripts/parseConfigFile AUTO_UPDATE ; then
-       . $QA_SRC/scripts/parseConfigFile UPDATE=auto
-    fi
-
-    # 'frozen' can only be disabled by install --force ...
-    if [ "${CMD_UP}" = freeze ] ; then
-       ${QA_SRC}/install --freeze
-
-       CMD_UP=
-       UPDATE=
-    fi
-
-    if [ ${CMD_UP} ] ; then
-       test "${CMD_UP}" != t && \
-          . $QA_SRC/scripts/parseConfigFile UPDATE=${CMD_UP}
-
-       isUp=t
-    elif [ ${UPDATE} ] ; then
-       if [ "${CMD_UP:0:4}" = auto ] ; then
-          . $QA_SRC/scripts/parseConfigFile UPDATE=auto
-          isUp=t
-       fi
-    fi
-
-    isInq=t
-
-    local prj=${PROJECT}
-
-    if [ "${installArgs}" ] ; then
-      local iA_args iA_arg
-      declare -a iA_args
-      iA_args=(${installArgs//,/ })
-
-      for iA_arg in ${iA_args[*]} ; do
-        if [ ${iA_arg:0:2} != '--' ] ; then
-          prj=${iA_arg}
-          break
-        fi
-      done
-    fi
-  fi
-
-  if [ ${isUp} ] ; then
+  if [ "${INSTALL_ARGS}" ] ; then
     # checksum of current qa-dkrz
     local md5_0
     md5_0=$( md5sum ${QA_SRC}/scripts/qa-dkrz | awk '{print $1}' )
 
-    if ${QA_SRC}/install ${TTY:+-T } ${TTY} ${INSTALL_ARGS//,/ } ${prj} ; then
+    if ${QA_SRC}/install ${TTY:+-T } ${TTY} ${INSTALL_ARGS//,/ } ; then
 
         local md5_1
         md5_1=$( md5sum ${QA_SRC}/scripts/qa-dkrz | awk '{print $1}' )
@@ -2973,37 +2928,14 @@ init()
        test $? -eq 41 & exit  # silently
 
        # could not make the executable for the given project
-       std_out flush "could not install ${prj}"
+       std_out flush "could not install ${INSTALL_ARGS//,/ }"
        exit 1
     fi
 
     test ! ${PROJECT} && exit 0
 
-  elif [ ${isInq} ] ; then
-      if ! . $QA_SRC/scripts/inqRunEnv --read-only ${prj} ; then
-        # get the state of the current installation: read config-file
-        #local installArg
-        #if [ ${INSTALL_ARGS} ] ; then
-        #   installArg="${INSTALL_ARGS}up${prj:+,${prj}}"
-        #else
-        #   installArg="up${prj:+,${prj}}"
-        #fi
-
-        local p=${0%/*}
-        echo -e "\nMissing external tables/executabels."  > $TTY
-        echo "Please, run: ${p%/*}/install --up --force PROJECT"  > $TTY
-        exit 1
-      fi
-
-      if [ ! ${PROJECT} ] ; then
-         if [ ${#SELECT_PATH_LIST} -gt 0 -o ${#SELECT_VAR_LIST} -gt 0 ] ; then
-     echo "PROJECT name is required in a QA_CONF file or on the command-line."
-            exit 1
-         fi
-      fi
+    test ${STOP_AFTER_INSTALL} && exit 0
   fi
-
-  test ${STOP_AFTER_INSTALL} && exit 0
 
   # expand comma-sep-list to arrays
   EMAIL_SUMMARY=( ${EMAIL_SUMMARY//,/ } )
@@ -3639,7 +3571,7 @@ log()
 
   if [ "$1" = '--start' ] ; then
     #QA_VERSION="$(${QA_SRC}/scripts/getVersion ${DEBUG_MANAGER:+--debug} ${PROJECT})"
-    QA_VERSION=$(python ${QA_SRC}/python/qa-dkrz/qa_version.py)
+    QA_VERSION=$(python ${QA_SRC}/python/qa-dkrz/qa_version.py ${PROJECT})
     . $QA_SRC/scripts/parseConfigFile QA_VERSION=${QA_VERSION}
 
     s_out="start:\n${sp[1]}date: $( date +'%FT%T' )"
@@ -5236,6 +5168,9 @@ for OPTARG in $* ; do
       QA_EXAMPLE=t
     elif [ ${OPTNAME} = CONFIG_FILE ] ; then
       export CONFIG_FILE=${OPTARG#*=}
+    elif [ ${OPTNAME:0:7} = INSTALL -o ${OPTNAME:0:7} = install ] ; then
+      args[${#args[*]}]=--${arg}
+      continue
     elif [ ${OPTNAME} = QA_CONFIG ] ; then
       QA_CONFIG=${OPTARG#*=}
     elif [ ${OPTNAME} = QA_TABLES ] ; then
