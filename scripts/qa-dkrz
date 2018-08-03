@@ -2912,7 +2912,7 @@ init()
   local prj=${PROJECT}
 
   if [ ! "${INSTALL_ARGS}" ] ; then
-    if ! . ${QA_SRC}/scripts/parseConfigFile AUTO_UPDATE ; then
+    if . ${QA_SRC}/scripts/parseConfigFile AUTO_UPDATE ; then
        INSTALL_ARGS="--up,${prj}"
     fi
   fi
