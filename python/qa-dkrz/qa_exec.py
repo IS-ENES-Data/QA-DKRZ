@@ -565,9 +565,9 @@ class QaExec(object):
         else:
             istatus = 0
 
-        if self.qaConf.isOpt('RUN_CMOR3_LLNL'):
+        if self.qaConf.isOpt('RUN_PrePARE'):
             # run and append output
-            check_output += self.run_CMOR_LLNL(t_vars)
+            check_output += self.run_PrePARE(t_vars)
 
         entry_id=''
 
@@ -609,7 +609,7 @@ class QaExec(object):
         return proceed  # true: proceed with next sub-temporal file
 
 
-    def run_CMOR_LLNL(self, t_vars):
+    def run_PrePARE(self, t_vars):
         os.environ["UVCDAT_ANONYMOUS_LOG"] = "no"
 
         head, file = os.path.split(self.nc_file)
