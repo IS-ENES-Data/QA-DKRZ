@@ -38,20 +38,25 @@ QA_TABLES=/hdh/hdh/QA_Tables
 # copy generated files to opt/qa-dkrz
 #cp -r ./bin ${QA_SRC}
 
-# write git version to install.log
-echo "branch=$(git branch | grep '*' | awk '{print $2}')" > ${QA_SRC}/install.log
+# write branch,commit_id,tag to install.log
+vers="branch=$(git branch | grep '*' | awk '{print $2}')"
 
-declare -a last_log
-last_log=( $(git log --oneline --decorate | grep -m 1 .) )
-for(( i=0 ; i < ${#last_log[*]} ; ++i )) ; do
-  if [ $i -eq 0 ] ; then
-    echo "hexa=${last_log[i]}" >> ${QA_SRC}/install.log
-  elif [ ${last_log[i]} = 'tag:' ] ; then
-    tag=${last_log[$((++i))]}
-    last=$(( ${#tag} -1 ))
-    echo "tag=${tag:0:${last}}" >> ${QA_SRC}/install.log
-  fi
-done
+declare -a arr
+arr=( $(git log --oneline --decorate | grep -m 1 .) )
+if [ ${#arr[*]} -gt 0 ] ; then
+  vers=${vers}"\nhexa=${arr[0]}"
+else
+  vers=${vers}"\nhexa=-"
+fi
+
+arr=( $( grep -m 1 "version:" conda-recipes/qa-dkrz/meta.yaml ) )
+tmp=${arr[$((${#arr[*]}-1))]}
+vers="${vers}\ntag=qa-dkrz-${tmp//\'/}"
+arr=( $( grep -m 1 "number:" conda-recipes/qa-dkrz/meta.yaml ) )
+tmp=${arr[$((${#arr[*]}-1))]}
+vers="${vers}-${tmp}"
+
+echo -e ${vers} > ${QA_SRC}/install.log
 
 # install wrapper script in bin/ to call cfchecker and qa-dkrz
 cp $RECIPE_DIR/cfchecker-wrapper_env.sh $PREFIX/bin/dkrz-cf-checker.sh
