@@ -150,6 +150,7 @@ class LogSummary(object):
 
             # begin of writing the JSON files
             fl = os.path.join(self.f_annot, self.log_name + '.json')
+            self.save_json_file = fl
 
             with open(fl, 'w') as fd:
                 # just a PASS annotation
