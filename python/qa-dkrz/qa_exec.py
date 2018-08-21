@@ -641,7 +641,7 @@ class QaExec(object):
 
         pp_run = self.qaConf.getOpt("PrePARE")
         pp_run += ' --variable ' + x_file[0]
-        pp_run += ' ' + mip_table + ' ' + self.nc_file
+        pp_run += ' --table-path ' + mip_table + ' ' + self.nc_file
         pp_run += ' 2>&1'
 
         try:

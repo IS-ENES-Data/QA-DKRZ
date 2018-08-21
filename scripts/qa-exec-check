@@ -545,6 +545,20 @@ getChecksum()
   return
 }
 
+get_table_id()
+{
+  test ${TABLE_ID} && return
+
+  TABLE_ID=( $( ${QA_SRC}/bin/getNC_att.x $ncFile --only-value table_id) )
+  if [ "${TABLE_ID[0]}" = Table -a ${#TABLE_ID[*]} -gt 1 ] ; then
+    TABLE_ID=${TABLE_ID[1]}
+  elif [ ${#TABLE_ID[*]} -gt 0 ] ; then
+    TABLE_ID=${TABLE_ID[0]}
+  fi
+
+  return
+}
+
 
 ##//! Initialisation of this run.
 
@@ -1098,10 +1112,8 @@ run()
   # read output of the run
   ans=$(<out_${name}.txt)
 
-  # run CMOR (D.Nadeau, LLNL)
-  if [ ${RUN_PrePARE:-f} = t ] ; then
-    declare -a annot_CMOR_LLNL
-
+  # run PrePARE (D.Nadeau, LLNL)
+  if [ ${RUN_PREPARE:-f} = t ] ; then
     # streams into ans
     run_PrePARE
   fi
@@ -1133,26 +1145,27 @@ run_PrePARE()
 #  fi
 
   local file table_path
+  file=$ncFile
 
-  local words
-  declare -a words
-
-  while read -a words ; do
-    if [ ${words[0]} = '-p' ] ; then
-       file=${words[1]}
-    elif [ ${words[0]} = '-f' ] ; then
-      file=${file}/${words[1]}
-      break
-    fi
-  done < param_file_$$.txt
-
-  # find the right MIP table
   table_path=$TABLE_PATH/cmip6-cmor-tables/Tables
 
-  local table_id=$( ${QA_SRC}/bin/getNC_att.x $file --only-value table_id)
+  # read from ncFile's attribute table_id; sets variable TABLE_ID
+  get_table_id
+
+#  local words
+#  declare -a words
+
+#  while read -a words ; do
+#    if [ ${words[0]} = '-p' ] ; then
+#       file=${words[1]}
+#    elif [ ${words[0]} = '-f' ] ; then
+#      file=${file}/${words[1]}
+#      break
+#    fi
+#  done < param_file_$$.txt
 
   # check whether at least one of the two indicate an existing json-table
-  local mip_table=${table_path}/CMIP6_${table_id}.json
+  local mip_table=${table_path}/CMIP6_${TABLE_ID}.json
 
   if ! ls ${mip_table} &> /dev/null ; then
     # still contains the filename without path
@@ -1543,7 +1556,6 @@ set_qa_par()
 
  test ${#TABLE_VAR_REQ} -gt 0 && \
    par=${par}"${s}"tVR=${TABLE_VAR_REQ}
-
 
  test ${TABLE_RELAXED_DIM_CONSTRAINT:-f} = t && \
    par=${par}"${s}"tRDC

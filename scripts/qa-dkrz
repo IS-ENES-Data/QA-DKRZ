@@ -633,7 +633,7 @@ callQaExecutor()
           QA_SRC \
           REATTEMPT_LIMIT \
           REPLICATED_RECORD \
-          RUN_PrePARE \
+          RUN_PREPARE \
           SESSION \
           SESSION_LOGDIR \
           SHOW_CALL \

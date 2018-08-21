@@ -90,9 +90,7 @@ freeze()
        return
 
     elif [ ${isForce} ] ; then
-       isUpdate=t
        return
-
     fi
 
     test ${isUpdate} && return
@@ -735,7 +733,6 @@ do
 
         elif [ "${OPTNAME}" = FORCE ] ; then
           isForce=t
-          isUpdate=t
         elif [ "${OPTNAME}" = FREEZE ] ; then
           isFreeze=t
 

@@ -682,6 +682,7 @@ Outlier::test(QA_Data *pQAD)
         ostr.setf(std::ios::scientific, std::ios::floatfield);
 
         double cT;
+        std::string text;
         for( size_t k=0 ; k < outRec.size() ; ++k )
         {
           // adjust coded flags
@@ -689,15 +690,16 @@ Outlier::test(QA_Data *pQAD)
 
           if( (cT=pQA->qaTime.getTimeValue(outRec[k])) < MAXDOUBLE)
           {
-            ostr << "\nrec#=" << outRec[k];
-            ostr << ", time=" << cT;
-            ostr << ", date=" << pQA->qaTime.refDate.getDate(cT).str();
-            ostr << ", value=";
+            text += "\nrec#=" + hdhC::double2String(outRec[k]);
+            text += ", time=" + hdhC::double2String(cT);
+            text += ", date=" + pQA->qaTime.refDate.getDate(cT).str();
+            ostr.str(", value=");
             ostr << std::setw(12) << std::setprecision(5) << outVal[k];
+            text += ostr.str() ;
           }
         }
 
-        if( (retCode=notes->operate(capt, ostr.str())) )
+        if( (retCode=notes->operate(capt, text)) )
         {
           notes->setCheckStatus(pQA->n_data, pQA->n_fail);
         }

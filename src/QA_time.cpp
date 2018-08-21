@@ -661,7 +661,7 @@ QA_Time::initRelativeTime(std::string &units)
        {
           // empty equivalent to only _FillValue
           isTimeBounds=false;
-          std::string key("T_3");
+          std::string key("T_3a");
 
           if( notes->inq( key, boundsName ) )
           {
@@ -1543,52 +1543,49 @@ QA_Time::testPeriod(Split& x_f)
 
         if( tb_name.size() )
         {
-            std::string key("3_20");
+            std::string key("T_3c");
 
             if( notes->inq( key, tb_name ) )
             {
-            std::string capt(hdhC::tf_var(tb_name));
-            capt += " is inconsistent with " ;
-            capt += pQA->getInstantAtt() ;
+              std::string capt(hdhC::tf_var(tb_name));
+              capt += " declaration is inconsistent with cell_methods time: point" ;
 
-            (void) notes->operate(capt) ;
-            notes->setCheckStatus(pQA->drsF, pQA->n_fail);
+              (void) notes->operate(capt) ;
+              notes->setCheckStatus(pQA->drsF, pQA->n_fail);
             }
         }
     }
-    else
+
+    pDates[4] = new Date(refDate);
+    pDates[5] = new Date(refDate);
+
+    if( firstTimeValue != firstTimeBoundsValue[0] )
+        if( firstTimeBoundsValue[0] != 0 )
+            pDates[4]->addTime(firstTimeBoundsValue[0]);
+
+    // regular: filename Start/End time vs. TB 1st_min/last_max
+    if( lastTimeValue != lastTimeBoundsValue[1] )
+        if( lastTimeBoundsValue[1] != 0 )
+            pDates[5]->addTime(lastTimeBoundsValue[1]);
+
+    if( notes->inq( "T_3b", getBoundsName() ) )
     {
-        pDates[4] = new Date(refDate);
-        pDates[5] = new Date(refDate);
-
-        if( firstTimeValue != firstTimeBoundsValue[0] )
-           if( firstTimeBoundsValue[0] != 0 )
-             pDates[4]->addTime(firstTimeBoundsValue[0]);
-
-         // regular: filename Start/End time vs. TB 1st_min/last_max
-         if( lastTimeValue != lastTimeBoundsValue[1] )
-           if( lastTimeBoundsValue[1] != 0 )
-             pDates[5]->addTime(lastTimeBoundsValue[1]);
-
-         if( notes->inq( "T_8", getBoundsName() ) )
-         {
-           // disabled for all but CORDEX
-           double db_centre=(firstTimeBoundsValue[0]
+        // disabled for all but CORDEX
+        double db_centre=(firstTimeBoundsValue[0]
                              + firstTimeBoundsValue[1])/2. ;
-           if( ! hdhC::compare(db_centre, "=", firstTimeValue) )
-           {
-             std::string key("T_8");
-             if( notes->inq( key, pQA->qaExp.getVarnameFromFilename()) )
-             {
+        if( ! hdhC::compare(db_centre, "=", firstTimeValue) )
+        {
+            std::string key("T_3b");
+            if( notes->inq( key, getBoundsName()) )
+            {
                 std::string capt("Range of ");
                 capt += hdhC::tf_var("time_bnds") ;
                 capt += "is not centred around <time> value." ;
 
                 (void) notes->operate(capt) ;
                 notes->setCheckStatus("TIME", pQA->n_fail );
-             }
-           }
-         }
+            }
+        }
     }
   }
   else if( ! pQA->pIn->variable[time_ix].isInstant )
@@ -1648,7 +1645,10 @@ QA_Time::testPeriodAlignment(std::vector<std::string>& sd, Date** pDates,
     if( *pDates[0] == *pDates[4] && *pDates[1] == *pDates[5] )
        return true;
 
-    // alignment of time bounds and period in the filename
+  if( notes->findAnnotation("T_3c", getBoundsName()) )
+      return false ;
+
+  // alignment of time bounds and period in the filename
   bool is[] = { true, true, true, true };
   double dDiff[]={0., 0., 0., 0.};
 
