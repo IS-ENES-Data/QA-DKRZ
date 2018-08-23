@@ -3,11 +3,10 @@ getCondaPath()
   if [ ${CONDA_PATH} ] ; then
     return
   else
-    if . $QA_SRC/scripts/parseConfigFile CONDA_PATH ] ; then
-      export CONDA_PATH
-      return
-    fi
-
+     # could be defined for CMIP6/PrePARE
+     if . $QA_SRC/scripts/parseConfigFile CONDA_PATH ; then
+       export CONDA_PATH
+     fi
   fi
 
   # no conda in PATH;
@@ -31,8 +30,12 @@ getCondaPath()
   done
 
   if [ ${i} -lt ${sz} ] ; then
-     export CONDA_PATH="${pth}"
-     . $QA_SRC/scripts/parseConfigFile CONDA_PATH=${CONDA_PATH}
+     if [ i! ${CONFDA_PATH} ] ; then
+        export CONDA_PATH="${pth}"
+        . $QA_SRC/scripts/parseConfigFile CONDA_PATH=${CONDA_PATH}
+     fi
+
+     isCondaInstance=t
   fi
 
   # CONDA_PATH could be empty, if conda is neither referenced

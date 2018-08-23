@@ -209,7 +209,7 @@ ship()
         . $QA_SRC/scripts/parseConfigFile --ship
 
         # conda or github repo
-        if [ ${CONDA_PATH} ] ; then
+        if [ ${isCondaInstance} ] ; then
           local bp=${CONDA_PATH%/bin/conda}
           cd ${bp%/*} &> /dev/null
           echo  "tar cf ${pth}/QA-DKRZ.tar ${bp##*/} "
@@ -248,7 +248,7 @@ ship()
             progress_wheel &
             job_id=$!
           fi
-          if [ CONDA_PATH} ] ; then
+          if [ isCondaInstance} ] ; then
              tar rf ${pth}/QA-DKRZ.tar ${bp##*/}
           else
              tar --exclude="${bp##*/}/envs/qa-dkrz" --exclude="${bp##*/}/qa-dkrz*" \
@@ -396,7 +396,7 @@ update()
 
   if [ ${isUpQA} ] ; then
     # search updates after a specified number of days; default: once a day
-    if [ ${CONDA_PATH} ] ; then
+    if [ ${isCondaInstance} ] ; then
        test ! ${CONDA_QA_ENV} && \
          . ${QA_SRC}/scripts/parseConfigFile CONDA_QA_ENV
 
@@ -947,7 +947,7 @@ if [ ! -f ${QA_SRC}/.qa-dkrz/config.txt -a ${isCondaBuild:-f} = f ] ; then
   echo "${QA_SRC}:" > ${QA_SRC}/.qa-dkrz/config.txt
 
   line_num=$( grep -n ${QA_SRC}: ~/.qa-dkrz/config.txt )
-  line_num=$(( ${line_num%%:} + 1 ))
+  line_num=$(( ${line_num%%:*} + 1 ))
 
   sed -n "${line_num},/^[:space]*$/ p" ~/.qa-dkrz/config.txt \
       >> ${QA_SRC}/.qa-dkrz/config.txt
