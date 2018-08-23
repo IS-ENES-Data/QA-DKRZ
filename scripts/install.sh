@@ -784,6 +784,9 @@ for(( i=0 ; i < ${#prj_cpp[*]} ; ++i )) ; do
 done
 
 prj_cpp=( ${prj_cpp[*]} )
+if [ ${#projects[*]} -eq 0 ] ; then
+   projects=( ${valid_projects[*]} )
+fi
 
 for prj in ${projects[*]} ; do
   for(( i=0 ; i < ${#prj_cpp[*]} ; ++i )) ; do

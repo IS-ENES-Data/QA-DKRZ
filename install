@@ -898,7 +898,10 @@ for pck in $* ; do
 done
 
 # make all by default
-test ${#projects[*]} -eq 0 && projects=( ${valid_projects[*]} )
+if [ ${#projects[*]} -eq 0 ] ; then
+   projects=( ${valid_projects[*]} )
+   coll[${#coll[*]}]="${projects[*]}"
+fi
 
 if ! . ${QA_SRC}/scripts/getTablesPath ; then
   test -w ${QA_SRC} && exit 1
@@ -943,11 +946,11 @@ if [ ! -f ${QA_SRC}/.qa-dkrz/config.txt -a ${isCondaBuild:-f} = f ] ; then
 
   echo "${QA_SRC}:" > ${QA_SRC}/.qa-dkrz/config.txt
 
-  sed -n "
-	${QA_SRC//\//\\\/}/,/^[:space]*$/ {
-	    /${QA_SRC//\//\\\/}/n # skip over the first line
-	    p
-	}"  >> ${QA_SRC}/.qa-dkrz/config.txt
+  line_num=$( grep -n ${QA_SRC}: ~/.qa-dkrz/config.txt )
+  line_num=$(( ${line_num%%:} + 1 ))
+
+  sed -n "${line_num},/^[:space]*$/ p" ~/.qa-dkrz/config.txt \
+      >> ${QA_SRC}/.qa-dkrz/config.txt
 
   chmod -R o-w ${QA_SRC}/.qa-dkrz
   chmod -R o+r ${QA_SRC}/.qa-dkrz
