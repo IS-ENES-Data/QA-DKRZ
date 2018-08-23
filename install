@@ -943,7 +943,7 @@ if [ ! -f ${QA_SRC}/.qa-dkrz/config.txt ] ; then
 
   echo "${QA_SRC}:" > ${QA_SRC}/.qa-dkrz/config.txt
 
-  sed -n
+  sed -n "
 	${QA_SRC//\//\\\/}/,/^[:space]*$/ {
 	    /${QA_SRC//\//\\\/}/n # skip over the first line
 	    p
