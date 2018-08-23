@@ -208,7 +208,7 @@ ship()
         test -f $QA_SRC/.ship-qa-config.tx && \rm -f $QA_SRC/.ship-qa-config.txt
         . $QA_SRC/scripts/parseConfigFile --ship
 
-        # conda or github repo
+        # conda  or github repo
         if [ ${isCondaInstance} ] ; then
           local bp=${CONDA_PATH%/bin/conda}
           cd ${bp%/*} &> /dev/null
