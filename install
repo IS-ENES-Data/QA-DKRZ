@@ -265,6 +265,21 @@ ship()
     return
 }
 
+syncTables()
+{
+  if [ ${isSyncTables} ] ; then
+    if ! mkdir -p ${QA_TABLES}/tables  ; then
+      echo "failure: mkdir -p ${QA_TABLES}/tables"
+      exit_fnct 1
+    fi
+
+    # note that QA_TABLES points to .qa-dkrz wherever it is located
+    rsync -auz --exclude '*~' $QA_SRC/tables ${QA_TABLES} &> /dev/null
+  fi
+
+  return
+}
+
 tr_option()
 {
   local line="${!1}"
@@ -385,7 +400,7 @@ update()
        test ! ${CONDA_QA_ENV} && \
          . ${QA_SRC}/scripts/parseConfigFile CONDA_QA_ENV
 
-       if [ ${isUpQA} ] ; then
+       if [ ${isUpQA:-f} != f -a -w ${QA_SRC} ] ; then
           if update_CONDA_env "${CONDA_QA_NAME}" "${CONDA_QA_CHANNELS}" \
                       "${CONDA_PATH}"   "${CONDA_QA_ENV:-qa-dkrz}" ; then
 
@@ -399,7 +414,7 @@ update()
                  QA_VERSION=$( python $QA_SRC/python/qa-dkrz/qa_version.py )
           fi
         fi
-    elif [ -d ${QA_SRC}/.git ] ; then
+    elif [ -d ${QA_SRC}/.git -a -w ${QA_SRC} ] ; then
       test -w ${QA_SRC} && update_QA_SRC
     fi
   fi
@@ -410,21 +425,13 @@ update()
         eval isPRJ=isUp_${prj}
         if [ ${isPRJ} ] ; then
           if ! update_external $prj ; then
-             local isSyncTables=t
+             isSyncTables=t
           fi
         fi
       done
   fi
 
-  if [ ${isSyncTables} ] ; then
-    if ! mkdir -p ${QA_TABLES}/tables  ; then
-      echo "failure: mkdir -p ${QA_TABLES}/tables"
-      exit_fnct 1
-    fi
-
-    # note that QA_TABLES points to .qa-dkrz wherever it is located
-    rsync -auz --exclude '*~' $QA_SRC/tables ${QA_TABLES} &> /dev/null
-  fi
+  syncTables
 
   return 0
 }
@@ -827,6 +834,25 @@ done
 
 shift $(( $OPTIND - 1 ))
 
+if [ ! -w ${QA_SRC} ] ; then
+  if [ ! -f ~/.qa-dkrz/config.txt ] ; then
+    # alien user
+    if [ ! -f ${QA_SRC}/.qa-dkrz/config.txt ] ; then
+       echo " no such file ${QA_SRC}/.qa-dkrz/config.txt"
+       echo " please, inform the installer of QA-DKRZ"
+       exit 1
+    fi
+
+    if [ ! -f ~/.qa-dkrz/config.txt ] ; then
+       if [ ! -d ~/.qa-dkrz ] ; then
+          test -w ~ && cp ${QA_SRC}/.qa-dkrz/config.txt ~/.qa-dkrz/config.txt
+       fi
+    fi
+  fi
+
+  exit
+fi
+
 # check for freezing or being frozen
 freeze
 
@@ -875,7 +901,7 @@ done
 test ${#projects[*]} -eq 0 && projects=( ${valid_projects[*]} )
 
 if ! . ${QA_SRC}/scripts/getTablesPath ; then
-  exit 1
+  test -w ${QA_SRC} && exit 1
 fi
 
 if [ ${isUpdate} ] ; then
@@ -908,6 +934,23 @@ if [ ${isUpdate} ] ; then
       fi
     fi
   fi
+fi
+
+# store for alien users
+if [ ! -f ${QA_SRC}/.qa-dkrz/config.txt ] ; then
+  mkdir ${QA_SRC}/.qa-dkrz
+  # sed -n "${QA_SRC//\//\\\/}/,/^[:space]*$/ p" ~/.qa-dkrz/config.txt \
+
+  echo "${QA_SRC}:" > ${QA_SRC}/.qa-dkrz/config.txt
+
+  sed -n
+	${QA_SRC//\//\\\/}/,/^[:space]*$/ {
+	    /${QA_SRC//\//\\\/}/n # skip over the first line
+	    p
+	} "  >> ${QA_SRC}/.qa-dkrz/config.txt
+
+  chmod -R o-w ${QA_SRC}/.qa-dkrz
+  chmod -R o+r ${QA_SRC}/.qa-dkrz
 fi
 
 if [ ${isShip} ] ; then
