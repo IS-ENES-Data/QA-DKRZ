@@ -30,7 +30,7 @@ getCondaPath()
   done
 
   if [ ${i} -lt ${sz} ] ; then
-     if [ i! ${CONFDA_PATH} ] ; then
+     if [ ! ${CONDA_PATH} ] ; then
         export CONDA_PATH="${pth}"
         . $QA_SRC/scripts/parseConfigFile CONDA_PATH=${CONDA_PATH}
      fi
