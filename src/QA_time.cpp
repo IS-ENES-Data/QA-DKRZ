@@ -1549,8 +1549,9 @@ QA_Time::testPeriod(Split& x_f)
             {
               std::string capt(hdhC::tf_var(tb_name));
               capt += " declaration is inconsistent with cell_methods time: point" ;
+              std::string text("Time bounds are no longer checked.") ;
 
-              (void) notes->operate(capt) ;
+              (void) notes->operate(capt, text) ;
               notes->setCheckStatus(pQA->drsF, pQA->n_fail);
             }
         }
