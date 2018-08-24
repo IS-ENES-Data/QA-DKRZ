@@ -679,7 +679,7 @@ initLog()
   sTxt[$((ix++))]="3 - event:"
   sTxt[$((ix++))]="7annotation: \'${y_caption}\'"
   sTxt[$((ix++))]="7impact: ${y_impact}"
-  sTxt[$((ix++))]="7tag: \'${y_tag}\'"
+  sTxt[$((ix++))]="7tag: ${y_tag}"
 
   local i
   for(( i=0 ; i < ${#y_text[*]} ; ++i )) do
@@ -996,7 +996,7 @@ parseKey()
     sTxt[${#sTxt[*]}]="3 - event:"
     sTxt[${#sTxt[*]}]="7annotation: '${caption}'"
     test ${impact} && sTxt[${#sTxt[*]}]="7impact: $impact"
-    test ${tag} && sTxt[${#sTxt[*]}]="7tag: \'$tag\'"
+    test ${tag} && sTxt[${#sTxt[*]}]="7tag: $tag"
 
     sX=${mess#*TXT-BEG}
     sX=${sX%%TXT-END*}
