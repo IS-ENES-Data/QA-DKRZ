@@ -130,12 +130,15 @@ DataOutputBuffer::store(hdhC::FieldData &fA)
    }
    else
    {
+    return ; //
+    /*
      min[bufferCount]       =1.E+20;
      max[bufferCount]       =1.E+20;
 
      ave[bufferCount]       =1.E+20;
      fill_count[bufferCount]=-1;
      checksum[bufferCount]  =0;
+    */
    }
 
    fill_count[bufferCount]=fA.fillingValueNum;
