@@ -31,6 +31,10 @@ class LogSummary(object):
         self.prj_var_ix = 0
         self.prj_frq_ix = 1
         self.no_email=False
+        self.severity={'L1':'Warning',
+                       'L2':'Error',
+                       'L3':'Error',
+                       'L4':'Error'}
 
     def annotation_add(self, var_id, path_id, blk, i):
         # annotation and associated indices of properties
@@ -1158,11 +1162,15 @@ class LogSummary(object):
         capt = self.annot_capt[ix].strip("'")
         fd.write(3*tab + '"annotation": "' + capt + '"')
 
-        #if len(self.annot_impact[ix]):
-        #    impact = self.annot_impact[ix].strip("'")
-        #    fd.write(',\n' + 3*tab + '"severity": "' + impact + '"\n')
-        #else:
-        #    fd.write("\n")
+        if len(self.annot_tag[ix]):
+            tag = self.annot_tag[ix].strip("'")
+            fd.write(',\n' + 3*tab + '"tag": "' + tag + '"')
+
+        if len(self.annot_impact[ix]):
+            impact = self.annot_impact[ix].strip("'")
+            fd.write(',\n' + 3*tab + '"severity": "' + self.severity[impact] + '"')
+
+        fd.write("\n")
 
         fd.write(2*tab + '}')
 
