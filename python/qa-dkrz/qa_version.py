@@ -253,9 +253,9 @@ class GetVersion(object):
 
 
     def no_such_table(self, prj, path):
-        print 'Missing external tables for project ' + prj
-        print 'Is ' + path + ' installed?'
-        print 'If not, then run: install --up [--force] [--freeze] ' + prj
+        print ('Missing external tables for project ' + prj)
+        print ('Is ' + path + ' installed?')
+        print ('If not, then run: install --up [--force] [--freeze] ' + prj)
 
         sys.exit(1)
         return
@@ -421,4 +421,4 @@ if __name__ == '__main__':
 
     rev = get_version(opts=opts, com_line_opts=clo)
     #rev = get_version(extern=True, opts={'QA_SRC': QA_SRC} )
-    print rev
+    print (rev)
