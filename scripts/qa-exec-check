@@ -1190,7 +1190,7 @@ run_PrePARE()
   local ans2
   ans2="$( ${PrePARE} \
      --variable ${variable%%_*} \
-     ${mip_table} \
+     --table-path ${mip_table} \
      ${file} 2>&1 \
      | python ${QA_SRC}/python/qa-dkrz/qa_convert_cmor_output.py)"
 

@@ -2053,6 +2053,8 @@ CMOR::checkMIP_table(InFile& in, VariableMetaData& vMD,
          notes->setCheckStatus("CV", pQA->n_fail);
          pQA->setExitState( notes->getExitState() ) ;
       }
+
+      return false;
    }
 
   // headings for variables

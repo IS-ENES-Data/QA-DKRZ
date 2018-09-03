@@ -12,6 +12,10 @@ def convert_CMOR_output(lines):
         if len(line) == 0 or line[0:11] == 'processing:':
             continue
 
+        if line[0:9] == 'Traceback':
+            emergency(lines)
+            return
+
         # find the beginning of a block
         count = 0
         for mark in blk_marks:
@@ -118,6 +122,29 @@ def convert_CMOR_output(lines):
 
     for ix in range(len(annot)):
         print annot[ix][0],
+
+    return
+
+def emergency(lines):
+    flag = ' FLAG-BEG:CAPT-BEG'
+    flag += 'CMOR ' + 'Traceback issued' + 'CAPT-END'
+
+    annot = flag
+    sz = len(lines)
+
+    annot += 'TXT-BEG'
+    for jx in range(1,sz):
+        if jx > 0:
+            annot += ';'
+
+        annot += lines[jx]
+
+    annot += 'TXT-END'
+
+    annot += 'FLAG-END'
+    annot = annot.replace('"','\"')
+
+    print annot
 
     return
 
