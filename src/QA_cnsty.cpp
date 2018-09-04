@@ -493,33 +493,46 @@ Consistency::testAttributes( std::string& varName,
 
       // aditional attribute in the current sub-temp file
       std::string key("8_6");
+      std::string capt(hdhC::tf_att(varName, vs_f_aName[f_ix])) ;
+      capt += "is new across ";
+
+      if( pQA->fileSequenceState == 's' || pQA->fileSequenceState == 'l' )
+      {
+          key += 'a';
+          capt += "sub-temporal files" ;
+      }
+      else
+      {
+          key += 'b';
+          capt += "experiments" ;
+      }
+
       if(  notes->inq( key, varName ) )
       {
-        std::string capt(hdhC::tf_att(varName, vs_f_aName[f_ix])) ;
-        capt += "is new across ";
-
-        if( pQA->fileSequenceState == 's' || pQA->fileSequenceState == 'l' )
-            capt += "sub-temporal files" ;
-        else
-            capt += "experiments" ;
-
-        (void) notes->operate(capt) ;
-        notes->setCheckStatus("Consistency","FAIL" );
+         (void) notes->operate(capt) ;
+         notes->setCheckStatus("Consistency","FAIL" );
       }
     }
 
     if(notValue)
     {
         std::string key("8_8");
+        std::string capt(hdhC::tf_att(varName, vs_f_aName[f_ix])) ;
+        capt += "has changed across ";
+        if( pQA->fileSequenceState == 's' || pQA->fileSequenceState == 'l' )
+        {
+            key += 'a';
+            capt += "sub-temporal files, now" ;
+        }
+        else
+        {
+            key += 'b';
+            capt += "experiments, now" ;
+        }
+
+
         if( notes->inq(key, varName) )
         {
-          std::string capt(hdhC::tf_att(varName, vs_f_aName[f_ix])) ;
-          capt += "has changed across ";
-          if( pQA->fileSequenceState == 's' || pQA->fileSequenceState == 'l' )
-              capt += "sub-temporal files, now" ;
-          else
-              capt += "experiments, now" ;
-
           capt += hdhC::tf_val(vs_f_aVal[f_ix]) ;
           capt += ", previously ";
           capt += hdhC::tf_val(vs_t_aVal[t_ix]) ;
@@ -538,14 +551,21 @@ Consistency::testAttributes( std::string& varName,
     {
       // aditional attribute in the current sub-temp file
       std::string key("8_7");
+      std::string capt(hdhC::tf_att(varName, vs_t_aName[t_ix])) ;
+      capt += "is missing across ";
+      if( pQA->fileSequenceState == 's' || pQA->fileSequenceState == 'l' )
+      {
+          key += 'a';
+          capt += "sub-temporal files" ;
+      }
+      else
+      {
+          capt += "experiments" ;
+          key += 'b';
+      }
+
       if(  notes->inq( key, varName ) )
       {
-        std::string capt(hdhC::tf_att(varName, vs_t_aName[t_ix])) ;
-        capt += "is missing across ";
-        if( pQA->fileSequenceState == 's' || pQA->fileSequenceState == 'l' )
-            capt += "sub-temporal files" ;
-        else
-            capt += "experiments" ;
 
         (void) notes->operate(capt) ;
         notes->setCheckStatus("Consistency","FAIL" );
@@ -583,16 +603,23 @@ Consistency::testAux(std::string mode,
       if( mode == "missing" )  // missing in the current sub-temp file
       {
         std::string key("8_4");
+        std::string capt("auxiliary ");
+        capt += hdhC::tf_var(vvs_1st_aVal[i][0]) ;
+        capt += "is missing across ";
+
+        if( pQA->fileSequenceState == 's' || pQA->fileSequenceState == 'l' )
+        {
+            key += 'a';
+            capt += "sub-temporal files" ;
+        }
+        else
+        {
+            key += 'b';
+            capt += "experiments" ;
+        }
+
         if( notes->inq( key, varName ) )
         {
-          std::string capt("auxiliary ");
-          capt += hdhC::tf_var(vvs_1st_aVal[i][0]) ;
-          capt += "is missing across ";
-          if( pQA->fileSequenceState == 's' || pQA->fileSequenceState == 'l' )
-              capt += "sub-temporal files" ;
-          else
-              capt += "experiments" ;
-
           (void) notes->operate(capt) ;
           notes->setCheckStatus("Consistency","FAIL" );
         }
@@ -600,16 +627,22 @@ Consistency::testAux(std::string mode,
       else if( mode == "new" )  // file introduces a new attribute
       {
         std::string key("8_5");
+        std::string capt("new auxiliary ");
+        capt += hdhC::tf_var(vvs_1st_aVal[i][0]) ;
+        capt += "across ";
+        if( pQA->fileSequenceState == 's' || pQA->fileSequenceState == 'l' )
+        {
+            key += 'a';
+            capt += "sub-temporal files" ;
+        }
+        else
+        {
+            key += 'b';
+            capt += "experiments" ;
+        }
+
         if( notes->inq( key, varName) )
         {
-          std::string capt("new auxiliary ");
-          capt += hdhC::tf_var(vvs_1st_aVal[i][0]) ;
-          capt += "across ";
-          if( pQA->fileSequenceState == 's' || pQA->fileSequenceState == 'l' )
-              capt += "sub-temporal files" ;
-          else
-              capt += "experiments" ;
-
           (void) notes->operate(capt) ;
           notes->setCheckStatus("Consistency","FAIL" );
         }
