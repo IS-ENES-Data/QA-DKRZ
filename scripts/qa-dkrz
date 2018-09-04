@@ -3155,7 +3155,7 @@ initExperimentName()
     LOG_FILE_INDEX=( ${LOG_FILE_INDEX//,/ } )
   fi
 
-  if [ ! \( "${LOG_PATH_INDEX}" -o "${LOG_FILE_INDEX}" \) ] ; then
+  if [ "${LOG_PATH_INDEX:-f}" = f -a "${LOG_FILE_INDEX:-f}" = f ] ; then
     LOG_FNAME='undefined-scope'
   fi
 
