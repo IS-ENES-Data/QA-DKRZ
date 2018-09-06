@@ -2175,7 +2175,7 @@ getNextVariable()
 
     y_impact=L2
     if [ $status -eq 3 ] ; then
-      y_caption='syncFiles.cpp with unspecific failure'
+      y_caption='Unspecific failure across sub-temporal files'
       y_tag=M5
     else
       y_caption='file(s) with invalid time data'
@@ -2221,7 +2221,7 @@ getNextVariable()
 
     # issue annotation
     y_impact=L2
-    y_caption='syncFiles.cpp: sub-temporal file sequence ambiguities.'
+    y_caption='Ambiguities across sub-temporal file.'
     y_tag=M6
     y_meta_data=OMIT
     y_time_values=FAIL
