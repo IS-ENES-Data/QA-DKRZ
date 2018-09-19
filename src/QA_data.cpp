@@ -1339,24 +1339,21 @@ QA_Data::checkFinally(Variable *var)
      std::string key=("R100");
      if( notes->inq( key, name) )
      {
-       std::string capt("data record totally with _FillValue, found ");
+       std::string capt("data record totally with _FillValue");
+       std::string text("Found ");
        if( fillValueRecordStartTime.size() > 1 )
-         capt += "first ";
+         text += "first ";
 
-       capt += "for time indices ";
+       text += "for rec# ";
        std::string r( hdhC::double2String(fillValueRecordStartRec[0]) );
-                   r += " - " ;
-                   r += hdhC::double2String(fillValueRecordEndRec[0]);
-       capt += hdhC::tf_val(r);
+       text += hdhC::tf_val(r);
 
-       capt += ", time values ";
+       text += ", time value ";
        r =  hdhC::double2String(fillValueRecordStartTime[0]) ;
-       r += " - " ;
-       r += hdhC::double2String(fillValueRecordEndTime[0]);
 
-       capt += hdhC::tf_val(r);
+       text += hdhC::tf_val(r);
 
-       (void) notes->operate(capt) ;
+       (void) notes->operate(capt, text) ;
        notes->setCheckStatus(pQA->n_data, pQA->n_fail);
      }
    }
