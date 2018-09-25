@@ -2494,7 +2494,6 @@ getPaths()
   if [ ${SHOW_PATH_SEARCH:-f} = t ] ; then
     set +x
     wait
-    exit
   fi
 
   # Only pass the loop when the file is already partially filled.
