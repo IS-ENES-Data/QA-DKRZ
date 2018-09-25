@@ -28,26 +28,17 @@
 
 struct Branch
 {
-   Branch(){prev=0; level=0;}
+   Branch(){prev=nullptr;}
    Branch( Branch *p){prev=p;}
    ~Branch(){;}
 
-   Branch*   back(void);
+   void      cpTreeDownwards(Branch *);
    Branch*   branch(void);
    void      deleteTree(void);
-   // recursive
-   void      getSequence(std::vector<std::vector<Branch*> >&);
-   // first call
-   std::vector<std::vector<Branch*> >
-             getSequence(void);
-   void      printTree(void);
-   void      setLevel(int i){level=i;}
-   void      setStr(std::string &s){ str=s;}
 
    Branch *prev;
    std::vector<Branch*> next;
    std::string str;
-   int level;
 } ;
 
 class BraceOP
@@ -61,19 +52,17 @@ class BraceOP
   void  add(std::vector<std::string> &) ;
   void  add(std::string);
   void  clear();
-  void  findBraces(bool enablePrintTree=false);
-  void  getGroups(std::vector<std::vector<Branch*> > &);
+  void  findBraces(void);
+  void  getGroup(Branch *);
   bool  next(std::string&);
   void  printGroups(void);
-  void  printTree(void){ findBraces(true); }
-  void  rmDiscardToken(std::string &);
+  void  rule_discard_lower(Branch *);
+  void  rule_top_down(Branch *);
+  void  scanTree(Branch &);
   void  set(std::vector<std::string> &) ;
   void  set(std::string);
-  void  setDiscard(std::string);
 
   size_t                   nextCounter;
-  std::string              discardToken;
-  std::string              discardClose;
 
   std::string              str;
   std::vector<std::string> groups;

@@ -663,6 +663,23 @@ Split::getItems(void)
 }
 
 std::string
+Split::getItemsStr(std::string sp)
+{
+  if( ! isDecomposed )
+    decompose();
+
+  std::string s;
+  for( size_t i=0 ; i < items.size() ; ++i )
+  {
+      if( s.size() )
+          s += sp ;
+      s += items[i] ;
+  }
+
+  return s;
+}
+
+std::string
 Split::getLine(void)
 {
   std::string s;

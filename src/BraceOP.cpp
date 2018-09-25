@@ -3,19 +3,16 @@
 BraceOP::BraceOP()
 {
   nextCounter=0;
-  setDiscard("D()");
 }
 
 BraceOP::BraceOP(std::string &s)
 {
   str=s;
   nextCounter=0;
-  setDiscard("D()");
  }
 
 BraceOP::BraceOP(std::vector<std::string> &s)
 {
-  setDiscard("D()");
   set(s);
 }
 
@@ -52,7 +49,7 @@ BraceOP::clear(void)
 }
 
 void
-BraceOP::findBraces(bool isPrintTree)
+BraceOP::findBraces(void)
 {
   // find { or } positions and corresponding levels.
   // due to nesting there might be multiple braces or
@@ -71,9 +68,6 @@ BraceOP::findBraces(bool isPrintTree)
   tmp += '}';
   str = tmp;
 
-  size_t countLeft=1;
-  size_t countRight=0;
-
   std::string s;
   int lC=0 ; // level counter
   size_t last=0;
@@ -87,10 +81,7 @@ BraceOP::findBraces(bool isPrintTree)
 
     if( str[pos] == '{' )
     {
-      ++countLeft;
-
       currB = currB->branch();
-      currB->setLevel(++lC);
 
       if( ! ( (last +1 ) > pos) )
       {
@@ -113,8 +104,6 @@ BraceOP::findBraces(bool isPrintTree)
     }
     else if( str[pos] == '}' )
     {
-      ++countRight;
-
       if( (last+1) != pos)
       {
         // close an open brace expr
@@ -123,10 +112,11 @@ BraceOP::findBraces(bool isPrintTree)
        	if( ! (s.size() == 0 || s == ",") )
         {
           // item could be placed at a brace without comma
-          size_t sz = currB->prev ? currB->prev->str.size() : 0 ;
+          // size_t sz = currB->prev ? currB->prev->str.size() : 0 ;
+          size_t sz = currB->prev == nullptr ? 0 : currB->prev->str.size() ;
 
-	         if( s[0] != ',' )
-            if( sz && currB->str[sz-1] != ',' )
+          if( s[0] != ',' )
+            if( sz && currB->str[currB->str.size()-1] != ',' )
               currB->str += ',';
           currB->str += s ;
         }
@@ -138,29 +128,10 @@ BraceOP::findBraces(bool isPrintTree)
     }
   }
 
-//  if( countLeft != countRight )
-//    return ; // error
+  // this scans recursively through the branches identifying the one higest one
+  groups.clear();
 
-  if( isPrintTree )
-  {
-     tree.printTree();
-     return;
-  }
-
-  // a sequence of strings from the top most leaf down the crotches
-  // to the root (order reversed).
-  std::vector<std::vector<Branch*> > sequences = tree.getSequence();
-
-  // perform brace operation: add lower level items to higher ones, if
-  // there is no identical L-value in the higher ones. Then, resolve
-  // each sequence into the components. The resulting vector of groups
-  // is member of the class.
-  getGroups(sequences);
-
-  // disable sequences which is composed out of the tree branches
-  for( size_t i=0 ; i < sequences.size() ; ++i )
-    for( size_t j=0 ; j < sequences[i].size() ; ++j )
-       sequences[i][j] = 0;
+  scanTree(tree);
 
   tree.deleteTree();
 
@@ -168,145 +139,210 @@ BraceOP::findBraces(bool isPrintTree)
 }
 
 void
-BraceOP::getGroups(std::vector<std::vector<Branch*> > &sequences)
+BraceOP::getGroup(Branch *b_top)
 {
-  // a group is formed by all tokens within a given brace-level
-  // plus those from lower levels whose L-value does not match any
-  // in the current group.
+   // The sub-tree could be temporarily changed, thus a copy.
+   Branch bc;
+   bc.cpTreeDownwards(b_top);
 
-  Split c_low;
-  Split c_high;
-  c_low.setSeparator(',');
-  c_high.setSeparator(',');
+   Branch* b = &bc;
 
-  Split a_low;
-  Split a_high;
-  a_low.setSeparator('=');
-  a_high.setSeparator('=');
-  bool is=false;
+   // discard lower items by D(items) of higher level; top-down a tree
+   rule_discard_lower(b);
 
-  std::string dStr;
+   // combine levels; top -> down: top overrules
+   rule_top_down(b);
 
-  for(size_t i=0 ; i < sequences.size() ; ++i )
-  {
-    for(size_t j=1 ; j < sequences[i].size() ; ++j )
-    {
-       // comma-split of low and high -level string
-       c_low = sequences[i][j-1]->str ;
-       c_high = sequences[i][j]->str ;
+   std::string str( hdhC::stripSides(b->str, ",") );
 
-       // test for low-level assignments
-       for( size_t l=0 ; l < c_low.size() ; ++l)
-       {
-         for( size_t h=0 ; h < c_high.size() ; ++h)
-         {
-           is=true;
+   while( b->prev != nullptr )
+   {
+       if( b->prev->str.size() )
+          str = b->prev->str + "," + str ;
 
-           // identical L-value: discard the lower level one
-           if( c_low[l][0] == c_high[h][0] )
-           {
-              a_low  = c_low[l];
-              a_high = c_high[h];
-              if( a_low[0] == a_high[0] )  // only L-value
-                is=false;
-           }
+       b = b->prev;
+   }
 
-           // discard lower level items
-           if( c_high[h].size() > discardToken.size() )
-           {
-             dStr = c_high[h].substr(0, discardToken.size()) ;
+   str = hdhC::stripSides(str, ",") ;
+   groups.push_back( hdhC::unique(str, ',') );
 
-             if( dStr == discardToken )
-             {
-                a_low  = c_low[l];
-                a_high = c_high[h];
+   return;
+}
 
-                dStr  = discardToken + a_low[0] ;
-                dStr += discardClose ;
+void
+BraceOP::rule_top_down(Branch* b)
+{
+   if( b->prev == nullptr || b->str.size() == 0 )
+       return;
 
-                if( dStr == a_high[0] )  // only L-value
-                {
-                  is=false;
-                  rmDiscardToken( sequences[i][j]->str ) ;
-                  break;
-                }
-             }
-           }
-         }
+   // for discarding outer elements: macro D(item)
+   Branch* b_high = b;
 
-         if( is && c_low[l].size() )  // an item to assign
-         {
-            sequences[i][j]->str += ',' ;
-            sequences[i][j]->str += c_low[l] ;
-         }
-       }
-    }
+   std::string high_key;
+   std::string low_key;
 
-//      std::cout << sequences[i][j]->str << "\t" ;
-//    std::cout << std::endl;
-  }
+   // note that the lower parts of a tree have to be searched
+   // for each branch, because the original sub-tree remains untouched.
+   while( b_high->prev != nullptr)
+   {
+      Split x_high(hdhC::clearSpaces(b_high->str), ",");
 
-  // remove discard-item
-  for(size_t i=0 ; i < sequences.size() ; ++i )
-    for(size_t j=0 ; j < sequences[i].size() ; ++j )
-       if( sequences[i][j]->str.find(discardToken) < std::string::npos )
-          rmDiscardToken( sequences[i][j]->str ) ;
-
-  // remove identical strings
-
-  // 2-D for storing array indexes
-  std::vector<std::vector<int> > ix;
-  for(size_t i=0 ; i < sequences.size() ; ++i )
-  {
-    ix.push_back( std::vector<int>() );
-    for(size_t j=0 ; j < sequences[i].size() ; ++j )
-      ix[i].push_back( j );
-  }
-
-  for(size_t i0=0 ; i0 < sequences.size() ; ++i0 )
-  {
-    for(size_t i1=0 ; i1 < sequences[i0].size() ; ++i1 )
-    {
-       if( sequences[i0][i1]->str.size() == 0
-           || sequences[i0][i1]->str == "," )
-       {
-         ix[i0][i1] = -1 ;
-         continue;
-       }
-
-       for(size_t j0=i0+1 ; j0 < sequences.size() ; ++j0 )
-       {
-         for(size_t j1=0 ; j1 < sequences[j0].size() ; ++j1 )
-         {
-           if( i0 == j0 && i1 == j1 )
-             continue; //note: ... ; i0 < sequences.size()-1 ; ...
-                       //      doesn't work for only a single item
-           if( sequences[i0][i1]->str == sequences[j0][j1]->str )
-             ix[j0][j1] = -1 ;
-         }
-       }
-    }
-  }
-
-  groups.clear();
-
-  for(size_t i=0 ; i < sequences.size() ; ++i )
-  {
-    for(size_t j=0 ; j < sequences[i].size() ; ++j )
-    {
-      if( ix[i][j] > -1 )
+      for(size_t j=0 ; j < x_high.size() ; ++j)
       {
-       std::string t( hdhC::stripSides( sequences[i][j]->str, "," ) ) ;
-       groups.push_back("");
-       groups.back() += t[0];
-       for( size_t k=1 ; k < t.size() ; ++k )
-         if( ! ( t[k] == ',' && t[k-1] == ',' ) )
-           groups.back() += t[k] ;
-      }
-    }
-  }
+          size_t pos;
+          if( (pos=x_high[j].find('=')) < std::string::npos )
+              high_key=x_high[j].substr(0,pos);
+          else
+              high_key=x_high[j];
 
-  return ;
+          // scan the lower sub-tree
+          Branch* b_low = b_high->prev;
+          std::string res_low;
+
+          while( b_low->prev != nullptr )
+          {
+              std::string low_str=hdhC::clearSpaces(b_low->str);
+
+              Split x_low(low_str, ',');
+              res_low.clear();
+              bool isLowChanged=false;
+
+              for( size_t i=0 ; i < x_low.size() ; ++i )
+              {
+                 if( (pos=x_low[i].find('=')) < std::string::npos )
+                    low_key=x_low[i].substr(0,pos);
+                 else
+                    low_key=x_low[i];
+
+                 if( low_key != high_key )
+                 {
+                    if( res_low.size() )
+                        res_low += "," ;
+                    res_low += x_low[i] ;
+                 }
+                 else
+                    isLowChanged=true;
+              }
+
+              if( isLowChanged )
+                  b_low->str = res_low ;
+
+              b_low = b_low->prev;
+          }
+      }
+
+      b_high = b_high->prev ;
+   }
+
+   return;
+}
+
+void
+BraceOP::rule_discard_lower(Branch* b)
+{
+   if( b->prev == nullptr || b->str.size() == 0 )
+       return;
+
+   // for discarding outer elements: macro D(item)
+   Branch* b_high = b;
+
+   std::string high_res;
+   std::string high_str;
+
+   // note that the lower parts of a tree have to be searched
+   // for each branch, because the original sub-tree remains untouched.
+   while( b_high->prev != nullptr)
+   {
+      size_t pos0=0;
+      size_t pos1;
+      size_t pos2;
+      bool isHighChanged =false;
+      high_str=hdhC::clearSpaces(b_high->str);
+      high_res.clear();
+
+      // D() could contain multiple items
+      while( (pos1=high_str.find("D(", pos0)) < std::string::npos )
+      {
+         high_res += high_str.substr(pos0, pos1-pos0);
+
+         isHighChanged=true;
+
+         pos1 += 2;
+         pos2 = b_high->str.find(")", pos1) ;
+         std::string str_D(high_str.substr(pos1,pos2-pos1)) ;
+         pos0 = pos2+1 ;
+
+         Split x_hD(str_D, ",");
+
+         for(size_t jD=0 ; jD < x_hD.size() ; ++jD)
+         {
+            // scan the lower sub-tree
+            Branch* b_low = b_high->prev;
+            std::string res_low;
+
+            while( b_low->prev != nullptr )
+            {
+                std::string low_str=hdhC::clearSpaces(b_low->str);
+
+                if( b_low->str.size() )
+                {
+                   Split x_low(low_str, ',');
+                   res_low.clear();
+                   bool isLowChanged=false;
+
+                   for( size_t i=0 ; i < x_low.size() ; ++i )
+                   {
+                       if( x_low[i] != x_hD[jD] )
+                       {
+                          if( res_low.size() )
+                              res_low += "," ;
+                          res_low += x_low[i] ;
+                       }
+                       else
+                          isLowChanged=true;
+                   }
+
+                   if( isLowChanged )
+                       b_low->str = res_low ;
+                }
+
+                b_low = b_low->prev;
+            }
+         }
+      }
+
+
+      if( isHighChanged )
+      {
+         if( pos0 < high_str.size() )
+            high_res += high_str.substr(pos0) ;
+
+         b_high->str = high_res ;
+      }
+
+      b_high = b_high->prev ;
+   }
+
+   return;
+}
+
+void
+BraceOP::scanTree(Branch &b)
+{
+   // reaching the tip of this sub-tree
+   if( b.str.size() > 0 )
+   {
+       // assemble group
+       getGroup(&b);
+
+       if( b.next.size() == 0)
+          return ;
+   }
+
+   for( size_t i=0 ; i < b.next.size() ; ++i )
+       scanTree(*b.next[i]) ;
+
+   return ;
 }
 
 bool
@@ -333,31 +369,6 @@ BraceOP::printGroups(void)
 }
 
 void
-BraceOP::rmDiscardToken(std::string &s0)
-{
-  Split splt(s0,",");
-
-  s0.clear();
-
-  for( size_t k=0 ; k < splt.size() ; ++k )
-  {
-    if( splt.size() > discardToken.size() )
-    {
-      std::string dStr( splt[k].substr(0, discardToken.size()) ) ;
-
-      if( dStr == discardToken )
-        continue;
-
-      if( s0.size() )
-        s0 += ',' ;
-      s0 += splt[k];
-    }
-  }
-
-  return ;
-}
-
-void
 BraceOP::set(std::vector<std::string> &vs)
 {
   str.clear();
@@ -377,20 +388,30 @@ BraceOP::set(std::string s)
   return;
 }
 
-void
-BraceOP::setDiscard(std::string s)
-{
-  if( s.size() )
-    s="D()";
-
-  discardClose = s[ s.size()-1 ];
-  discardToken = s.substr(0, s.size()-1);
-
-  return;
-}
-
-
 // ----------------
+
+void
+Branch::cpTreeDownwards(Branch *p0)
+{
+  Branch* p = this;
+
+  // destroy any tree build from this instance;
+  // then the vector next is empty, but exists
+  deleteTree();
+
+  //while( p0 != nullptr )
+  while( p0->prev )
+  {
+    p->str=p0->str;
+    p->prev = new Branch() ;
+    p->prev->next.push_back(this) ;
+
+    p=p->prev;
+    p0 = p0->prev;
+  }
+
+  return ;
+}
 
 Branch*
 Branch::branch(void)
@@ -410,58 +431,3 @@ Branch::deleteTree(void)
 
   return;
 }
-
-std::vector<std::vector<Branch*> >
-Branch::getSequence(void)
-{
-  std::vector<std::vector<Branch*> > sequences;
-
-  if( next.size() == 0 )
-    return sequences; // no single branch is defined
-
-  sequences.push_back( * new std::vector<Branch*> );
-  sequences.back().push_back( this ) ;
-  next[0]->getSequence(sequences);
-
-  return sequences;
-}
-
-void
-Branch::getSequence(
-    std::vector<std::vector<Branch*> > &sequences)
-{
-  sequences.back().push_back( this ) ;
-  size_t last=sequences.back().size();
-  size_t curr=sequences.size()-1;
-
-  for( size_t i=0 ; i < next.size() ; ++i )
-  {
-    if( i )  // clone parent sequence
-    {
-       sequences.push_back( * new std::vector<Branch*> );
-       for( size_t j=0 ; j < last ; ++j )
-	        sequences.back().push_back( sequences[curr][j] );
-    }
-
-    next[i]->getSequence(sequences);
-  }
-
-  return;
-}
-
-void
-Branch::printTree(void)
-{
-  for( int l=1 ; l < level-1 ; ++l )
-     std::cout << "|\t" ;
-
-  if( level > 1 )
-    std::cout << "|____" ;
-  std::cout << str << std::endl;
-
-  for( size_t i=0 ; i < next.size() ; ++i )
-    next[i]->printTree();
-
-  return;
-}
-
