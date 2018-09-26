@@ -74,6 +74,7 @@ BraceOP::findBraces(void)
   Branch tree;
   Branch *currB=&tree ;
 
+  // note any multiple ',' will be removed later again.
   for( size_t pos=0 ; pos < str.size(); ++pos )
   {
     s.clear();
@@ -91,14 +92,7 @@ BraceOP::findBraces(void)
         {
           // item could be placed at a brace without comma
           if( currB->prev != nullptr )
-          {
-            size_t sz = currB->prev->str.size() ;
-
-         	  if( s[0] != ',' )
-              if( sz && currB->prev->str[sz-1] != ',' )
-                currB->prev->str += ',';
-            currB->prev->str += s;
-          }
+            currB->prev->str += "," + s + ",";
         }
       }
 
@@ -112,16 +106,8 @@ BraceOP::findBraces(void)
         s = str.substr(last+1, pos - last -1) ;
 
        	if( ! (s.size() == 0 || s == ",") )
-        {
           // item could be placed at a brace without comma
-          // size_t sz = currB->prev ? currB->prev->str.size() : 0 ;
-          size_t sz = currB->prev == nullptr ? 0 : currB->prev->str.size() ;
-
-          if( s[0] != ',' )
-            if( sz && currB->str[currB->str.size()-1] != ',' )
-              currB->str += ',';
-          currB->str += s ;
-        }
+          currB->str += "," + s + "," ;
       }
 
       last = pos;
