@@ -3022,8 +3022,8 @@ CF::setCheck(std::string &s)
      std::string tag(bKey+"261b");
      if( notes->inq(tag) )
      {
-       std::string capt("unknown Conventions=" + s);
-       capt += ", restart with providing a valid convention, e.g. '-C CF-1.4'";
+       std::string capt("undefined Conventions=" + s);
+       capt += ", restart with providing a valid convention, e.g. 'CF-1.4'";
 
        (void) notes->operate(capt) ;
        notes->setCheckStatus( n_CF, fail );
@@ -4509,16 +4509,35 @@ CF::chap261(void)
 
   if( glob_cf.size() == 0 )
   {
+    bool isRetVal=false;
+    if ( cFVersion.size() )
+      if( setCheck(cFVersion) ) // option-provided convention supersedes
+          isRetVal=true;
+
     if( notes->inq(bKey + "261a") )
     {
       std::string capt("missing global ");
       capt += hdhC::tf_att(hdhC::empty, n_Conventions) ;
 
-      (void) notes->operate(capt) ;
+      std::string text;
+
+      if( isRetVal )
+      {
+        size_t pos=0;
+        if( cFVersion.substr(0,2) == "CF" || cFVersion.substr(0,2) == "cf" )
+            pos=2;
+
+        if( cFVersion[3] == '-' )
+          pos=3;
+
+         text = "checked with CF-" + cFVersion.substr(pos);
+      }
+
+      (void) notes->operate(capt, text) ;
       notes->setCheckStatus( n_CF, fail );
     }
 
-    return false;  // no more checks
+    return isRetVal; // no more checks
   }
 
   Split x_glob_cf(glob_cf, ",; ", true);
@@ -4560,7 +4579,7 @@ CF::chap261(void)
       std::string tag(bKey+"261b");
       if( notes->inq(tag) )
       {
-        std::string capt("unknown global ") ;
+        std::string capt("undefined global ") ;
         capt += hdhC::tf_att(hdhC::empty, n_Conventions, glob_cf);
 
         (void) notes->operate(capt) ;
