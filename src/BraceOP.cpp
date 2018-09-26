@@ -69,7 +69,6 @@ BraceOP::findBraces(void)
   str = tmp;
 
   std::string s;
-  int lC=0 ; // level counter
   size_t last=0;
 
   Branch tree;
@@ -91,12 +90,15 @@ BraceOP::findBraces(void)
         if( s.size() && s != "," )
         {
           // item could be placed at a brace without comma
-          size_t sz = currB->prev->str.size() ;
+          if( currB->prev != nullptr )
+          {
+            size_t sz = currB->prev->str.size() ;
 
-       	  if( s[0] != ',' )
-            if( sz && currB->prev->str[sz-1] != ',' )
-              currB->prev->str += ',';
-          currB->prev->str += s;
+         	  if( s[0] != ',' )
+              if( sz && currB->prev->str[sz-1] != ',' )
+                currB->prev->str += ',';
+            currB->prev->str += s;
+          }
         }
       }
 
@@ -123,8 +125,8 @@ BraceOP::findBraces(void)
       }
 
       last = pos;
-      --lC;
-      currB = currB->prev;
+      if( currB->prev != nullptr )
+         currB = currB->prev;
     }
   }
 
