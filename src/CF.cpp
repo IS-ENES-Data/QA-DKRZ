@@ -5658,14 +5658,40 @@ CF::chap432(void)
 
      if( (j=var.getAttIndex(n_standard_name)) > -1 )
      {
-        if( hdhC::isAmong(var.attValue[j][0], valid_sn) )
+        int count_failure=0;
+        std::string test_sn(var.attValue[j][0]) ;
+
+        // try different spellings, if the provided one fails
+        while ( count_failure < 6 )
         {
-          ix_sN.push_back(i);
-          jx_sN.push_back(j);
+          if( hdhC::isAmong(test_sn, valid_sn) )
+          {
+            ix_sN.push_back(i);
+            jx_sN.push_back(j);
+
+            if( count_failure )
+                var.attValue[j][0] = test_sn;
+
+            break;
+          }
+          else
+          {
+            ++count_failure;
+            if( count_failure == 1 )
+              test_sn = var.attValue[j][0] + "_coordinate" ;
+            else if( count_failure == 2 )
+              test_sn =  "atmosphere_" + var.attValue[j][0] + "_coordinate";
+            else if( count_failure == 3 )
+              test_sn =  "ocean_" + var.attValue[j][0] + "_coordinate";
+            else if( count_failure == 4 )
+              test_sn =  "atmosphere_" + var.attValue[j][0];
+            else if( count_failure == 5 )
+              test_sn =  "ocean_" + var.attValue[j][0] ;
+          }
         }
      }
 
-     // look for a totally misnamed ft att
+     // find index of the ft att
      Split x_av;
      for( size_t v=0 ; v < var.attName.size() ; ++v )
      {
@@ -5689,8 +5715,8 @@ CF::chap432(void)
             if( x_av[x++][tail] != ':' )
               break;
 
-            else if( !pIn->nc.isVariableValid( x_av[x] ) )
-                break;
+//            else if( !pIn->nc.isVariableValid( x_av[x] ) )
+//                break;
           }
 
           if( x == x_av_sz )
@@ -5799,7 +5825,6 @@ CF::chap432(Variable& var,
   chap432_getParamVars(var, valid_sn, valid_ft, valid_ft_ix, valid_sn_ix,
                    att_ft_ix, att_ft_pv) ;
 
-
   // special for the alternative hybrid sigma pressure coord.
   if( valid_ft_ix == 2 && att_ft_pv.size() == 3 )
     valid_ft[valid_ft_ix]="ap: b: ps:";
@@ -5813,7 +5838,7 @@ CF::chap432(Variable& var,
       capt += "The attributes " + n_formula_terms + " and " ;
       capt += n_standard_name + " are not compatible";
 
-      std::string text("Found ") ;
+      std::string text("Tried ") ;
       text += hdhC::tf_att(var.name, n_standard_name, var.attValue[att_sn_ix][0]) + " vs. " ;
       text += hdhC::tf_att(var.name,n_formula_terms, var.attValue[att_ft_ix][0]) ;
 
