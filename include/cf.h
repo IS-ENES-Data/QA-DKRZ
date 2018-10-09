@@ -71,7 +71,8 @@ class CF : public IObj
   bool   chap431(Variable&);  // vertical dimensional coord
   void   chap432(void);       // vertical dimensionless coord
   bool   chap432(Variable&, std::vector<std::string>&, std::vector<std::string>&,
-                   int ft_jx, int sn_jx);
+                 int valid_ft_ix, int valid_sn_ix, int ft_jx, int sn_jx,
+                 std::vector<std::pair<std::string, std::string> > &) ;
   // check of standard_name vs. formula_terms (case: dimless vertical coord)
   bool   chap432_checkSNvsFT( Variable& var,
             std::vector<std::string>& valid_sn,

@@ -709,7 +709,7 @@ CF::checkCoordinateValues(Variable& var, bool isFormTermAux, T x)
 void
 CF::checkGroupRelation(void)
 {
-  if( pIn->varSz < 2 )  // at least two files are required for a relation
+  if( pIn->varSz < 2 )  // at least two variables are required for a relation
      return;
 
   std::vector<std::string>& aG = associatedGroups;
@@ -5620,7 +5620,7 @@ CF::chap432(void)
   std::vector<std::string> valid_ft;
   valid_ft.push_back("p0: lev:");
   valid_ft.push_back("sigma: ps: ptop:");
-  valid_ft.push_back("a: p0: b: ps:"); // alternative is substituted later
+  valid_ft.push_back("a: p0: b: ps:");
   valid_ft.push_back("a: b: orog:");
   valid_ft.push_back("a: b1: b2: ztop: zsurf1: zsurf2:");
   valid_ft.push_back("sigma: eta: depth:");
@@ -5628,33 +5628,29 @@ CF::chap432(void)
   valid_ft.push_back("sigma: eta: depth: depth_c: nsigma: zlev:");
   valid_ft.push_back("sigma: depth: z1: z2: a: href: k_c:");
 
-  std::vector<int> ix ;  // collects all the candidates
-  std::vector<int> ij_fT;
-  std::vector<int> ij_sN;
-  std::vector<int> ij_aV;
-
-  std::vector<int> ix_sN ;
-  std::vector<int> ix_aV ; // value of an attribute is appropriate
-  std::vector<int> jx_sN ;
-  std::vector<int> jx_aV ; // value of an attribute is appropriate
+  // alternative to the case a: p0: b: ps: ;
+  // this will be substituted, if true
+  valid_ft.push_back("ap: b: ps:");
 
   // two ways to identify a dimless vertical coord.
   // a) a formula_terms attribute,
   // b) a standard name indicating a valid dimless method
+  std::vector<std::pair<std::string, std::string> > att_ft_pv ;
 
   for( size_t i=0 ; i < pIn->varSz ; ++i )
   {
+     // index of an ft att and corresponding standard_name
+     int valid_ft_ix=-1;
+     int valid_sn_ix=-1;
+
+     int ft_jx=-1;
+     int sn_jx=-1;
+
      Variable& var = pIn->variable[i] ;
      int j;
 
      if( (j=var.getAttIndex(n_formula_terms)) > -1 )
-     {
-        ix.push_back(i);
-
-        ij_fT.push_back(j);
-        ij_sN.push_back(-1);
-        ij_aV.push_back(-1);
-     }
+        ft_jx=j;
 
      if( (j=var.getAttIndex(n_standard_name)) > -1 )
      {
@@ -5666,8 +5662,7 @@ CF::chap432(void)
         {
           if( hdhC::isAmong(test_sn, valid_sn) )
           {
-            ix_sN.push_back(i);
-            jx_sN.push_back(j);
+            sn_jx=j;
 
             if( count_failure )
                 var.attValue[j][0] = test_sn;
@@ -5691,104 +5686,57 @@ CF::chap432(void)
         }
      }
 
-     // find index of the ft att
      Split x_av;
-     for( size_t v=0 ; v < var.attName.size() ; ++v )
+
+     for( size_t j=0 ; j < var.attName.size() ; ++j )
      {
-        if( var.attName[v] == n_cell_measures
-              || var.attName[v] == n_cell_methods )
-          continue;
-
-        x_av = var.attValue[v][0] ;
-        size_t x_av_sz = x_av.size() ;
-
-        // must appear in pairs
-        if( x_av_sz % 2 )
-          continue;
-
-        if( x_av_sz )
+        if( ft_jx == -1 )
         {
-          size_t x;
-          for( x=0 ; x < x_av_sz ; ++x )
-          {
-            size_t tail = x_av[x].size()-1;
-            if( x_av[x++][tail] != ':' )
-              break;
+           if( var.attName[j] == n_cell_measures
+                || var.attName[j] == n_cell_methods )
+             continue;
 
-//            else if( !pIn->nc.isVariableValid( x_av[x] ) )
-//                break;
-          }
+           // a colon is requested
+           if( var.attValue[j][0].find(':') == std::string::npos )
+             continue;
 
-          if( x == x_av_sz )
-          {
-            ix_aV.push_back(i);
-            jx_aV.push_back(v);
+           // colon separates pairs
+           x_av = var.attValue[j][0] ;
+           size_t x_av_sz = x_av.size() ;
+
+           if( x_av_sz % 2 || var.attValue[j][0].find(':') == std::string::npos )
+             continue;
+        }
+
+        // formula_terms by vector of pairs: 1st=key: 2nd=param_varName
+        att_ft_pv.clear() ;
+
+        chap432_getParamVars(var, valid_sn, valid_ft, valid_ft_ix, valid_sn_ix,
+                   j, att_ft_pv) ;
+
+        if( valid_ft_ix > -1 )
+        {
+            if( ft_jx == -1 )
+               ft_jx = j ;
+
             break;
-          }
         }
      }
-  }
 
-  // the sequence of tests must be: i), ii)
+     // not a ft type; try for another variable
+     if( valid_ft_ix == -1 )
+       continue;
 
-  // i) try attribute with appropriate format
-  for( size_t i=0 ; i < ix_aV.size() ; ++i )
-  {
-    size_t j;
-    for( j=0 ; j < ix.size() ; ++j )
-    {
-      if( ix_aV[i] == ix[j] )
-      {
-        if( ij_aV[j] == -1 )
-          ij_aV[j] = jx_aV[i];
-
-        break;
-      }
-    }
-
-    if( j == ix.size() )
-    {
-      ix.push_back(ix_aV[i]) ;
-      ij_fT.push_back(jx_aV[i]) ;
-      ij_sN.push_back(-1) ;
-    }
-  }
-
-  // ii) found appropriate standard name
-  for( size_t i=0 ; i < ix_sN.size() ; ++i )
-  {
-    size_t j;
-    for( j=0 ; j < ix.size() ; ++j )
-    {
-      if( ix_sN[i] == ix[j] )
-      {
-        if( ij_sN[j] == -1 )
-          ij_sN[j] = jx_sN[i];
-
-        break;
-      }
-    }
-
-    if( j == ix.size() )
-    {
-      ix.push_back(ix_sN[i]) ;
-      ij_fT.push_back(-1) ;
-      ij_sN.push_back(jx_sN[i]) ;
-    }
-  }
-
-  for( size_t i=0 ; i < ix.size() ; ++i)
-  {
-    Variable& var = pIn->variable[ix[i]];
-
-    if( chap432(var, valid_sn, valid_ft, ij_fT[i], ij_sN[i]) )
-    {
-      var.coord.isC[2]    = true;
-      var.coord.isZ_DL = true;
-      var.addWeight(2);
-      var.addAuxCount();
-      var.isChecked=true;
-    }
+     // if( chap432(var, valid_sn, valid_ft, ij_fT[i], ij_sN[i]) )
+     if( chap432(var, valid_sn, valid_ft, valid_ft_ix, valid_sn_ix,
+                 ft_jx, sn_jx, att_ft_pv ) )
+     {
+         var.coord.isC[2]    = true;
+         var.coord.isZ_DL = true;
+         var.addWeight(2);
+         var.addAuxCount();
+         var.isChecked=true;
+     }
   }
 
   return;
@@ -5798,12 +5746,11 @@ bool
 CF::chap432(Variable& var,
    std::vector<std::string>& valid_sn,
    std::vector<std::string>& valid_ft,
-   int att_ft_ix, int att_sn_ix )
+   int valid_ft_ix, int valid_sn_ix,
+   int att_ft_ix, int att_sn_ix,
+   std::vector<std::pair<std::string, std::string> > &att_ft_pv)
 {
   // dimensionless vertical coordinate
-  int valid_ft_ix=-1;
-  int valid_sn_ix=-1;
-
   int att_units_jx ;
   std::string units;
   if( (att_units_jx=var.getAttIndex(n_units)) > -1 )
@@ -5818,16 +5765,6 @@ CF::chap432(Variable& var,
   if( chap432_checkSNvsFT(var, valid_sn, valid_ft, valid_sn_ix,
                    att_ft_ix, att_sn_ix, units) )
     return false; // no formula_terms case
-
-  // formula_terms by vector of pairs: 1st=key: 2nd=param_varName
-  std::vector<std::pair<std::string, std::string> > att_ft_pv ;
-
-  chap432_getParamVars(var, valid_sn, valid_ft, valid_ft_ix, valid_sn_ix,
-                   att_ft_ix, att_ft_pv) ;
-
-  // special for the alternative hybrid sigma pressure coord.
-  if( valid_ft_ix == 2 && att_ft_pv.size() == 3 )
-    valid_ft[valid_ft_ix]="ap: b: ps:";
 
   // sn and ft from the same valid algorithm?
   if( att_sn_ix > -1 && valid_ft_ix > -1 && valid_ft_ix != valid_sn_ix)
@@ -5994,7 +5931,7 @@ CF::chap432_checkSNvsFT( Variable& var,
 
   // no formula_terms attribute is given
   if( att_ft_ix == -1)
-     return true;  // apparently no hybrid case
+     return true;
 
   return false;
 }
@@ -6103,9 +6040,10 @@ CF::chap432_getParamVars( Variable& var,
   }
 
   // compare to the parameters provided by CF (appendix D)
+  size_t v_ft_sz = valid_ft.size() ;
   for( size_t i=0 ; i < att_ft_pv.size() ; ++i )
   {
-     for( size_t j=0 ; j < valid_ft.size() ; ++j )
+     for( size_t j=0 ; j < v_ft_sz ; ++j )
      {
        for( size_t k=0 ; k < x_valid_ft[j].size() ; ++k )
        {
@@ -6149,8 +6087,17 @@ CF::chap432_getParamVars( Variable& var,
      else if( zx[1] == valid_sn_ix )
         valid_ft_ix = zx[1] ;
   }
+  else if( zx[0] == 0 )
+    valid_ft_ix = -1 ; //
   else
     valid_ft_ix = zx[0] ;
+
+  // special for the alternative hybrid sigma pressure coord.
+  if( valid_ft_ix == static_cast<int>(v_ft_sz-1) && att_ft_pv.size() == 3 )
+  {
+     valid_ft_ix = 2 ;
+     valid_ft[valid_ft_ix]="ap: b: ps:";
+  }
 
   return ;
 }
