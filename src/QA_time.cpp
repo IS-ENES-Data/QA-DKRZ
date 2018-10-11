@@ -311,6 +311,7 @@ QA_Time::init(std::vector<std::string>& optStr)
        if( pIn->variable[i].name == name )
        {
           time_ix = i;
+          timeType = pIn->variable[time_ix].type ;
           isTime=true;
           boundsName = pIn->variable[time_ix].getAttValue("bounds") ;
           break;
@@ -341,6 +342,9 @@ QA_Time::init(std::vector<std::string>& optStr)
        return false;
      }
    }
+
+   bufferType=pIn->variable[time_ix].type;
+   timeOutputBuffer.setBufferType(bufferType);
 
    // is time unlimited?
    if( isTime && ! pIn->nc.isDimUnlimitedGenuine() )
@@ -2952,7 +2956,11 @@ TimeOutputBuffer::clear(void)
 {
   if( buffer )
   {
-    delete buffer;
+    if( bufferType == NC_DOUBLE )
+       delete buffer;
+    else if( bufferType == NC_DOUBLE )
+       delete f_buffer;
+
     delete buffer_step;
 
     bufferCount=0;
@@ -2966,7 +2974,10 @@ TimeOutputBuffer::flush(void)
   if( bufferCount )
   {
     // Flush temporarily arrayed values
-    pQA->nc->putData(nextFlushBeg, bufferCount, name, buffer );
+    if( bufferType == NC_DOUBLE )
+       pQA->nc->putData(nextFlushBeg, bufferCount, name, buffer );
+    else if( bufferType == NC_FLOAT )
+       pQA->nc->putData(nextFlushBeg, bufferCount, name, f_buffer );
 
     if( nextFlushBeg )
       pQA->nc->putData(nextFlushBeg, bufferCount, name_step, buffer_step );
@@ -2996,7 +3007,11 @@ TimeOutputBuffer::initBuffer(QA* p, size_t nxt, size_t mx)
      clear();
   }
 
-  buffer =       new double [maxBufferSize] ;
+  if( bufferType == NC_DOUBLE )
+     buffer = new double [maxBufferSize] ;
+  else if( bufferType == NC_FLOAT )
+     f_buffer = new float [maxBufferSize] ;
+
   buffer_step =  new double [maxBufferSize] ;
 
   bufferCount = 0;
@@ -3019,7 +3034,11 @@ TimeOutputBuffer::store(double val, double step)
    if( bufferCount == maxBufferSize )
      flush();  // resets countTime, too
 
-   buffer[bufferCount]=val;
+   if( bufferType == NC_DOUBLE )
+      buffer[bufferCount]=val;
+   else if( bufferType == NC_FLOAT )
+      f_buffer[bufferCount]=val;
+
    buffer_step[bufferCount++]=step;
 
    return;

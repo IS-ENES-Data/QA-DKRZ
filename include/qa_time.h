@@ -21,6 +21,7 @@ class TimeOutputBuffer
 
   //! Change the flush counter; 1500 by default
   void    initBuffer(QA*, size_t next=0, size_t max=1500);
+  void    setBufferType(nc_type t){bufferType=t;}
   void    setName(std::string n);
   void    setNextFlushBeg(size_t n){nextFlushBeg=n;};
   void    store(double val, double step);
@@ -34,7 +35,11 @@ class TimeOutputBuffer
 
   QA* pQA;
 
+  nc_type bufferType;
   double *buffer;
+  float  *f_buffer;
+
+  //nc_type buffer_stepType;
   double *buffer_step;
 };
 
@@ -76,6 +81,8 @@ class QA_Time
   int time_ix;    // the var-index
   int timeBounds_ix;
   bool isTime;
+  nc_type timeType;
+  nc_type timeBoundsType;
 
   double lastTimeStep;  // is set in flush()
   double refTimeOffset;
@@ -201,9 +208,10 @@ class QA_Time
   Split  tt_xmode;
   std::vector<Date> tt_dateRange;
 
-  size_t bufferCount;
-  size_t maxBufferSize;
-  size_t nextFlushBeg;
+  size_t  bufferCount;
+  size_t  maxBufferSize;
+  size_t  nextFlushBeg;
+  nc_type bufferType;
 
   std::string ANNOT_ACCUM;
 
