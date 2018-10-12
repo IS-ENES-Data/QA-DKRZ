@@ -44,7 +44,7 @@ DRS_CV::checkFilename(std::string& fName, struct DRS_CV_Table& drs_cv_table)
   {
       if( x_filename[i].find('.') < std::string::npos )
       {
-         std::string key("1_2b");
+         std::string key("1_2a");
          if( notes->inq( key, pQA->qaTime.name) )
          {
            std::string capt("filename must no have a dot, found");
@@ -263,17 +263,16 @@ DRS_CV::checkFilenameEncoding(Split& x_filename, struct DRS_CV_Table& drs_cv_tab
   {
      capt.push_back(cpt);
      text.push_back(txt);
-     keys.push_back("1_2");
+     keys.push_back("1_2b");
   }
 
   if( text.size() )
   {
-    std::string capt("DRS CV filename:");
     for(size_t i=0 ; i < text.size() ; ++i )
     {
       if( notes->inq( keys[i], "DRS") )
       {
-        (void) notes->operate(capt[i]+text[i]) ;
+        (void) notes->operate(capt+text[i]) ;
         notes->setCheckStatus(drsF, pQA->n_fail);
       }
     }
@@ -837,7 +836,7 @@ DRS_CV::findFN_faults(Split& drs, Split& x_e,
 
     if( drsSz == x_eSz )
     {
-      capt = "Suspicion of a missing item in the filename" ;
+      capt = "Suspicion of a missing DRS item in the filename" ;
       text = "Found " + hdhC::tf_val(drs.getStr()) ;
 
       return;
@@ -845,7 +844,7 @@ DRS_CV::findFN_faults(Split& drs, Split& x_e,
 
     if( !(drs[j] == t || t == n_ast) )
     {
-      capt = "Filename: ";
+      capt  = "Filename: DRS failure";
       text  = " DRS item " + hdhC::tf_assign(x_e[j], drs[j]);
       text += " vs. global attribute " + hdhC::tf_assign(cvMap[x_e[j]], t) ;
 
