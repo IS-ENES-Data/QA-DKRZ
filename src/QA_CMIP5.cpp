@@ -272,7 +272,7 @@ DRS_CV::checkFilenameEncoding(Split& x_filename, struct DRS_CV_Table& drs_cv_tab
     {
       if( notes->inq( keys[i], "DRS") )
       {
-        (void) notes->operate(capt+text[i]) ;
+        (void) notes->operate(capt[i],text[i]) ;
         notes->setCheckStatus(drsF, pQA->n_fail);
       }
     }
