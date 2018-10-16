@@ -1999,7 +1999,7 @@ QA_Data::testConst(hdhC::FieldData &fA)
   if( ! fA.isValid )
     return ;
 
-  if( ! enableConstValueTest )
+  if( fA.size == 1 || ! enableConstValueTest )
     return ;
 
   if( currMin != currMax )
