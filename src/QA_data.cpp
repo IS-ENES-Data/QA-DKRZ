@@ -2008,8 +2008,8 @@ QA_Data::testConst(hdhC::FieldData &fA)
 
     if( constValueRecordState )
     {
-      constValueRecordEndTime.push_back(pQA->qaTime.prevTimeValue) ;
-      constValueRecordEndRec.push_back(pIn->currRec-1) ;
+      constValueRecordEndTime.back(pQA->qaTime.prevTimeValue) ;
+      constValueRecordEndRec.back(pIn->currRec-1) ;
       constValueRecordState=false;
     }
 
@@ -2031,6 +2031,10 @@ QA_Data::testConst(hdhC::FieldData &fA)
     constValueRecord.push_back(val);
     constValueRecordStartTime.push_back(pQA->qaTime.currTimeValue) ;
     constValueRecordStartRec.push_back(pIn->currRec) ;
+
+    // values in case of a single event at the end of a record
+    constValueRecordEndTime.push_back(pQA->qaTime.prevTimeValue) ;
+    constValueRecordEndRec.push_back(pIn->currRec-1) ;
   }
 
   return ;
