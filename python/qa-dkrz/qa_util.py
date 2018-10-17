@@ -234,7 +234,7 @@ class GetPaths(object):
 
         if countUnreadableFiles == len(fs):
             if countUnreadableFiles:
-                print 'no read-permission for files in' + path
+                print ('no read-permission for files in' + path)
                 sys.exit(1)
 
         return fBase, fNames
@@ -474,7 +474,7 @@ def f_str_replace(rFile, items, repls):
         repls=rpls
 
     if num != len(repls):
-        print 'inappropriate args: items=' + repr(items) + ' vs. repl=' + repr(repls)
+        print ('inappropriate args: items=' + repr(items) + ' vs. repl=' + repr(repls))
 
     rng = range(len(repls))
     wFile = rFile + repr(os.getpid())
@@ -483,7 +483,7 @@ def f_str_replace(rFile, items, repls):
         try:
             w = open(wFile, 'w')
         except IOError:
-            print 'could not open file ' + wFile
+            print ('could not open file ' + wFile)
             sys.exit(1)
 
         for line in f:
@@ -520,7 +520,7 @@ def get_curr_revision(src, is_CONDA):
                                           "branch"
                                           ]).split('\n')
         except subprocess.CalledProcessError as e:
-            print e.output()
+            print (e.output())
             d['branch']='?'
             d['hexa']='?'
             return ''
@@ -542,7 +542,7 @@ def get_curr_revision(src, is_CONDA):
                                           "1"
                                           ])
         except subprocess.CalledProcessError as e:
-            print e.output()
+            print (e.output())
             d['branch']='?'
             d['hexa']='?'
             return ''
@@ -761,19 +761,51 @@ def get_QA_SRC(path):
     #   b) python/qa-dkrz/qa-dkrz.py
     # return: isConda, QA_SRC
 
-    # is argv[0] called by a plain name?
+    # expand . and .., but keep files .asdf or ..bsdf etc.
+    npItems=os.getcwd()
+    if len(npItems) == 1:
+        # '/'
+        npItems=[' ']
+    elif len(path) and path[0] == '/':
+        # ignore os.getcwd()
+        npItems=[]
+    else:
+        npItems=npItems.split('/')
+
+    pItems=path.split('/')
+
+    for ix in range(len(pItems)):
+        if len(pItems[ix]) == 0:
+            pass
+        elif len(pItems[ix]) == 1 and pItems[ix] == '.':
+            # .
+            pass
+        elif len(pItems[ix]) == 2 and pItems[ix] == '..':
+            # ..
+            if len(npItems) == 1:
+                # note npItems[0] represents '/'
+                print 'path: impossible to apply .. at /'
+                sys.exit(1)
+
+            del npItems[-1]
+        else:
+            npItems.append(pItems[ix])
+
+    path='/'
+    for itm in npItems:
+        path=os.path.join(path, itm)
+
     head, tail = os.path.split(path)
     if len(head) == 0:
         target=os.path.join(os.getcwd(), tail)
         return get_QA_SRC(target)
 
-    pItems=path.split('/')
-    if 'envs' in pItems and 'opt' in pItems:
+    if 'envs' in npItems and 'opt' in npItems:
         isConda=True
     else:
         isConda=False
 
-    if 'python' in pItems:
+    if 'python' in npItems:
         # a python script was called
         p, t = os.path.split(head)
         p, t = os.path.split(p)
@@ -787,7 +819,6 @@ def get_QA_SRC(path):
         return (isConda, p)
 
     target=path
-
     if target[0] == '.' or '/.' in target:
         old_path=os.getcwd()
         os.chdir(p)     # remove . and .. anywhere in the path
@@ -802,10 +833,10 @@ def get_QA_SRC(path):
             target = os.path.join(os.path.dirname(target),target)
 
         if not os.path.exists(target):
-            print 'broken link ' + target
+            print ('broken link ' + target)
             sys.exit(1)
     elif not os.path.exists(target):
-        print 'invalid path=' + target
+        print ('invalid path=' + target)
         sys.exit(1)
 
     return get_QA_SRC(target)
@@ -1013,6 +1044,6 @@ def which(items):
                             , stdout=DEV_NULL, stderr=DEV_NULL ) == 0:
                 b=True
             else:
-                print "which: no " + item + "in PATH"
+                print ("which: no " + item + "in PATH")
 
     return b
