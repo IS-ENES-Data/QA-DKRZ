@@ -2008,8 +2008,8 @@ QA_Data::testConst(hdhC::FieldData &fA)
 
     if( constValueRecordState )
     {
-      constValueRecordEndTime.back(pQA->qaTime.prevTimeValue) ;
-      constValueRecordEndRec.back(pIn->currRec-1) ;
+      constValueRecordEndTime.back() = pQA->qaTime.prevTimeValue ;
+      constValueRecordEndRec.back() = pIn->currRec-1 ;
       constValueRecordState=false;
     }
 
