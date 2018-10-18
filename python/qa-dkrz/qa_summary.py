@@ -43,12 +43,21 @@ class LogSummary(object):
 
         # just to have them defined in case of an error
         capt=''
+        curr_capt=''
         impact=''
         tag=''
 
         words = blk[i+1].lstrip(' -').split(None,1)
         if words[0] == 'annotation:':
             capt = words[1]
+            pos0=capt.find('<')
+            if pos0 > -1:
+                pos1=capt.find('>')
+                if pos1 > -1:
+                    curr_capt  = capt[0:pos0+1]
+                    curr_capt += '*'
+                    curr_capt += capt[pos1:]
+
             i=i+1
 
         words = blk[i+1].lstrip(' -').split(None,1)
@@ -69,6 +78,46 @@ class LogSummary(object):
 
             i=i+1
 
+        # index of a new annotation
+        ix = len(self.annot_capt)
+
+        # find groups of variables with the same annotation.
+        # If found, then <var-name> is replaced by <*>
+        test_capt=capt
+
+        for test_count in range(2):
+
+            # try for a var-group
+            is_group=False
+            is_break=False
+            for ig in range(ix):
+                if self.annot_capt[ig] == capt:
+                    is_break=True
+                    break
+
+                p0=self.annot_capt[ig].find('<')
+                if p0 > -1:
+                    p1=self.annot_capt[ig].find('>')
+                    if p1 > -1:
+                        if self.annot_capt[ig].find('<*>') == -1:
+                            prev_capt  = self.annot_capt[ig][0:p0+1]
+                            prev_capt += '*'
+                            prev_capt += self.annot_capt[ig][p1:]
+                        else:
+                            prev_capt = self.annot_capt[ig]
+
+                        if prev_capt == test_capt:
+                            if capt != test_capt:
+                                self.annot_capt[ig] = prev_capt
+                            capt = test_capt
+                            is_group=True
+                            break
+
+            if is_break or is_group:
+                break
+
+            test_capt=curr_capt
+
         # the sub-temporal range of a given variable (and path)
         try:
             # index of a found annotation
@@ -87,7 +136,7 @@ class LogSummary(object):
             self.annot_fName_dt_id.append([[self.dt_id]])
         else:
             # a registered annotation
-
+            # look for a group of
             # associated properties
             try:
                 jx = self.annot_path_id[ix].index(path_id)
@@ -168,72 +217,6 @@ class LogSummary(object):
             a, b = self.annotation_getItems(ix)
             pItems.append(copy.deepcopy(a))
             pMutable.append(copy.deepcopy(b))
-
-        # combine annotations that only differ by a var-name
-        index_to_kill=[]
-        for ix in range(annot_sz-1):
-            if len(self.annot_capt[ix]) == 0:
-                continue
-
-            words_ix = qa_util.split(self.annot_capt[ix], '\'" <>')
-            ix_sz = len(words_ix)
-
-            for jx in range(ix+1, annot_sz):
-                if len(self.annot_capt[jx]) == 0:
-                    continue
-
-                words_jx = qa_util.split(self.annot_capt[jx], '\'" <>')
-                jx_sz = len(words_jx)
-
-                count=0
-                pos=0
-                if ix_sz == jx_sz:
-                    for i in range(jx_sz):
-                        if words_ix[i] != words_jx[i]:
-                            count += 1
-                            pos=i
-                        else:
-                            isBreak=False
-                            for pM in pMutable[ix]:
-                                for k in pM:
-                                    p_item=self.p_items[k]
-                                    if words_ix[i] == p_item:
-                                        count += 1
-                                        pos=i
-                                        isBreak=True
-                                        break
-
-                                if isBreak:
-                                    break
-
-                    else:
-                        if count == 1:
-                            # is it a variable?
-                            for j in range( len(pMutable[jx]) ):
-                                for k in range( len(pMutable[jx][j]) ):
-                                    p_item=self.p_items[pMutable[jx][j][k]]
-
-                                    if words_jx[pos] == p_item:
-                                        # found some
-                                        pMutable[ix][j].append(pMutable[jx][j][k])
-                                        pItems[ix][j]=0  # i.e. '*'
-                                        index_to_kill.append(jx)
-                                        self.annot_capt[jx]=''
-
-
-        index_to_kill.sort()
-        index_to_kill.reverse()
-        for ix in index_to_kill:
-            del pMutable[ix]
-            del pItems[ix]
-            del self.annot_capt[ix]
-            del self.annot_impact[ix]
-            del self.annot_tag[ix]
-            del self.annot_fName_id[ix]
-            del self.annot_path_id[ix]
-            del self.annot_fName_dt_id[ix]
-        else:
-            annot_sz = len(self.annot_capt)
 
 
         # any component before pathBase is deleted.
@@ -397,18 +380,6 @@ class LogSummary(object):
         dtr = self.dt[self.dt_id]
         if dtr == x_name[sz-1]:
             sz -= 1
-
-        # members of a the DRS components
-        if sep == self.prj_data_sep:
-            # init
-            if len(self.p_drs) == 0:
-                for i in range(sz):
-                    self.p_drs.append([])
-
-            # update
-            for i in range(sz):
-                if not x_name[i] in self.p_drs[i]:
-                    self.p_drs[i].append(x_name[i])
 
         for i in range(sz):
             # update the list of var or path items, respectively
@@ -826,7 +797,7 @@ class LogSummary(object):
             return
 
         if not os.path.isfile(f_log):
-            print 'qa_summary: ' + f_log + ' : no such file'
+            print ('qa_summary: ' + f_log + ' : no such file')
             return
 
         # extraction of annotations and atomic time ranges from log-files
@@ -852,7 +823,6 @@ class LogSummary(object):
 
         self.f_items=[]
         self.p_items=['*']  # a placeholder
-        self.p_drs=[]
 
         self.atomicBeg=[]         # atomic time interval: index by
         self.atomicEnd=[]         #                       'var_id'_'path_id'
