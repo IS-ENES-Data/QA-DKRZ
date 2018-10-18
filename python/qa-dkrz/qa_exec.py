@@ -565,7 +565,7 @@ class QaExec(object):
         else:
             istatus = 0
 
-        if self.qaConf.isOpt('RUN_PrePARE'):
+        if self.qaConf.isOpt('RUN_PREPARE'):
             # run and append output
             check_output += self.run_PrePARE(t_vars)
 

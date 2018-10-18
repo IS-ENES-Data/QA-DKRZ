@@ -769,8 +769,11 @@ class QaConfig(object):
 
         # is it defined in QA_SRC/.qa-conf ? Else: try home
         self.home = os.path.join( os.environ['HOME'], '.qa-dkrz')
+        qa_src_qaconf=os.path.join(self.qa_src, '.qa-dkrz')
 
-        if os.path.isfile( os.path.join(self.qa_src, '.qa-config.txt') ):
+        if os.path.isfile( os.path.join(qa_src_qaconf, 'config.txt') ):
+           self.cfg_file=os.path.join(qa_src_qaconf, 'config.txt')
+        elif os.path.isfile( os.path.join(self.qa_src, '.qa-config.txt') ):
            self.cfg_file=os.path.join(self.qa_src, '.qa-config.txt')
         elif os.path.isfile( os.path.join(self.qa_src, '.qa.cfg') ):
            self.cfg_file=os.path.join(self.qa_src, '.qa.cfg')
