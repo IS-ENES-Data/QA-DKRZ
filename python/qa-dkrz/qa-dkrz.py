@@ -621,6 +621,7 @@ if __name__ == '__main__':
     g_vars.qa_src = QA_SRC
     g_vars.isConda = isCONDA
     g_vars.pid = str(os.getpid())
+    g_vars.UDUNITS2_XML_PATH = qaConf.getOpt("UDUNITS2_XML_PATH")
 
     if 'QA_EXAMPLE' in qaConf.dOpts:
         qaConf = prepareExample(qaConf)

@@ -497,6 +497,8 @@ class QaExec(object):
 
     def run(self, t_vars):
 
+        os.environ["UDUNITS2_XML_PATH"] = self.g_vars.UDUNITS2_XML_PATH
+
         qa_lock = os.path.join(t_vars.var_path,
                                'qa_lock_' + t_vars.fBase + '.txt')
         if os.path.isfile(qa_lock):
@@ -519,7 +521,6 @@ class QaExec(object):
             sys.exit(1)
         else:
             param = self.getParamStr(t_vars, ' ')
-
 
         log_entry={}
 

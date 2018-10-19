@@ -1127,6 +1127,8 @@ run()
 
 run_PrePARE()
 {
+  #. ${CONDA_PATH%/conda}/activate cmor
+
   export UVCDAT_ANONYMOUS_LOG=no
 
   if [ ! ${PrePARE} ] ; then
@@ -1140,9 +1142,9 @@ run_PrePARE()
     fi
   fi
 
-#  if . $QA_SRC/scripts/parseConfigFile UDUNITS2_XML_PATH ; then
-#    export UDUNITS2_XML_PATH
-#  fi
+  if . $QA_SRC/scripts/parseConfigFile UDUNITS2_XML_PATH ; then
+    export UDUNITS2_XML_PATH=$UDUNITS2_XML_PATH
+  fi
 
   local file table_path
   file=$ncFile
@@ -1180,6 +1182,7 @@ run_PrePARE()
          echo 'Cancel CMOR_LLN run' # > $TTY
     #   else
        fi
+       . ${CONDA_PATH%/conda}/activate cmor
        return 1
     fi
   fi
@@ -1209,6 +1212,8 @@ run_PrePARE()
       ans="${ans}${ans2:i:1}"
     fi
   done
+
+  #. ${CONDA_PATH%/conda}/deactivate
 
   return 0
 }
