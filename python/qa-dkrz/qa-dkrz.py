@@ -608,6 +608,9 @@ def testLock(t_vars, fBase):
 
 
 if __name__ == '__main__':
+    if len(sys.argv) == 1:
+        sys.argv.append("--help")
+
     (isCONDA, QA_SRC) = qa_util.get_QA_SRC(sys.argv[0])
 
     qa_init.run_install(QA_SRC)  # exit after processing, if any
