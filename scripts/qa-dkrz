@@ -5011,36 +5011,23 @@ tryCom()
 
 tr_option()
 {
-  local line="$1"
-  local i pref value
-
   # only parameter of -e, -E is processed
-  if [ "${2}" = '-e' ] ; then
-    for(( i=0 ; i < ${#line} ; ++i )) ; do
-      if [ ${line:i:1} != - ] ; then
-        line=${line:i}
-        break
-      else
-        pref="${pref}-"
-      fi
-    done
+  local name value
+  local x_line
+  declare -a x_line
 
-    local value x_line
-    declare -a x_line
-    x_line=( ${line/=/ } )
+  x_line=( ${1/=/ } )
 
-    line="${x_line[0]/% /}"
-    line=$( echo "${line/% /}" | tr "[:lower:]" "[:upper:]" )
-    line=$( echo "${line}" | tr "-" "_" )
-    line=${line//QC/QA}
+  name=$( echo "${x_line[0]/% /}" | tr "[:lower:]" "[:upper:]" )
+  name=$( echo "${name}" | tr "-" "_" )
+  name=${name//QC/QA}
 
-    value=
-    if [ ${#x_line[*]} -gt 1 ] ; then
-      value="=${x_line[1]/% /}"
-    fi
-
-    arg=${pref}${line}${value}
+  value=
+  if [ ${#x_line[*]} -gt 1 ] ; then
+    value="=${x_line[1]/% /}"
   fi
+
+  arg=${pref}${name}${value}
 
   return
 }
@@ -5143,54 +5130,72 @@ QA_FILE_EXECUTER=qa-exec-check
 rootPID=$$
 
 args=()
-for OPTARG in $* ; do
+for(( i=1 ; i <= $# ; ++i )) ; do
+  OPTARG=${!i}
+
   if [ ${OPTARG:0:2} = '-E' -o ${OPTARG:0:2} = '-e' ] ; then
+     optargs[${#optargs[*]}]='-e'
+
      if [ ${#OPTARG} -gt 2 ] ; then
        if [ ${OPTARG:2:1} = '_' -o ${OPTARG:2:1} = '-' ] ; then
-         optargs=( -e ${OPTARG:3} )
+         optargs[${#optargs[*]}]=${OPTARG:3}
        else
-         optargs=( -e ${OPTARG:2} )
+         optargs[${#optargs[*]}]=${OPTARG:2}
        fi
-     else
-       optargs=( -e )
-       continue
      fi
   else
      optargs=( ${optargs[*]} ${OPTARG} )
   fi
+done
 
-  for arg in ${optargs[*]} ; do
-    test ${arg} = '-h' -o ${arg} = '--help' \
-        && . $QA_SRC/scripts/qa-help
-    test ${arg} = '--debug' && set -x
+for(( j=0 ; j < ${#optargs[*]} ; ++j )) ; do
+    arg=${optargs[j]}
 
-    tr_option $arg $prev_opt
-    OPTNAME=${arg%%=*}
-
-    if [ ${OPTNAME} = DEBUG -o ${OPTNAME} = DEBUG_M ] ; then
+    if [ ${arg} = '-h' -o ${arg} = '--help' ] ; then
+       . $QA_SRC/scripts/qa-help  # exit 1
+    elif [ ${arg} = '--debug' ] ; then
        set -x
-    elif [ "${OPTNAME}" = EXAMPLE ] ; then
-      QA_EXAMPLE=t
-    elif [ ${OPTNAME} = CONFIG_FILE ] ; then
-      export CONFIG_FILE=${OPTARG#*=}
-    elif [ ${OPTNAME:0:7} = INSTALL -o ${OPTNAME:0:7} = install ] ; then
-      args[${#args[*]}]=--${arg}
-      continue
-    elif [ ${OPTNAME} = QA_CONFIG ] ; then
-      QA_CONFIG=${OPTARG#*=}
-    elif [ ${OPTNAME} = QA_TABLES ] ; then
-      QA_TABLES=${OPTARG#*=}
-    elif [ ${OPTNAME} = QA_SRC ] ; then
-      QA_SRC=${OPTARG#*=}
-    elif [ ${OPTNAME} = WORK ] ; then
-      QA_RESULTS=${OPTARG#*=}
-      arg="QA_RESULTS=${OPTARG#*=}"
+    elif [ ${arg} = '-f' ] ; then
+       args[${#args[*]}]='-f'
+
+       j=$((j+1))
+       arg=${optargs[j]}
+       if [ ${arg//\/} != ${arg} ] ; then
+          cd ${arg%/*} &> /dev/null
+          arg=${PWD}/${arg##*/}
+          cd - &> /dev/null
+       fi
+    fi
+
+    if [ $arg = '-e' ] ; then
+      j=$((j+1))
+      arg=${optargs[j]}
+
+      tr_option $arg
+      OPTNAME=${arg%%=*}
+
+      if [ ${OPTNAME} = DEBUG -o ${OPTNAME} = DEBUG_M ] ; then
+         set -x
+      elif [ "${OPTNAME}" = EXAMPLE ] ; then
+        QA_EXAMPLE=t
+      elif [ ${OPTNAME} = CONFIG_FILE ] ; then
+        export CONFIG_FILE=${OPTARG#*=}
+      elif [ ${OPTNAME:0:7} = INSTALL -o ${OPTNAME:0:7} = install ] ; then
+        args[${#args[*]}]=--${arg}
+        continue
+      elif [ ${OPTNAME} = QA_CONFIG ] ; then
+        QA_CONFIG=${OPTARG#*=}
+      elif [ ${OPTNAME} = QA_TABLES ] ; then
+        QA_TABLES=${OPTARG#*=}
+      elif [ ${OPTNAME} = QA_SRC ] ; then
+        QA_SRC=${OPTARG#*=}
+      elif [ ${OPTNAME} = WORK ] ; then
+        QA_RESULTS=${OPTARG#*=}
+        arg="QA_RESULTS=${OPTARG#*=}"
+      fi
     fi
 
     args[${#args[*]}]=${arg}
-    prev_opt=${arg}
-  done
-  optargs=()
 done
 
 test ${#args[*]} -eq 0 && args[0]='--help'
