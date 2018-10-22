@@ -5193,6 +5193,8 @@ for OPTARG in $* ; do
   optargs=()
 done
 
+test ${#args[*]} -eq 0 && args[0]='--help'
+
 # HOME/.qa-dkrz/config.txt by default
 . ${QA_SRC}/scripts/getConfigFile
 

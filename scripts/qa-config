@@ -1860,8 +1860,8 @@ do
   esac
 done
 
-if [ ${isHelp:-f} = t ] ; then
-  . $QA_SRC/scripts/qa-help
+if [ ${isHelp} ] ; then
+  . $QA_SRC/scripts/qa-help  # exit 1
 fi
 
 # may be overwritten by configuration file or command-line
