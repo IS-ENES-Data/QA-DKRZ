@@ -225,10 +225,32 @@ class QaConfig(object):
             args.SHOW_CALL = True
 
         if args.AUTO_UP     != None: _ldo['AUTO_UP']      = args.AUTO_UP
+        if args.CMD_UPDATE  != None: _ldo['CMD_UPDATE']   = args.CMD_UPDATE
         if args.CONFIG_FILE != None: _ldo['CONFIG_FILE']  = args.CONFIG_FILE
         if args.QA_TABLES   != None: _ldo['QA_TABLES']    = args.QA_TABLES
-        if args.TASK        != None: _ldo['TASK']         = args.TASK
-        if args.CMD_UPDATE  != None: _ldo['CMD_UPDATE']   = args.CMD_UPDATE
+
+        if args.TASK        != None:
+            # conversion of relative paths, if any
+            head, tail = os.path.split(args.TASK)
+            if len(head):
+                if args.TASK[0:1] != '/':
+                    x_task = os.path.join(os.getcwd(), args.TASK).split('/')
+                    p_task='/'
+                    for i in range(1,len(x_task)):
+                        x = x_task[i]
+                        if x[0:2] == '..':
+                            p_task, tail = os.path.split(p_task)
+                        elif x[0:1] == '.':
+                            pass
+                        else:
+                            p_task = os.path.join(p_task, x)
+                    else:
+                        args.TASK = p_task
+                elif len(args.TASK) == 1:
+                    print "Error: task file must not be '/'"
+                    sys.exit(1)
+
+            _ldo['TASK'] = args.TASK
 
         if args.DRYRUN:              _ldo['DRY_RUN']        = True
         if args.NEXT  > 0:
