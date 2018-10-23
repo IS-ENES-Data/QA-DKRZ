@@ -1968,6 +1968,7 @@ do
           installArgs+="${--OPTARG},"
 
         elif [ "${OPTNAME}" = INSTALL ] ; then
+          isInstall=t
           opts=( ${OPTVAL//,/ } )
 
           for opt in ${opts[*]} ; do
@@ -2001,12 +2002,15 @@ do
           setKWL PROJECT_AS=${OPTVAL}
 
         elif [ "${OPTNAME}" = SHIP ] ; then
+          isInstall=t
           installArgs+="--ship=${OPTVAL}"
 
         elif [ "${OPTNAME}" = UNSHIP ] ; then
+          isInstall=t
           installArgs+="--unship"
 
         elif [ "${OPTNAME:0:2}" = UP ] ; then
+          isInstall=t
           installArgs+="--up,"
 
         elif [ "${OPTNAME}" = VERSION ] ; then
@@ -2031,7 +2035,7 @@ done
 
 test ${#PROVIDED_FIELS[*]} -gt 0 && setKWL PROVIDED_FILES=${PROVIDED_FILES[*]// /,}
 
-if [ ${installArgs} ] ; then
+if [ ${isInstall:-f} = t -a ${installArgs} ] ; then
    test ${DEBUG_CONF} && installArgs="--debug,${installArgs}"
    setKWL INSTALL_ARGS="${installArgs}"
 fi
