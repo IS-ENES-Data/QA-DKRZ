@@ -2035,7 +2035,7 @@ done
 
 test ${#PROVIDED_FIELS[*]} -gt 0 && setKWL PROVIDED_FILES=${PROVIDED_FILES[*]// /,}
 
-if [ ${isInstall:-f} = t -a ${installArgs} ] ; then
+if [ ${isInstall:-f} = t -a ${#installArgs[*]} -gt 0 ] ; then
    test ${DEBUG_CONF} && installArgs="--debug,${installArgs}"
    setKWL INSTALL_ARGS="${installArgs}"
 fi
