@@ -433,7 +433,10 @@ Ensemble::getTimes(std::string &str, bool isFNameAlignment)
         mmb.nc.close();
 
         if( retVal == -1 )
+        {
+           isNoRec=true;
            return 0;  // fixed file
+        }
         else if( retVal == 4 )
            isNoRec=true;
     }
@@ -1165,6 +1168,7 @@ int
 SyncFiles::printTimelessFile(std::string &str)
 {
    // true below means: print only marked entries
+   int retVal;
 
    if( ensemble->sz > 1 )
    {  // occurence within an ensemble of files: error
@@ -1174,25 +1178,28 @@ SyncFiles::printTimelessFile(std::string &str)
      // More than a single file is an error; output filenames
      ensemble->enablePrintOnlyMarked();
      str = ensemble->getOutput() ;
-     return 10;
+     retVal=10;
    }
    else if( ensemble->sz == 1 )
    {
       if( ensemble->member[0]->state.size() )
       {
         ensemble->enablePrintOnlyMarked();
-        str = ensemble->getOutput() ;
-        return 3;  // a fixed field file, but with error
+        retVal=3;  // a fixed field file, but with error
       }
       else
-        return 4;  // a fixed field file
+        retVal=4;  // a fixed field file
+
+      str = ensemble->getOutput() ;
    }
    else
    {
       ensemble->enablePrintOnlyMarked();
       str = ensemble->getOutput() ;
-      return 3 ;  // unspecific error
+      retVal=3 ;  // unspecific error
    }
+
+   return retVal ;
 }
 
 void
@@ -1273,10 +1280,9 @@ SyncFiles::run(void)
   {
     returnValue = printTimelessFile(str) ;
     if( str.size() )
-    {
       std::cout << str ;
-      return returnValue ;
-    }
+
+    return returnValue ;
   }
 
   // Check for ambiguities, return 0 for PASS.
