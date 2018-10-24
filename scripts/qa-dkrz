@@ -5168,6 +5168,7 @@ for(( j=0 ; j < ${#optargs[*]} ; ++j )) ; do
     fi
 
     if [ $arg = '-e' ] ; then
+      args[${#args[*]}]='-e'
       j=$((j+1))
       arg=${optargs[j]}
 
