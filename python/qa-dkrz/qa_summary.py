@@ -43,20 +43,35 @@ class LogSummary(object):
 
         # just to have them defined in case of an error
         capt=''
-        curr_capt=''
+        capt_group=[]
         impact=''
         tag=''
 
         words = blk[i+1].lstrip(' -').split(None,1)
         if words[0] == 'annotation:':
             capt = words[1]
-            pos0=capt.find('<')
-            if pos0 > -1:
-                pos1=capt.find('>')
-                if pos1 > -1:
-                    curr_capt  = capt[0:pos0+1]
-                    curr_capt += '*'
-                    curr_capt += capt[pos1:]
+
+            # possible generalisations by grouping <*>
+            p1=0
+            p0=capt.find('<',p1)
+
+            while True:
+                if p0 == -1:
+                    break
+
+                if len(capt_group):
+                    s_0 = capt_group[-1]
+                else:
+                    s_0 = capt
+
+                p0=s_0.find('<',p1)
+                if p0 > -1:
+                    p1=s_0.find('>',p0+1)
+                    if p1 > -1:
+                        capt_group.append(s_0[0:p0+1])
+                        capt_group[-1] += '*'
+                        capt_group[-1] += s_0[p1:]
+                        p0 = p1
 
             i=i+1
 
@@ -83,40 +98,42 @@ class LogSummary(object):
 
         # find groups of variables with the same annotation.
         # If found, then <var-name> is replaced by <*>
-        test_capt=capt
-
-        for test_count in range(2):
-
+        for tc in range(len(capt_group)):
             # try for a var-group
             is_group=False
             is_break=False
             for ig in range(ix):
-                if self.annot_capt[ig] == capt:
-                    is_break=True
-                    break
+                prev_capt=''
+                p0=0
+                p1=0
+                while True:
+                    p0=self.annot_capt[ig].find('<',p1)
+                    if p0 == -1:
+                        break
 
-                p0=self.annot_capt[ig].find('<')
-                if p0 > -1:
-                    p1=self.annot_capt[ig].find('>')
+                    p1=self.annot_capt[ig].find('>',p0+1)
                     if p1 > -1:
                         if self.annot_capt[ig].find('<*>') == -1:
-                            prev_capt  = self.annot_capt[ig][0:p0+1]
-                            prev_capt += '*'
-                            prev_capt += self.annot_capt[ig][p1:]
+                            s_0=self.annot_capt[ig]
+                            if len(prev_capt):
+                                for prev in range(tc):
+                                    prev_capt += s_0[p1:p0+1]
+                                    prev_capt += '*'
+                                else:
+                                    prev_capt += s_0[p1:]
                         else:
                             prev_capt = self.annot_capt[ig]
 
-                        if prev_capt == test_capt:
-                            if capt != test_capt:
-                                self.annot_capt[ig] = prev_capt
-                            capt = test_capt
-                            is_group=True
-                            break
+                if p1:  # also True for negative values
+                    if prev_capt == capt_group[tc]:
+                        if capt != capt_group[tc]:
+                            self.annot_capt[ig] = prev_capt
+                        capt = capt_group[tc]
+                        is_group=True
+                        break
 
             if is_break or is_group:
                 break
-
-            test_capt=curr_capt
 
         # the sub-temporal range of a given variable (and path)
         try:
