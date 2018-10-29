@@ -677,7 +677,7 @@ initLog()
 
   sTxt[$((ix++))]="3events:"
   sTxt[$((ix++))]="3 - event:"
-  sTxt[$((ix++))]="7annotation: \'${y_caption}\'"
+  sTxt[$((ix++))]="7annotation: ${y_caption}"
   sTxt[$((ix++))]="7impact: ${y_impact}"
   sTxt[$((ix++))]="7tag: ${y_tag}"
 
@@ -923,7 +923,7 @@ parseKey()
   test $# -gt 0 && key=$1
 
   if [ ${key} = CHECK ] ; then
-    sTxt[${#sTxt[*]}]="3conclusion: \'${mess}\'"
+    sTxt[${#sTxt[*]}]="3conclusion: ${mess}"
 
     # checksum, creation_date and tracking_id, if available
     getChecksum

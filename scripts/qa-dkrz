@@ -3171,9 +3171,9 @@ initLog()
   sTxt[$((ix++))]="3conclusion: FAIL"
   sTxt[$((ix++))]="3events:"
   sTxt[$((ix++))]="3 - event:"
-  sTxt[$((ix++))]="7annotation: \'${y_caption}\'"
+  sTxt[$((ix++))]="7annotation: ${y_caption}"
   sTxt[$((ix++))]="7impact: ${y_impact}"
-  sTxt[$((ix++))]="7tag: \'${y_tag}\'"
+  sTxt[$((ix++))]="7tag: ${y_tag}"
 
   y_meta_data=
   y_time_values=
