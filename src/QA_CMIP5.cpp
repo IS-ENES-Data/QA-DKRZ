@@ -272,7 +272,7 @@ DRS_CV::checkFilenameEncoding(Split& x_filename, struct DRS_CV_Table& drs_cv_tab
     {
       if( notes->inq( keys[i], "DRS") )
       {
-        (void) notes->operate(capt[i],text[i]) ;
+        (void) notes->operate(capt[i]+text[i]) ;
         notes->setCheckStatus(drsF, pQA->n_fail);
       }
     }
@@ -844,7 +844,7 @@ DRS_CV::findFN_faults(Split& drs, Split& x_e,
 
     if( !(drs[j] == t || t == n_ast) )
     {
-      capt  = "Filename: DRS failure";
+      capt  = "DRS (filename): ";
       text  = " DRS item " + hdhC::tf_assign(x_e[j], drs[j]);
       text += " vs. global attribute " + hdhC::tf_assign(cvMap[x_e[j]], t) ;
 
