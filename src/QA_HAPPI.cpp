@@ -909,7 +909,7 @@ DRS_CV::findPath_faults(Split& drs, Split& x_e,
             continue;
         }
 
-        text += " failed for " + hdhC::tf_assign(x_e[j],t) ;
+        text += " failed for " + x_e[j] + hdhC::tf_val(t);
         text += ", found" + hdhC::tf_val(drs[i]) + " in the path" ;
       }
 

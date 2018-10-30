@@ -1708,7 +1708,7 @@ DRS_CV::findPath_faults(Split& drs, Split& x_e,
             text = " probably" + hdhC::tf_val(x_e[j]) ;
           else
           {
-            text += " failed for " + hdhC::tf_assign(x_e[j],t) ;
+            text += " failed for " + x_e[j] + hdhC::tf_val(t);
             text += ", found" + hdhC::tf_val(drs[i]) + " in the path" ;
           }
 
