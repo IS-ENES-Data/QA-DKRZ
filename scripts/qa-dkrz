@@ -3191,11 +3191,14 @@ initLog()
   sTxt[$((ix++))]="3status: ${y_status:-0}"
   y_status=
 
-  local out=${QA_RESULTS}/data/${subPath}/qa_lock_${1}.txt
-  echo "Path: ${nextPath}"                  > $out
-  echo "File: ${1}"                        >> $out
-  echo "${impact}-${tag}: ${y_caption}" >> $out
+  #local out=${QA_RESULTS}/data/${subPath}/qa_lock_${1}.txt
+  #echo "Path: ${nextPath}"                  > $out
+  #echo "File: ${1}"                        >> $out
+  #echo "${impact}-${tag}: ${y_caption}" >> $out
 
+  mkdir -p ${QA_RESULTS}/data/${subPath}
+
+  log out=${QA_RESULTS}/data/${subPath}/qa_lock_${1}.txt
   log
 
   sendSubject="Annotation: ${y_caption}"
@@ -3590,16 +3593,6 @@ log()
     return
   fi
 
-  local out
-  if [ ${LOG_PATH_INDEX[0]} ] ; then
-    if ! getExperimentName P ${subPath} ; then
-      getExperimentName F ${netxFile[0]}
-    fi
-  else
-    getExperimentName F ${netxFile[0]}
-  fi
-  out=$LOG_FNAME_DIR/${CURR_LOG_FNAME}.log
-
   s_out="${s_out} - date: $( date +'%FT%T' )"
 
 #  if [ ${QA_HOST} = $HOSTNAME ] ; then
@@ -3659,6 +3652,26 @@ log()
     s_out="${s_out}${str}"
 
   done
+
+  local i out tmp
+
+  for(( i=1 ; i <= $# ; ++i )) ; do
+     tmp=${!i}
+     if [ ${tmp%%=*} = 'out' ] ; then
+        out=${tmp#out=}
+     fi
+  done
+
+  if [ ! ${out} ] ; then
+    if [ ${LOG_PATH_INDEX[0]} ] ; then
+      if ! getExperimentName P ${subPath} ; then
+        getExperimentName F ${netxFile[0]}
+      fi
+    else
+      getExperimentName F ${netxFile[0]}
+    fi
+    out=$LOG_FNAME_DIR/${CURR_LOG_FNAME}.log
+  fi
 
   echo -e "${s_out}" >> $out
 
