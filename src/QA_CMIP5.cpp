@@ -1936,7 +1936,7 @@ CMOR::checkMIPT_dim_type(
   if( notes->inq( key, vMD.var->name) )
   {
     std::string capt(QA_Exp::getCaptionIntroDim(f_DMD, n_type ));
-    capt += "CMOR table requests,";
+    capt += "CMOR table requests";
     capt += hdhC::tf_val(t_DMD.attMap[n_type]);
     capt += ", found";
     capt += hdhC::tf_val(f_DMD.attMap[n_type]);
