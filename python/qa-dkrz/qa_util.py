@@ -761,45 +761,14 @@ def get_QA_SRC(path):
     #   b) python/qa-dkrz/qa-dkrz.py
     # return: isConda, QA_SRC
 
-    # expand . and .., but keep files .asdf or ..bsdf etc.
-    npItems=os.getcwd()
-    if len(npItems) == 1:
-        # '/'
-        npItems=[' ']
-    elif len(path) and path[0] == '/':
-        # ignore os.getcwd()
-        npItems=[]
-    else:
-        npItems=npItems.split('/')
-
-    pItems=path.split('/')
-
-    for ix in range(len(pItems)):
-        if len(pItems[ix]) == 0:
-            pass
-        elif len(pItems[ix]) == 1 and pItems[ix] == '.':
-            # .
-            pass
-        elif len(pItems[ix]) == 2 and pItems[ix] == '..':
-            # ..
-            if len(npItems) == 1:
-                # note npItems[0] represents '/'
-                print 'path: impossible to apply .. at /'
-                sys.exit(1)
-
-            del npItems[-1]
-        else:
-            npItems.append(pItems[ix])
-
-    path='/'
-    for itm in npItems:
-        path=os.path.join(path, itm)
+    path = resolve_relative_path(path)
 
     head, tail = os.path.split(path)
     if len(head) == 0:
         target=os.path.join(os.getcwd(), tail)
         return get_QA_SRC(target)
 
+    npItems = path.split('/')
     if 'envs' in npItems and 'opt' in npItems:
         isConda=True
     else:
@@ -900,6 +869,47 @@ def mk_list(items):
        return items
 
    return [items]
+
+
+def resolve_relative_path(path):
+    if path[0] == '/':
+        return path
+
+    # expand . and .., but keep files .asdf or ..bsdf etc.
+    npItems=os.getcwd()
+    if len(npItems) == 1:
+        # '/'
+        npItems=[' ']
+    elif len(path) and path[0] == '/':
+        # ignore os.getcwd()
+        npItems=[]
+    else:
+        npItems=npItems.split('/')
+
+    pItems=path.split('/')
+
+    for ix in range(len(pItems)):
+        if len(pItems[ix]) == 0:
+            pass
+        elif len(pItems[ix]) == 1 and pItems[ix] == '.':
+            # .
+            pass
+        elif len(pItems[ix]) == 2 and pItems[ix] == '..':
+            # ..
+            if len(npItems) == 1:
+                # note npItems[0] represents '/'
+                print 'path: impossible to apply .. at /'
+                sys.exit(1)
+
+            del npItems[-1]
+        else:
+            npItems.append(pItems[ix])
+
+    abs_path='/'
+    for itm in npItems:
+        abs_path=os.path.join(abs_path, itm)
+
+    return abs_path
 
 
 def rm_r(*args):

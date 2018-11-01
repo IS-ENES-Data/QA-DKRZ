@@ -812,6 +812,8 @@ class LogSummary(object):
             print ('qa_summary: ' + f_log + ' : no such file')
             return
 
+        self.logfile = f_log
+
         # extraction of annotations and atomic time ranges from log-files
         self.log_path, self.log_name = os.path.split(f_log)
         self.log_name = self.log_name[0:-4]
@@ -1049,6 +1051,7 @@ class LogSummary(object):
 
         fd.write('{\n')
         fd.write(tab + '"QA_conclusion": "' + self.conclusion + '",\n')
+        fd.write(tab + '"QA_logfile": "' + self.logfile + '",\n')
         fd.write(tab + '"project": "' +  self.project + '",\n')
 
 
@@ -1190,4 +1193,7 @@ if __name__ == '__main__':
     f_logs = summary.prelude(args)
 
     for f_log in f_logs:
+        # logfile with absolute path
+        f_log = qa_util.resolve_relative_path(f_log)
+
         summary.run(f_log) # prelude returns always a list
