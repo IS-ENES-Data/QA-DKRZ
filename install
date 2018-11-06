@@ -397,23 +397,24 @@ update()
   if [ ${isUpQA} ] ; then
     # search updates after a specified number of days; default: once a day
     if [ ${isCondaInstance} ] ; then
-       test ! ${CONDA_QA_ENV} && \
-         . ${QA_SRC}/scripts/parseConfigFile CONDA_QA_ENV
+       :
+       #test ! ${CONDA_QA_ENV} && \
+       #  . ${QA_SRC}/scripts/parseConfigFile CONDA_QA_ENV
 
-       if [ ${isUpQA:-f} != f -a -w ${QA_SRC} ] ; then
-          if update_CONDA_env "${CONDA_QA_NAME}" "${CONDA_QA_CHANNELS}" \
-                      "${CONDA_PATH}"   "${CONDA_QA_ENV:-qa-dkrz}" ; then
+       #if [ ${isUpQA:-f} != f -a -w ${QA_SRC} ] ; then
+       #   if update_CONDA_env "${CONDA_QA_NAME}" "${CONDA_QA_CHANNELS}" \
+       #               "${CONDA_PATH}"   "${CONDA_QA_ENV:-qa-dkrz}" ; then
 
-            . ${QA_SRC}/scripts/parseConfigFile NEXT_QA_UPDATE ${isForce:+--force}
-            . ${QA_SRC}/scripts/parseConfigFile \
-                 CONDA_QA_ENV=${CONDA_QA_ENV:-${CONDA_PATH%/bin/conda}/envs/qa-dkrz}
+       #     . ${QA_SRC}/scripts/parseConfigFile NEXT_QA_UPDATE ${isForce:+--force}
+       #     . ${QA_SRC}/scripts/parseConfigFile \
+       #          CONDA_QA_ENV=${CONDA_QA_ENV:-${CONDA_PATH%/bin/conda}/envs/qa-dkrz}
 
-            # updates the QA_CONDA_REVISION entry in the config-file
-            # $QA_SRC/scripts/getVersion --force ${DEBUG} &> /dev/null
-            . ${QA_SRC}/scripts/parseConfigFile \
-                 QA_VERSION=$( python $QA_SRC/python/qa-dkrz/qa_version.py )
-          fi
-        fi
+       #     # updates the QA_CONDA_REVISION entry in the config-file
+       #     # $QA_SRC/scripts/getVersion --force ${DEBUG} &> /dev/null
+       #     . ${QA_SRC}/scripts/parseConfigFile \
+       #          QA_VERSION=$( python $QA_SRC/python/qa-dkrz/qa_version.py )
+       #   fi
+       # fi
     elif [ -d ${QA_SRC}/.git -a -w ${QA_SRC} ] ; then
       test -w ${QA_SRC} && update_QA_SRC
     fi
