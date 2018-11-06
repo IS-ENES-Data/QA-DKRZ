@@ -2599,10 +2599,10 @@ QA_Time::testPeriod_regularBounds(std::vector<std::string> &sd, Date** pDatesOri
      if( sd[0].size() < 5 )
      {
          //pDates[0]->shift("beg,yr");
-         pDates[1]->shift("end,yr");
+         pDates[1]->shift("end,y");
 
-         pDates[2]->shift("beg,yr");
-         pDates[3]->shift("end,yr");
+         pDates[2]->shift("beg,y");
+         pDates[3]->shift("end,y");
      }
      else if( sd[0].size() < 7 )
      {
