@@ -2598,7 +2598,7 @@ QA_Time::testPeriod_regularBounds(std::vector<std::string> &sd, Date** pDatesOri
      // sd[0] and sd[1] are of equal size.
      if( sd[0].size() < 5 )
      {
-         //pDates[0]->shift("beg,yr");
+         //pDates[0]->shift("beg,y");
          pDates[1]->shift("end,y");
 
          pDates[2]->shift("beg,y");
