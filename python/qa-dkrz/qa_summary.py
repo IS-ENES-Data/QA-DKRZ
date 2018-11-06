@@ -633,16 +633,17 @@ class LogSummary(object):
                 sz_max = sz
 
             word = name.rsplit('_', 2)
-            for j in range(len(frqs)):
-                if word[2] == frqs[j]:
-                    frqs_id[j].append(i)
-                    break
-            else:
-                # append new lists
-                frqs.append(word[2])
-                frqs_id.append([i])
-                frqs_beg.append(self.atomicBeg[i])
-                frqs_end.append(self.atomicEnd[i])
+            if len(word) > 2:
+                for j in range(len(frqs)):
+                    if word[2] == frqs[j]:
+                        frqs_id[j].append(i)
+                        break
+                else:
+                    # append new lists
+                    frqs.append(word[2])
+                    frqs_id.append([i])
+                    frqs_beg.append(self.atomicBeg[i])
+                    frqs_end.append(self.atomicEnd[i])
 
         # find the most extended begin and end, respectively, for each frequency
         for j in range(len(frqs)):
