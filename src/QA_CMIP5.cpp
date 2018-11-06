@@ -4359,7 +4359,7 @@ QA_Exp::init(std::vector<std::string>& optStr)
 
      if( i == vNames.size() )
      {
-       std::string key("1_3");
+       std::string key("1_3b");
        if( notes->inq( key, pQA->fileStr) )
        {
          std::string capt("variable ");
