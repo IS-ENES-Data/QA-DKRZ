@@ -43,8 +43,8 @@ return:  output: \n
   3      Unspecific error.\n
   4      No or invalid time properties; output filename.\n
   5      Invalid time data.\n
-  6      Could not open a NetCDF data file.\n
-  7      Could not open a NetCDF QA file.\n
+  6      Could not open NetCDF data file.\n
+  7      Could not open NetCDF QA file.\n
 >10      Ambiguity test failed (values accumulate):\n
   +1        misaligned dates in filenames \n
   +2        modification time check failed \n
@@ -429,7 +429,7 @@ Ensemble::getTimes(std::string &str, bool isFNameAlignment)
     }
     else
     {
-        int retVal = getTimes_NC(mmb);
+        retVal = getTimes_NC(mmb);
         mmb.nc.close();
 
         if( retVal == -1 )
@@ -1024,18 +1024,9 @@ Member::openNc(int ncid, std::string file)
 {
   if( ncid == -1 )
   {
-    try
-    {
-      if( ! nc.open(file.c_str()) )
-        throw "Exception";
-    }
-    catch (char const*)
-    {
-      // it is a feature for files built by pattern, if the
-      // time frame extends the range of files.
-      // Caller is responsible for trapping errors
-      return false;
-    }
+      // false: noExitOnError
+      if( ! nc.open(file.c_str(),"",false) )
+         return false;
   }
 
   return true;

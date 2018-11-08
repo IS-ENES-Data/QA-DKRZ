@@ -2166,7 +2166,7 @@ getNextVariable()
     return 0
   fi
 
-  if [ $status -eq 3 -o $status -eq 5 ] ; then
+  if [ $status -eq 3 -o $status -eq 5 -o $status -eq 6 ] ; then
 #    if [ ${PROGRESS_BAR} ] ; then
       local num=${#nV_fls[*]}
 #    fi
@@ -2177,9 +2177,12 @@ getNextVariable()
     if [ $status -eq 3 ] ; then
       y_caption='Unspecific failure across sub-temporal files'
       y_tag=M5
-    else
+    elif [ $status -eq 5 ] ; then
       y_caption='file(s) with invalid time data'
       y_tag=M9
+    else
+      y_caption='Invalid NetCDF file'
+      y_tag=M0
     fi
 
     y_meta_data=OMIT
@@ -3198,7 +3201,7 @@ initLog()
 
   mkdir -p ${QA_RESULTS}/data/${subPath}
 
-  log out=${QA_RESULTS}/data/${subPath}/qa_lock_${1}.txt
+  log --keep out=${QA_RESULTS}/data/${subPath}/qa_lock_${1}.txt
   log
 
   sendSubject="Annotation: ${y_caption}"
@@ -3659,6 +3662,8 @@ log()
      tmp=${!i}
      if [ ${tmp%%=*} = 'out' ] ; then
         out=${tmp#out=}
+     elif [ ${tmp%%=*} = '--keep' ] ; then
+       isKeep=t
      fi
   done
 
@@ -3675,9 +3680,7 @@ log()
 
   echo -e "${s_out}" >> $out
 
-  test "$1" == '--keep' && return
-
-  unset sTxt
+  test ! ${isKeep} && unset sTxt
 
   return
 }
