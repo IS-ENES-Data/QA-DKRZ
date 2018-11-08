@@ -472,9 +472,9 @@ Annotation::inq( std::string key, std::string name, std::string mode)
   isMultipleTags=true;
   isDescriptionFromTable=false;
   isAccumText=false;
-  isApply_MORE=true;
+  isApply_MORE=false;
   if( key[0] == 'R' && hdhC::isDigit(key.substr(1)) )
-      isApply_MORE=false;
+      isApply_MORE=true;
 
   if( mode.size() )
   {
