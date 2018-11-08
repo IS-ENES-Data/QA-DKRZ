@@ -239,7 +239,7 @@ Consistency::check(Variable &dataVar, std::string entryID)
 
   // test for auxiliaries missing in the file.
   testAux("missing",
-          vvs_f_aName, vvs_f_aVal, vvs_t_aName, vvs_t_aVal);
+          vvs_t_aName, vvs_t_aVal, vvs_f_aName, vvs_f_aVal);
 
   // test for new auxiliaries introduced by the file
   testAux("new",
@@ -379,7 +379,7 @@ Consistency::getValues(Variable &var, std::string &s)
       }
    }
 
-   s += ",values_2=";  // after the change of checksum calculation on 2017-03-30
+   s += ",checksum=";
    s += hdhC::double2String(ck, "p=|adj,float") ;
 
    return;
@@ -478,20 +478,16 @@ Consistency::testAttributes( std::string& varName,
 
   for( f_ix=1 ; f_ix < vs_f_aName.size() ; ++f_ix )
   {
-    bool notValue=false;
+    bool isDifferent=false;
     if( hdhC::isAmong(vs_f_aName[f_ix], vs_t_aName, t_ix) )
     {
         if( vs_f_aVal[f_ix] != vs_t_aVal[t_ix] )
-          notValue=true;
+          isDifferent=true;
     }
 
-    else if( vs_f_aName[f_ix] != "values_2" )
+    else if( vs_f_aName[f_ix] != "checksum" )
     {
-      // note that "values" is the name for checksums calculated
-      // by the obsolete method; the current one is "values_2"
-      // values and values2 are not compared.
-
-      // aditional attribute in the current sub-temp file
+      // additional attribute in the current sub-temp file
       std::string key("8_6");
       std::string capt(hdhC::tf_att(varName, vs_f_aName[f_ix])) ;
       capt += "is new across ";
@@ -514,11 +510,21 @@ Consistency::testAttributes( std::string& varName,
       }
     }
 
-    if(notValue)
+    if(isDifferent)
     {
         std::string key("8_8");
-        std::string capt(hdhC::tf_att(varName, vs_f_aName[f_ix])) ;
+        std::string capt;
+
+        if( vs_f_aName[f_ix] == "checksum" )
+        {
+           capt = hdhC::tf_var(varName, hdhC::colon) ;
+           capt += "Checksum of layout or data ";
+        }
+        else
+           capt = hdhC::tf_att(varName, vs_f_aName[f_ix]) ;
+
         capt += "has changed across ";
+
         if( pQA->fileSequenceState == 's' || pQA->fileSequenceState == 'l' )
         {
             key += 'a';
@@ -529,7 +535,6 @@ Consistency::testAttributes( std::string& varName,
             key += 'b';
             capt += "experiments, now" ;
         }
-
 
         if( notes->inq(key, varName) )
         {
@@ -547,7 +552,7 @@ Consistency::testAttributes( std::string& varName,
   for( t_ix=1 ; t_ix < vs_t_aName.size() ; ++t_ix )
   {
     if( ! hdhC::isAmong(vs_t_aName[t_ix], vs_f_aName)
-            &&  vs_t_aName[t_ix] != "values")
+            &&  vs_t_aName[t_ix] != "checksum")
     {
       // aditional attribute in the current sub-temp file
       std::string key("8_7");
