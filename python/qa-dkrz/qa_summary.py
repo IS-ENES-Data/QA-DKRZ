@@ -139,6 +139,8 @@ class LogSummary(object):
             ix = len(self.annot_capt)
 
             self.annot_capt.append(capt)
+            self.annot_example_capt.append(capt)
+            self.annot_example_isGroup.append(False)
             self.annot_tag.append(tag)
             self.annot_impact.append(impact)
 
@@ -148,6 +150,9 @@ class LogSummary(object):
             self.annot_fName_dt_id.append([[self.dt_id]])
         else:
             # a registered annotation
+            if is_group and not self.annot_example_isGroup[ix]:
+                self.annot_example_isGroup[ix]=True
+
             # look for a group of
             # associated properties
             try:
@@ -849,6 +854,8 @@ class LogSummary(object):
         self.annot_fName_id=[]    # for each var involved
         self.annot_path_id=[]
         self.annot_fName_dt_id=[] # for each time interval of each var involved
+        self.annot_example_capt=[] # example for grouped annotations
+        self.annot_example_isGroup=[]   #
 
         # count total occurrences (good and bad)
         self.file_count=0
@@ -1148,6 +1155,10 @@ class LogSummary(object):
         capt = self.annot_capt[ix].strip("'")
         fd.write(3*tab + '"annotation": "' + capt + '"')
 
+        if self.annot_example_isGroup[ix]:
+            xmpl_capt=self.annot_example_capt[ix].strip("'")
+            fd.write(',\n' + 3*tab + '"example": "' + xmpl_capt + '"')
+
         if len(self.annot_tag[ix]):
             tag = self.annot_tag[ix].strip("'")
             fd.write(',\n' + 3*tab + '"tag": "' + tag + '"')
@@ -1174,6 +1185,9 @@ class LogSummary(object):
 
         fd.write('annotation: ' + capt + '\n')
 
+        if self.annot_example_isGroup[ix]:
+            fd.write('example: ' + self.annot_example_capt[ix].strip("'") + '\n')
+
         if len(self.annot_impact[ix]):
             fd.write('impact:     ' + impact + '\n')
 
@@ -1186,7 +1200,7 @@ if __name__ == '__main__':
     summary = LogSummary()
     args=[]
     for a in sys.argv[1:]:
-        if a == '--no-email':
+        if a == '--no-email' or a == '--no-mail':
             summary.no_email=True
         else:
             args.append(a)
