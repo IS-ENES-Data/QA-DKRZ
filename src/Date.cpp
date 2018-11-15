@@ -274,7 +274,7 @@ Date::clear(void)
 }
 
 std::string
-Date::convertFormattedDate(std::string sd)
+Date::convertFormattedDate(std::string sdd)
 {
   // be prepared for some short-cuts to be valid
   // (e.g. 1961 equiv. 1961-01 equiv. 1961-01-01)
@@ -282,46 +282,37 @@ Date::convertFormattedDate(std::string sd)
   // sharp by default.
 
   if( formattedRange.size() == 0 )
-    if( sd.find('-') < std::string::npos )
-       return sd;
+    if( sdd.find('-') < std::string::npos )
+       return sdd;
 
   // --> YYYYMMDDhhmmss[.deci]
-  sd = getFullyFormattedDateStr(sd) ;
+  //std::string iso("0000-01-01T00:00:00");
 
-  std::string iso("0000-01-01T00:00:00");
+  std::string iso;
+  if( ! getFullyFormattedDateStr(sdd, iso))
+  {
+     std::string text("Date::convertFormattedDate failed for ");
+     text += sdd;
+     exceptionError(text);
+  }
 
   // append decimal figures
   std::string dec;
   size_t pos;
-  if( (pos=sd.find('.')) < std::string::npos)
+  if( (pos=iso.find('.')) < std::string::npos)
   {
-    dec = sd.substr(pos) ;
-    sd = sd.substr(0,pos);
+    dec = iso.substr(pos) ;
+    iso = iso.substr(0,pos);
   }
 
   // way back in the past
   bool isMinus(false);
 
-  if( sd[0] == '-' )
+  if( iso[0] == '-' )
   {
      isMinus=true;
-     sd = sd.substr(1);
+     iso = iso.substr(1);
   }
-
-  // set dates of time periods
-  if( sd.size() > 3 )
-    iso.replace(0, 4, sd, 0, 4);
-  if( sd.size() > 5 )
-    iso.replace(5, 2, sd, 4, 2);
-  if( sd.size() > 7 )
-    iso.replace(8, 2, sd, 6, 2);
-
-  if( sd.size() > 9 )
-    iso.replace(11, 2, sd, 8, 2);
-  if( sd.size() > 11 )
-    iso.replace(14, 2, sd, 10, 2);
-  if( sd.size() > 13 )
-    iso.replace(17, 2, sd, 12, 2);
 
   // Apply maximum date ranges when enabled; times remain sharp.
   // Take into account individual settings 'Yx-Mx-...' with
@@ -462,29 +453,34 @@ Date::convertFormattedToISO_8601(double f)
 }
 
 std::string
-Date::convertFormattedToISO_8601(std::string str )
+Date::convertFormattedToISO_8601(std::string sdd )
 {
   // Convention: Date ISO 8601 Format: yyyy-mm-ddThh:mm:ss
   // different compositions of str0 are converted.
   // Note: yy means really yy A.D., not the century + yy
 
-  if( hdhC::isNumber(str) )
+  if( hdhC::isNumber(sdd) )
   {
-     double f = hdhC::string2Double(str);
+     double f = hdhC::string2Double(sdd);
      return convertFormattedToISO_8601(f);
   }
 
-  str = getFullyFormattedDateStr(str);
+  size_t pos;
+
+  std::string str ;
+  getFullyFormattedDateStr(sdd, str) ;
+  /*
+  if( ! getFullyFormattedDateStr(sdd, str))
+  {
+     std::string txt("Date::convertFormattedToIS_8601 failed for " + sdd);
+     exceptionError(txt);
+  }
+  */
 
   std::string iso;
 
   // convert 'T' into a blank
-  size_t pos;
   if( (pos=str.find('T')) < std::string::npos )
-     str[pos] = ' ';
-
-  // this is for yymmdd_hhmmss
-  if( (pos=str.find('_')) < std::string::npos )
      str[pos] = ' ';
 
   Split x_str(str);
@@ -849,10 +845,18 @@ Date::getDeciYear(double y, double mo, double d,
   return dYear ;
 }
 
-std::string
-Date::getFullyFormattedDateStr(std::string sd)
+bool
+Date::getFullyFormattedDateStr(std::string sd, std::string& str)
 {
-    std::string str;  // yyyymmddhhmmss.*
+    // [[[y]y]y]ymmddhhmmss.*  --> yyyy-mm-ddThh:mm:ss.*
+
+    // yymmdd_hh[mmss.f local] --> yymmddhh[mmss.f local]
+    size_t pos;
+    if( (pos=sd.find('_')) < std::string::npos )
+    {
+       std::string t(sd.substr(pos+1,sd.size()) );
+       sd = sd.substr(0,pos) + t ;
+    }
 
     bool isMinus=false;
     if(sd[0] == '-')
@@ -861,8 +865,53 @@ Date::getFullyFormattedDateStr(std::string sd)
       sd=sd.substr(1);
     }
 
+    std::string as_d[3] ;
+    as_d[1]="01";
+    as_d[2]="01";
+
+    std::string as_t[3] ;
+    as_t[0]="00";
+    as_t[1]="00";
+    as_t[2]="00";
+
     if( hdhC::isDigit(sd) )
-        str=sd;
+    {
+        // Y[Y[Y[YMM[DD[hh[mm[ss[.f]]]]]]]]
+        // this kind of coding is generally ambiguous;
+        // only cases YYYY, i.e. the common case of CMIP, also YMM.
+        int sz=sd.size();
+
+        if( sd.size() < 3 )
+          as_d[0] = sd ;
+        else
+        {
+          // now, yyyy is supposed
+          as_d[0] = sd.substr(0,4) ;   // <- yr
+
+          if( sd.size() > 6 )
+          {
+            as_d[1] = sd.substr(4, 2) ;  // <- mon
+
+            if( sd.size() > 8 )
+            {
+              as_d[2] = sd.substr(6,2) ;  // <- day
+
+              if( sd.size() > 10 )
+              {
+                as_t[0] = sd.substr(8,2) ;  // <- hr
+
+                if( sd.size() > 12 )
+                {
+                  as_t[1] = sd.substr(10,2) ;  // <- min
+
+                  if( sd.size() > 14 )
+                    as_t[2] = sd.substr(12,sz) ;  // <- sec.f
+                }
+              }
+            }
+          }
+        }
+    }
     else
     {
       size_t pos;
@@ -872,115 +921,101 @@ Date::getFullyFormattedDateStr(std::string sd)
       Split x_T(sd,'T');
       Split x_dash(x_T[0], '-');
 
-      // year
-      if( x_dash[0].size() == 1 )
-          str = "000";
-      else if( x_dash[0].size() == 2 )
-          str = "00";
-      else if( x_dash[0].size() == 3 )
-          str = "0" ;
-      else if( x_dash[0].size() > 4 )
-          return sd;
+      if( x_dash.size() == 0 || x_dash.size() > 3 )
+          return false;
 
-      str += x_dash[0];
+      // year
+      as_d[0] = x_dash[0] ;
 
       // month
       if( x_dash.size() > 1 )
       {
          if( x_dash[1].size() == 1 )
-          str += "0";
+           as_d[1] = "0"  + x_dash[1];
          else if( x_dash[1].size() > 2 )
-            return sd;
-
-         str += x_dash[1];
+            return false;
+         else
+           as_d[1] = x_dash[1];
       }
 
       // day
       if( x_dash.size() > 2 )
       {
          if( x_dash[2].size() == 1 )
-          str += "0";
+           as_d[2] = "0"  + x_dash[2];
          else if( x_dash[2].size() > 2 )
-            return sd;
-
-         str += x_dash[2];
+            return false;
+         else
+           as_d[2] = x_dash[2];
       }
 
       if( x_T.size() > 1 )
       {
-        Split x_colon(x_T[1], ':');
+         Split x_colon(x_T[1], ':');
 
-        if( x_colon[0].size() == 1 )
-           str = "0";
-        else if( x_colon[0].size() > 2 )
-           return sd;
+         if( x_colon.size() > 3 )
+            return false;
 
-        str += x_colon[0];
+         // hr
+         if( x_colon[0].size() == 1 )
+            as_t[0] = "0" + x_colon[0];
+         else if( x_colon[0].size() > 2 )
+            return false;
+         else
+            as_t[0] = x_colon[0];
 
         // min
-        if( x_colon.size() > 1 )
-        {
-           if( x_colon[1].size() == 1 )
-            str += "0";
-           else if( x_colon[1].size() > 2 )
-              return sd;
-
-           str += x_colon[2];
-        }
+         if( x_colon[1].size() == 1 )
+            as_t[1] = "0"  + x_colon[1];
+         else if( x_colon[1].size() > 2 )
+            return false;
+         else
+            as_t[1] = x_colon[1];
 
         // sec
         if( x_colon.size() > 2 )
         {
            if( (pos=x_colon[2].find('.')) < std::string::npos )
            {
-              if( pos == 1 )
-                str += "0";
-              if( pos > 1 )
-                return sd;
+              if( pos == 0 )
+                 as_t[2] = "00" + x_colon[2];
+              else if( pos == 1 )
+                 as_t[2] = "0" + x_colon[2];
+              else if( pos == 2 )
+                 as_t[2] = x_colon[2];
+              else
+                 return false;
            }
-           else if( x_colon[2].size() == 1 )
-               str += "0";
-
-           str += x_colon[2];
+           else
+           {
+              if( x_colon[2].size() == 1 )
+                 as_t[2] = "0" + x_colon[2];
+              else if( x_colon[2].size() > 2 )
+                 return false;
+              else
+                 as_t[2] = x_colon[2];
+           }
         }
       }
     }
 
-    if( isMinus )
-        str = "-" + str ;
-
-    // clear the string
-    size_t sz=str.size();
-
-    if( str.substr(sz-2) == "00" )
+    // right-fill with "0"
+    if( as_d[0].size() < 4 )
     {
-        // sec or min
-        sz-=2;
-        str = str.substr(0,sz);
-
-        if( str.substr(sz-2) == "00" )
-        {
-            // min
-            sz-=2;
-            str = str.substr(0,sz);
-
-            if( str.substr(sz-2) == "00" )
-            {
-                // hr
-                sz-=2;
-                str = str.substr(0,sz);
-            }
-        }
+      std::string s;
+      for( size_t i=as_d[0].size() ; i < 4 ; ++i )
+         s += '0' ;
+      as_d[0] = s + as_d[0] ;
     }
 
-    if( sz == 8 && str.substr(sz-4) == "0101" )
-        // yr
-        str = str.substr(0,sz-4);
-    else if( sz == 6 && str.substr(sz-2) == "01" )
-        // yr-mon
-        str = str.substr(0,sz-2);
+    if( isMinus )
+        as_d[0] = "-" + as_d[0] ;
 
-    return str;
+    str = as_d[0] + "-" + as_d[1] + "-" + as_d[2] ;
+    str += "T";
+    str += as_t[0] + ":" + as_t[1] + ":" + as_t[2] ;
+
+    return true;
 }
 
 double
@@ -1892,7 +1927,7 @@ Date::setDate( std::string str, std::string cal, std::string monLen)
   if( str.size() == 0 )
   {
      std::string text("Date::setDate(): empty string");
-     exceptionError( text.c_str() );
+     exceptionError(text);
   }
 
   if( cal.size() )

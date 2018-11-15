@@ -473,8 +473,8 @@ private:
   void   exceptionError(std::string );
 
   /*  double getDayLightST( void );*/
-  static std::string
-         getFullyFormattedDateStr(std::string);
+  static bool
+         getFullyFormattedDateStr(std::string, std::string&);
 
   static void
          getDayTime(double d, double *h, double *m, double *s);
