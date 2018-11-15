@@ -888,23 +888,23 @@ Date::getFullyFormattedDateStr(std::string sd, std::string& str)
           // now, yyyy is supposed
           as_d[0] = sd.substr(0,4) ;   // <- yr
 
-          if( sd.size() > 6 )
+          if( sd.size() > 4 )
           {
             as_d[1] = sd.substr(4, 2) ;  // <- mon
 
-            if( sd.size() > 8 )
+            if( sd.size() > 6 )
             {
               as_d[2] = sd.substr(6,2) ;  // <- day
 
-              if( sd.size() > 10 )
+              if( sd.size() > 8 )
               {
                 as_t[0] = sd.substr(8,2) ;  // <- hr
 
-                if( sd.size() > 12 )
+                if( sd.size() > 10 )
                 {
                   as_t[1] = sd.substr(10,2) ;  // <- min
 
-                  if( sd.size() > 14 )
+                  if( sd.size() > 12 )
                     as_t[2] = sd.substr(12,sz) ;  // <- sec.f
                 }
               }

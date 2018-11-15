@@ -659,6 +659,7 @@ QA_Time::initRelativeTime(std::string &units)
          double dtb = firstTimeBoundsValue[1] - firstTimeBoundsValue[0];
 
          prevTimeBoundsValue[0]=firstTimeBoundsValue[0] - dtb ;
+
          prevTimeBoundsValue[1]=firstTimeBoundsValue[0]  ;
        }
        else
@@ -685,10 +686,6 @@ QA_Time::initRelativeTime(std::string &units)
 void
 QA_Time::initResumeSession(void)
 {
-    // if files are synchronised, i.e. a file hasn't changed since
-    // the last qa, this will exit in member finally()
-   isNoProgress = sync();
-
    std::vector<double> dv;
 
    // Simple continuation.
@@ -726,12 +723,26 @@ QA_Time::initResumeSession(void)
         // the reference date of the first chunk, which is
         // stored in the qa-nc file
         refTimeOffset= d_x0.getSince( d_x1 );
+
+        // adjust current values
+        firstTimeValue += refTimeOffset ;
+        currTimeValue += refTimeOffset ;
+        lastTimeValue += refTimeOffset ;
+
+        firstTimeBoundsValue[0] += refTimeOffset ;
+        firstTimeBoundsValue[1] += refTimeOffset ;
+        lastTimeBoundsValue[0] += refTimeOffset ;
+        lastTimeBoundsValue[1] += refTimeOffset ;
       }
    }
 
    // get internal values
    isTimeBounds =
      static_cast<bool>(pQA->nc->getAttValue("isTimeBoundsTest", name));
+
+    // if files are synchronised, i.e. a file hasn't changed since
+    // the last qa, this will exit in member finally()
+   isNoProgress = sync();
 
    return;
 }
@@ -1215,7 +1226,7 @@ QA_Time::sync(void)
   // scanning time
   for( int i=0 ; i < inRecNum ; ++i )
   {
-    double t_in = getTimeValue(i) ;
+    double t_in = getTimeValue(i) + refTimeOffset ;
 
     if( t_in < t_qa_eps )
       continue;
