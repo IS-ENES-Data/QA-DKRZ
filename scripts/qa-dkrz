@@ -949,6 +949,8 @@ clear()
 
   isClear=t  # global scope
 
+  local logF=$LOG_FNAME_DIR/${CURR_LOG_FNAME}.log
+
   # arbitrary order of arguments
   for f in ${CLEAR//,/ } ; do
     test ${CLEAR} = t && break  # unconditional
@@ -980,24 +982,23 @@ clear()
             && ls ${QA_RESULTS}/data/${subPath}/${fBase[ix]}.clear &> /dev/null ; then
          isClear=t
        fi
-    elif [ ${f%=*} = level -o ${f%=*} = tag ] ; then
-       if [ ${f%=*} = level ] ; then
-         # clear specified level
-         f="^${f#*=}-"
-       else
-         # e.g. L1-${tag}: where tag=CF_12 would match CF_12, CF_12x etc.
-         f="^[[:alnum:]]*-*${f#*=}.*: "
-       fi
+    elif [ ${f%=*} = tag ] ; then
+       local i words
 
-       local fl
-       for fl in \
-         $(ls ${QA_RESULTS}/data/${subPath}/qa_note_${fBase[ix]}* 2> /dev/null) \
-         $( ls ${QA_RESULTS}/data/${subPath}/qa_lock_${fBase[ix]}* 2> /dev/null)
-       do
-        if grep -q $f $fl &> /dev/null ; then
-          isClear=t
-          break
-        fi
+       declare -a words
+       words=( $(sed -n "/${fBase[ix]}/,/status:/ p" $logF ) )
+
+       for(( i=0 ; i < ${#words[*]} ; ++i )) ; do
+         if [ ${words[i]} = 'data_path:' ] ; then
+            test ${words[i+1]/${subPath}/} = ${words[i+1]}  && break
+         fi
+
+         if [ ${words[i]} = 'tag:' ] ; then
+            if [ ${words[i+1]} = "${f#*=}" ] ; then
+               isClear=t
+               break
+            fi
+         fi
        done
     elif [ ${f} != ${f/=/} -a ${f%=*} = var ] ; then
        # CLEAR=var=name
@@ -1118,7 +1119,7 @@ QA result path: ${target}\nRemoved QA results by following links."
     fi
 
     # also delete log-table entries
-    rmBlock $LOG_FNAME_DIR/$CURR_LOG_FNAME.log ${fBase[ix]}
+    rmBlock $logF ${fBase[ix]}
 
     # and also delete consistency table entries
 #    rmConsistTableEntry $LOG_FNAME_DIR/$CURR_LOG_FNAME.log ${fBase[ix]}
@@ -2136,6 +2137,35 @@ getNextVariable()
 
   status=$?
 
+  # up-to-date
+  if [ ${status} -eq 1 ] ; then
+#    if [ ${PROGRESS_BAR} ] ; then
+      # get number of data files for progress estimation
+      # note: all files no matter whether processed or locked
+#      local num=${#nV_fls[*]}
+#    fi
+    countProcessedFiles=$(( countProcessedFiles +1 ))
+
+    nextFile=
+    return 0
+  fi
+
+  # a fixed variable?
+  if [ $status -eq 4 ] ; then
+    # already processed?
+    if [ "${qa_fl}" ] ; then
+#      if [ ${PROGRESS_BAR} ] ; then
+        # get number of data files for progress estimation
+        # note: all files no matter whether processed or locked
+        local num=${#nV_fls[*]}
+#      fi
+
+      nextFile=
+      return 0
+    fi
+  fi
+
+
   # expand \newline, but preserve potential blanks
   nextFile=()
   local p0 p1 i
@@ -2152,19 +2182,6 @@ getNextVariable()
   fi
 
   local nFsSz=${#nextFile[*]}
-
-  # up-to-date
-  if [ ${status} -eq 1 ] ; then
-#    if [ ${PROGRESS_BAR} ] ; then
-      # get number of data files for progress estimation
-      # note: all files no matter whether processed or locked
-#      local num=${#nV_fls[*]}
-#    fi
-    countProcessedFiles=$(( countProcessedFiles +1 ))
-
-    nextFile=
-    return 0
-  fi
 
   if [ $status -eq 3 -o $status -eq 5 -o $status -eq 6 ] ; then
 #    if [ ${PROGRESS_BAR} ] ; then
@@ -2197,21 +2214,6 @@ getNextVariable()
 
     nextFile=  # ignore, try next
     return 0
-  fi
-
-  # a fixed variable?
-  if [ $status -eq 4 ] ; then
-    # already processed?
-    if [ "${qa_fl}" ] ; then
-#      if [ ${PROGRESS_BAR} ] ; then
-        # get number of data files for progress estimation
-        # note: all files no matter whether processed or locked
-        local num=${#nV_fls[*]}
-#      fi
-
-      nextFile=
-      return 0
-    fi
   fi
 
   # SYNC_FILE_AMBIGUITY_CHECK failed?
@@ -3670,10 +3672,10 @@ log()
   if [ ! ${out} ] ; then
     if [ ${LOG_PATH_INDEX[0]} ] ; then
       if ! getExperimentName P ${subPath} ; then
-        getExperimentName F ${netxFile[0]}
+        getExperimentName F ${nextFile[0]}
       fi
     else
-      getExperimentName F ${netxFile[0]}
+      getExperimentName F ${nextFile[0]}
     fi
     out=$LOG_FNAME_DIR/${CURR_LOG_FNAME}.log
   fi
