@@ -3891,7 +3891,7 @@ NcAPI::getTypeStr(nc_type ncType)
   else if( ncType == NC_USHORT )
     return "NC_USHORT" ;
   else if( ncType == NC_UINT64 )
-    return "NC_UNIT64" ;
+    return "NC_UINT64" ;
   else if( ncType == NC_INT64 )
     return "NC_INT64" ;
   else if( ncType == NC_STRING )

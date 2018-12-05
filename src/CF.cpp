@@ -1649,7 +1649,40 @@ CF::finalAtt_units(void)
 
     if( var.coord.isC[2] && !var.coord.isZ_DL && !var.isValidAtt(n_units) )
     {
-      // was is rated a dimless Z without formula_terms attribute?
+      // is it an index of coordinate variable shape pointing to an auxiliary?
+      std::string vType(pIn->nc.getTypeStr(var.type));
+
+      bool is=false;
+      if( vType == "NC_INT" )
+          is=true;
+      else if( vType == "NC_SHORT" )
+          is=true;
+      else if( vType == "NC_USHORT" )
+          is=true;
+      else if( vType == "NC_UINT" )
+          is=true;
+      else if( vType == "NC_INT64" )
+          is=true;
+      else if( vType == "NC_UINT64" )
+          is=true;
+
+      if( is )
+      {
+         for( size_t jx=0 ; jx < pIn->varSz ; ++jx )
+         {
+           if( jx == ix )
+               continue;
+
+           Variable& aux = pIn->variable[jx] ;
+           if( ! aux.isDataVar() )
+           {
+               if( hdhC::isAmong(var.name, aux.dimName) )
+                   return;
+           }
+         }
+      }
+
+      // apparently a dimless Z without formula_terms attribute
       if( notes->inq(bKey + "43d", var.name) )
       {
         std::string capt(hdhC::tf_var(var.name));
