@@ -1691,6 +1691,24 @@ QA_Time::testPeriodAlignment(std::vector<std::string>& sd, Date** pDates,
       // time_bounds: right-side
       if( ! (is[3] = *pDates[1] == *pDates[5]) )
         dDiff[3] = *pDates[5] - *pDates[1] ;
+
+/*
+      // special for 'sem': additional shift of the conducted
+      // one for months.
+      if( ! is[2] )
+      {
+        pDates[4]->addMonths(-1.) ;
+        if( ! (is[2] = *pDates[0] == *pDates[4]) )
+          dDiff[2] = *pDates[4] - *pDates[0] ;
+      }
+
+      if( ! is[3] )
+      {
+        pDates[5]->addMonths(1.) ;
+        if( ! (is[3] = *pDates[1] == *pDates[5]) )
+          dDiff[3] = *pDates[5] - *pDates[1] ;
+      }
+*/
     }
   }
 
@@ -1708,32 +1726,25 @@ QA_Time::testPeriodAlignment(std::vector<std::string>& sd, Date** pDates,
     {
       key.push_back("T_10h");
       capt.push_back("Misaligned ");
-      text.push_back(hdhC::empty);
+      text.push_back("");
 
       if( i == 0 )
-        capt.back() += "start-time: " ;
+        capt.back() += "start-time, " ;
       else
-        capt.back() += "end-time: " ;
-      capt.back() += "filename vs. ";
+        capt.back() += "end-time, " ;
 
-      size_t ix;
+      capt.back() += " found filename (";
+      capt.back() += pDates[0+i]->str() + ") " ;
 
       if( isTimeBounds )
       {
-        capt.back() += "time bounds";
-        text.back() = "Found difference of ";
-        ix = 4 + i ;
-        text.back() += hdhC::double2String(dDiff[2+i]);
-        text.back() += " day(s)";
+        capt.back() += "and time bounds (";
+        capt.back() += pDates[4+i]->str() + ") " ;
       }
       else
       {
-        capt.back() += "time values ";
-        ix = 2 + i ;
-
-        text.back() = "Found " + sd[i] ;
-        text.back() += " vs. " ;
-        text.back() += pDates[ix]->str();
+        capt.back() += "and time value ( ";
+        capt.back() += pDates[2+i]->str() + ") " ;
       }
 
       bRet=false;
