@@ -1733,18 +1733,18 @@ QA_Time::testPeriodAlignment(std::vector<std::string>& sd, Date** pDates,
       else
         capt.back() += "end-time, " ;
 
-      capt.back() += " found filename (";
-      capt.back() += pDates[0+i]->str() + ") " ;
+      capt.back() += " found filename <";
+      capt.back() += pDates[0+i]->str() + "> " ;
 
       if( isTimeBounds )
       {
-        capt.back() += "and time bounds (";
-        capt.back() += pDates[4+i]->str() + ") " ;
+        capt.back() += "and time bounds <";
+        capt.back() += pDates[4+i]->str() + "> " ;
       }
       else
       {
-        capt.back() += "and time value ( ";
-        capt.back() += pDates[2+i]->str() + ") " ;
+        capt.back() += "and time value < ";
+        capt.back() += pDates[2+i]->str() + "> " ;
       }
 
       bRet=false;
