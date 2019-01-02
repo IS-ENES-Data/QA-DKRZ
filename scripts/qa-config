@@ -937,7 +937,7 @@ output()
   fi
 
   # display all assignments made
-  if [ ${SHOW_CONF:-f} = t ] ; then
+  if [ ${SHOW_CONF:-f} = t -o ${SHOW_CONFIG:-f} = t ] ; then
     for(( j=0 ; j < ${#array[*]} ; ++j )) ; do
       std_out ${array[j]}
     done
