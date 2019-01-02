@@ -157,8 +157,8 @@ Consistency::check(Variable &dataVar, std::string entryID)
     {
        if( vs_t[i] != vs_f[i] )
        {
-         is=false ;
-         break;
+           is=false ;
+           break;
        }
     }
 
@@ -230,6 +230,10 @@ Consistency::check(Variable &dataVar, std::string entryID)
         }
         else
         {
+          // backward compatible
+          if( y[0] == "values" )
+             y[0] = "checksum";
+
           vvs_t_aName.back().push_back(y[0]);
           vvs_t_aVal.back().push_back(y[1]);
         }
@@ -552,7 +556,7 @@ Consistency::testAttributes( std::string& varName,
   for( t_ix=1 ; t_ix < vs_t_aName.size() ; ++t_ix )
   {
     if( ! hdhC::isAmong(vs_t_aName[t_ix], vs_f_aName)
-            &&  vs_t_aName[t_ix] != "checksum")
+            &&  vs_t_aName[t_ix] != "values")
     {
       // aditional attribute in the current sub-temp file
       std::string key("8_7");
