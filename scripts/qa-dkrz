@@ -2478,18 +2478,14 @@ getPaths()
     fi
   done
 
-  # only those paths that are selected and contain netCDF files
-  if [ ! -f ${SESSION_LOGDIR}/path-list.txt ] \
-       || ! grep -q -- '---EOF---' ${SESSION_LOGDIR}/path-list.txt ; then
-    \rm -f "${pathListFile}"
+  \rm -f "${pathListFile}"
 
-    if is_TPUT ; then
-      echo "getPaths ... " > $TTY
-    fi
-
-    getSelectedPaths ${PROJECT_DATAV[*]} &
-    getPathPID=$!
+  if is_TPUT ; then
+    echo "getPaths ... " > $TTY
   fi
+
+  getSelectedPaths ${PROJECT_DATAV[*]} &
+  getPathPID=$!
 
   set +f
 
