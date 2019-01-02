@@ -254,12 +254,6 @@ and PROJECT_DATA/SUB_PATH must not be identical"
    name=${name%.nc}
  fi
 
- # very special: gather tracking_ids of files; that's all
- if [ ${TRACKING_ID_ONLY:-f} = t ] ; then
-   writeTrackingID
-   return
- fi
-
  # secure files against corruption,
  # even in case of a system-crash: Part I:
  if [ ${SHOW_CALL:-f} = f ] ; then
@@ -2096,30 +2090,6 @@ wait_fnct()
 ## of a given variable are collected in a file in QA_RESULT/PROJECT/data/...DRS-structure
 ##*/
 
-
-writeTrackingID()
-{
-  local tidFile item
-  tidFile=tid_${name}.txt
-
-  # get the tracking_id
-  item=$( getNC_att.x $ncFile tracking_id )
-
-  # don't create multiple entries
-  if [ -e $tidFile ] ; then
-    if grep ${item} $tidFile &> /dev/null ; then
-      return
-    fi
-  fi
-
-  local str
-  str="tracking_id=${item}"
-  str="${str} file=${ncFile}"
-  str="${str} err_code=-1"
-  str="${str} date=$(date +'%FT%T')"
-
-  tryCom echo "$str" >> $tidFile
-}
 
 ##main()
 ##{

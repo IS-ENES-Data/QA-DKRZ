@@ -639,7 +639,6 @@ callQaExecutor()
           SHOW_CALL \
           SLEEP_TIME \
           TIME_LIMIT \
-          TRACKING_ID_ONLY \
           UNLIMITED_DIM_NAME \
           USE_STRICT \
           WORK_AT_LOW_LOAD \
@@ -2033,7 +2032,7 @@ getNextVariable()
     test $status -gt 1 && \rm ${QA_RESULTS}/data/${subPath}/qa_${1}.* 2> /dev/null
 
     if [ $status -eq 6 ] ; then
-      # creation_date and/or tracking_id was kept
+      # creation_date
       nextFile=  # ignore, try next
       return 0
     fi
@@ -2056,8 +2055,7 @@ getNextVariable()
   fi
 
   # sync with qa_file if available
-  #exception: only scan for the tracking id
-  if [ "${qa_fl}" -a ${TRACKING_ID_ONLY:-f} = f ] ; then
+  if [ "${qa_fl}" ] ; then
     syncOpts="${syncOpts} -p ${qa_fl}"
   fi
 
@@ -2223,7 +2221,7 @@ getNextVariable()
 
     # issue annotation
     y_impact=L2
-    y_caption='Ambiguities across sub-temporal file.'
+    y_caption='Ambiguities across sub-temporal files.'
     y_tag=M6
     y_meta_data=OMIT
     y_time_values=FAIL
