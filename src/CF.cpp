@@ -7073,6 +7073,7 @@ CF::chap56_gridMappingVar(Variable& var, std::string &s, std::string gmn)
             vs_gmn.push_back("lambert_cylindrical_equal_area");
             vs_gmn.push_back("latitude_longitude");
             vs_gmn.push_back("mercator");
+            vs_gmn.push_back("oblique_mercator");
             vs_gmn.push_back("orthographic");
             vs_gmn.push_back("polar_stereographic");
             vs_gmn.push_back("rotated_latitude_longitude");
@@ -8368,6 +8369,17 @@ CF::chap73_cellMethods_Method(std::string &str0, Variable& var)
   term.push_back("standard_deviation");
   term.push_back("sum");
   term.push_back("variance");
+
+  if( cFVal > 16 )
+  {
+    term.push_back("maximum_abolute_value");
+    term.push_back("minimum_abolute_value");
+    term.push_back("mean_abolute_value");
+    term.push_back("mean_of_upper_decile");
+    term.push_back("range");
+    term.push_back("root_mean_square");
+    term.push_back("sum_of_squares");
+  }
 
   // method str0 must begin with one of the terms
   Split x_methods(str0);
