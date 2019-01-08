@@ -102,8 +102,8 @@ class CF : public IObj
 //  void   chap55(void);  // trajectories: checked implicitely
   void   chap56(void);  // grid mapping
   int    chap56_gridMappingVar(Variable& dv, std::string &, std::string);
-  void   chap56_attProps(Variable& dataVar,
-            std::string mCV[]);       // map coordinates
+  void   chap56_gridMappingCoords(Variable& dataVar, std::string mCV[]);
+  void   chap56_gridMappingParams(Variable &var, std::string &gm_name)   ;
 
   void   chap6(void);    // labels
 
@@ -248,52 +248,66 @@ template <typename T>
   int         compress_ix;
 
   // a few names of attributes used throughout the checks
-  std::string n_ancillary_variables;
-  std::string n_area;
-  std::string n_attribute;
-  std::string n_axis;
-  std::string n_bounds;
-  std::string n_calendar;
-  std::string n_cell_measures;
-  std::string n_cell_methods;
-  std::string n_cf_role;
-  std::string n_CF;
-  std::string n_climatology;
-  std::string n_compress;
-  std::string n_Conventions;
-  std::string n_coordinates;
-  std::string n_dimension;
-  std::string n_featureType;
-  std::string n_FillValue;
-  std::string n_flag_masks;
-  std::string n_flag_values;
-  std::string n_formula_terms;
-  std::string n_global;
-  std::string n_grid_latitude;
-  std::string n_grid_longitude;
-  std::string n_grid_mapping;
-  std::string n_instance_dimension;
-  std::string n_long_name;
-  std::string n_latitude;
-  std::string n_leap_month;
-  std::string n_leap_year;
-  std::string n_longitude;
-  std::string n_missing_value;
-  std::string n_month_lengths;
-  std::string n_NC_GLOBAL;
-  std::string n_number_of_observations;
-  std::string n_positive;
-  std::string n_reco;
-  std::string n_standard_name;
-  std::string n_sample_dimension;
-  std::string n_time;
-  std::string n_units;
-  std::string n_valid_max;
-  std::string n_valid_min;
-  std::string n_valid_range;
-  std::string n_variable;
+  const std::string n_actual_range = {"actual_range"};
+  const std::string n_add_offset = {"add_offset"};
+  const std::string n_ancillary_variables = {"ancillary_variables"};
+  const std::string n_area = {"area"};
+  const std::string n_attribute = {"attribute"};
+  const std::string n_axis = {"axis"};
+  const std::string n_bounds = {"bounds"};
+  const std::string n_calendar = {"calendar"};
+  const std::string n_cell_measures = {"cell_measures"};
+  const std::string n_cell_methods = {"cell_methods"};
+  const std::string n_cf_role = {"cf_role"};
+  const std::string n_CF = {"CF"};
+  const std::string n_climatology = {"climatology"};
+  const std::string n_comment = {"comment"};
+  const std::string n_compress = {"compress"};
+  const std::string n_computed_standard_name = {"computed_standard_name"};
+  const std::string n_Conventions = {"Conventions"};
+  const std::string n_coordinates = {"coordinates"};
+  const std::string n_dimension = {"dimension"};
+  const std::string n_external_variables = {"external_variables"};
+  const std::string n_featureType = {"featureType"};
+  const std::string n_FillValue = {"FillValue"};
+  const std::string n_flag_masks = {"flag_masks"};
+  const std::string n_flag_meanings = {"flag_meanings"};
+  const std::string n_flag_values = {"flag_values"};
+  const std::string n_formula_terms = {"formula_terms"};
+  const std::string n_global = {"global"};
+  const std::string n_grid_latitude = {"grid_latitude"};
+  const std::string n_grid_longitude = {"grid_longitude"};
+  const std::string n_grid_mapping = {"grid_mapping"};
+  const std::string n_grid_mapping_name = {"grid_mapping_name"};
+  const std::string n_history = {"history"};
+  const std::string n_instance_dimension = {"instance_dimension"};
+  const std::string n_institution = {"institution"};
+  const std::string n_long_name = {"long_name"};
+  const std::string n_latitude = {"latitude"};
+  const std::string n_leap_month = {"leap_month"};
+  const std::string n_leap_year = {"leap_year"};
+  const std::string n_longitude = {"longitude"};
+  const std::string n_missing_value = {"missing_value"};
+  const std::string n_month_lengths = {"month_lengths"};
+  const std::string n_NC_GLOBAL = {"NC_GLOBAL"};
+  const std::string n_number_of_observations = {"number_of_observations"};
+  const std::string n_positive = {"positive"};
+  const std::string n_reco = {"CF recommendation"};
+  const std::string n_references = {"references"};
+  const std::string n_sample_dimension = {"sample_dimension"};
+  const std::string n_scale_factor = {"scale_factor"};
+  const std::string n_source = {"source"};
+  const std::string n_standard_error_multiplier = {"standard_error_multiplier"};
+  const std::string n_standard_name = {"standard_name"};
+  const std::string n_time = {"time"};
+  const std::string n_title = {"title"};
+  const std::string n_units = {"units"};
+  const std::string n_valid_max = {"valid_max"};
+  const std::string n_valid_min = {"valid_min"};
+  const std::string n_valid_range = {"valid_range"};
+  const std::string n_variable = {"variable"};
 
-  static const bool lowerCase = true;
+  const bool lowerCase = {true};
   std::string bKey;
   std::string fail;
   std::string NO_MT;
@@ -306,91 +320,132 @@ template <typename T>
   std::vector<std::pair<int, int> > ca_pij;
   std::vector<std::vector<std::string> > ca_vvs ;
 
+  // grid mapping parameters
+  std::string n_earth_radius = { "earth_radius" };
+  std::string n_false_easting = { "false_easting" };
+  std::string n_false_northing = { "false_northing" };
+  std::string n_fixed_angle_axis = { "fixed_angle_axis" };
+  std::string n_grid_north_pole_latitude = { "grid_north_pole_latitude" };
+  std::string n_grid_north_pole_longitude = { "grid_north_pole_longitude" };
+  std::string n_inverse_flattening = { "inverse_flattening" };
+  std::string n_latitude_of_projection_origin = { "latitude_of_projection_origin" };
+  std::string n_longitude_of_central_meridian = { "longitude_of_central_meridian" };
+  std::string n_longitude_of_prime_meridian = { "longitude_of_prime_meridian" };
+  std::string n_longitude_of_projection_origin = { "longitude_of_projection_origin" };
+  std::string n_north_pole_grid_longitude = { "north_pole_grid_longitude" };
+  std::string n_north_pole_longitude = { "north_pole_grid_longitude" };
+  std::string n_perspective_point_height = { "perspective_point_height" };
+  std::string n_scale_factor_at_central_meridian = { "scale_factor_at_central_meridian" };
+  std::string n_scale_factor_at_projection_origin = { "scale_factor_at_projection_origin" };
+  std::string n_semi_major_axis = { "semi_major_axis" };
+  std::string n_semi_minor_axis = { "semi_minor_axis" };
+  std::string n_sweep_angle_axis = { "sweep_angle_axis" };
+  std::string n_standard_parallel = { "standard_parallel" };
+  std::string n_straight_vertical_longitude_from_pole = { "straight_vertical_longitude_from_pole" };
+  std::string n_azimuth_of_central_line = { "azimuth_of_central_line" };
+  std::string n_geographic_crs_name = { "geographic_crs_name" };
+  std::string n_crs_wkt = { "crs_wkt" };
+  std::string n_geoid_name = { "geoid_name" };
+  std::string n_geopotential_datum_name = { "geopotential_datum_name" };
+  std::string n_horizontal_datum_name = { "horizontal_datum_name" };
+  std::string n_prime_meridian_name = { "prime_meridian_name" };
+  std::string n_projected_crs_name = { "projected_crs_name" };
+  std::string n_reference_ellipsoid_name = { "reference_ellipsoid_name" };
+  std::string n_towgs84 = { "towgs84" };
+
+  // Attributes and value type
   std::vector<std::string> CF_Attribute = {
-  // cf-1.2 Grid Mapping Attributes
-  "earth_radius", "N",
-  "false_easting", "N",
-  "false_northing", "N",
-  "grid_mapping_name", "N",
-  "grid_north_pole_latitude", "N",
-  "grid_north_pole_longitude", "N",
-  "inverse_flattening", "N",
-  "latitude_of_projection_origin", "N",
-  "longitude_of_central_meridian", "N",
-  "longitude_of_prime_meridian", "N",
-  "longitude_of_projection_origin", "N",
-  "north_pole_grid_longitude", "N",
-  "perspective_point_height", "N",
-  "scale_factor_at_central_meridian", "N",
-  "scale_factor_at_projection_origin", "N",
-  "semi_major_axis", "N",
-  "semi_minor_axis", "N",
-  "standard_parallel", "N",
-  "straight_vertical_longitude_from_pole", "N",
-
-  // cf-1.7 new Grid Mapping Attributes
-  "azimuth_of_central_line", "N",
-  "crs_wkt", "S",
-  "geographic_crs_name", "S",
-  "geoid_name", "S",
-  "geopotential_datum_name", "S",
-  "horizontal_datum_name", "S",
-  "prime_meridian_name", "S",
-  "projected_crs_name", "S",
-  "reference_ellipsoid_name", "S",
-  "towgs84", "N",
-
-  // cf-1.0 attributes
-  "add_offset", "N", "D",
-  "ancillary_variables", "S", "D",
-  "axis", "S", "C",
-  "bounds", "S", "C",
-  "calendar", "S", "C",
-  "cell_measures", "S", "D",
-  "cell_methods", "S", "D",
-  "climatology", "S", "C",
-  "comment", "S", "G" ,"D",
-  "compress", "S", "C",
-  "Conventions", "S", "G",
-  "coordinates", "S", "D",
-  "_FillValue", "D", "D",
-  "flag_meanings", "S", "D",
-  "flag_values", "D", "D",
-  "formula_terms", "S", "C",
-  "grid_mapping", "S", "D",
-  "history", "S", "G",
-  "institution", "S", "G", "D",
-  "leap_month", "N", "C",
-  "leap_year", "N", "C",
-  "long_name", "S", "C,D",
-  "missing_value", "D", "D",
-  "month_lengths", "N", "C",
-  "positive", "S", "C",
-  "references", "S", "G", "D",
-  "scale_factor", "N", "D",
-  "source", "S", "G", "D",
-  "standard_error_multiplier", "N", "D",
-  "standard_name", "S", "C", "D",
-  "title", "S", "G",
-  "units", "S", "C", "D",
-  "valid_max", "N", "C", "D",
-  "valid_min", "N", "C", "D",
-  "valid_range", "N", "C", "D",
-
-  // cf-1.3 new attributes
-  "flag_masks", "D," "D",
-
-  // cf-1.6 new attributes
-  "cf_role", "C", "C",
-  "featureType", "C", "G",
-  "instance_dimension", "N", "D",
-  "sample_dimension", "N", "D",
-
-  // cf-1.7 new attributes
-  "actual_range", "N", "C,D",
-  "computed_standard_name", "S", "C",
-  "external_variables", "S", "G"
+  n_actual_range, "N", "C,D",
+  n_add_offset, "N", "D",
+  n_ancillary_variables, "S", "D",
+  n_axis, "S", "C",
+  n_azimuth_of_central_line, "N",
+  n_bounds, "S", "C",
+  n_calendar, "S", "C",
+  n_cell_measures, "S", "D",
+  n_cell_methods, "S", "D",
+  n_cf_role, "C", "C",
+  n_climatology, "S", "C",
+  n_comment, "S", "G" ,"D",
+  n_compress, "S", "C",
+  n_computed_standard_name, "S", "C",
+  n_Conventions, "S", "G",
+  n_coordinates, "S", "D",
+  n_crs_wkt, "S",
+  n_earth_radius, "N",
+  n_external_variables, "S", "G",
+  n_false_easting, "N",
+  n_false_northing, "N",
+  n_featureType, "C", "G",
+  n_FillValue, "D", "D",
+  n_flag_masks, "D," "D",
+  n_flag_meanings, "S", "D",
+  n_flag_values, "D", "D",
+  n_formula_terms, "S", "C",
+  n_geographic_crs_name, "S",
+  n_geoid_name, "S",
+  n_geopotential_datum_name, "S",
+  n_grid_mapping_name, "N",
+  n_grid_mapping, "S", "D",
+  n_grid_north_pole_latitude, "N",
+  n_grid_north_pole_longitude, "N",
+  n_horizontal_datum_name, "S",
+  n_history, "S", "G",
+  n_instance_dimension, "N", "D",
+  n_institution, "S", "G", "D",
+  n_inverse_flattening, "N",
+  n_latitude_of_projection_origin, "N",
+  n_leap_month, "N", "C",
+  n_leap_year, "N", "C",
+  n_long_name, "S", "C,D",
+  n_longitude_of_central_meridian, "N",
+  n_longitude_of_prime_meridian, "N",
+  n_longitude_of_projection_origin, "N",
+  n_missing_value, "D", "D",
+  n_month_lengths, "N", "C",
+  n_north_pole_grid_longitude, "N",
+  n_perspective_point_height, "N",
+  n_positive, "S", "C",
+  n_prime_meridian_name, "S",
+  n_projected_crs_name, "S",
+  n_references, "S", "G", "D",
+  n_reference_ellipsoid_name, "S",
+  n_sample_dimension, "N", "D",
+  n_scale_factor, "N", "D",
+  n_scale_factor_at_central_meridian, "N",
+  n_scale_factor_at_projection_origin, "N",
+  n_semi_major_axis, "N",
+  n_semi_minor_axis, "N",
+  n_source, "S", "G", "D",
+  n_standard_error_multiplier, "N", "D",
+  n_standard_name, "S", "C", "D",
+  n_standard_parallel, "N",
+  n_straight_vertical_longitude_from_pole, "N",
+  n_title, "S", "G",
+  n_towgs84, "N",
+  n_units, "S", "C", "D",
+  n_valid_max, "N", "C", "D",
+  n_valid_min, "N", "C", "D",
+  n_valid_range, "N", "C", "D",
   };
+
+  // grid mapping names
+  const std::string n_albers_conical_equal_area = {"albers_conical_equal_area"};
+  const std::string n_azimuthal_equidistant = {"azimuthal_equidistant"};
+  const std::string n_lambert_azimuthal_equal_area = {"lambert_azimuthal_equal_area"};
+  const std::string n_lambert_conformal_conic = {"lambert_conformal_conic"};
+  const std::string n_lambert_cylindrical_equal_area = {"lambert_cylindrical_equal_area"};
+  const std::string n_latitude_longitude = {"latitude_longitude"};
+  const std::string n_mercator = {"mercator"};
+  const std::string n_orthographic = {"orthographic"};
+  const std::string n_polar_stereographic = {"polar_stereographic"};
+  const std::string n_rotated_latitude_longitude = {"rotated_latitude_longitude"};
+  const std::string n_stereographic = {"stereographic"};
+  const std::string n_transverse_mercator = {"transverse_mercator"};
+  const std::string n_vertical_perspective = {"vertical_perspective"};
+  const std::string n_geostationary = {"geostationary"};
+  const std::string n_oblique_mercator = {"oblique_mercator"};
+  const std::string n_sinusodial = {"sinusodial"};
 
 };
 

@@ -2163,20 +2163,18 @@ CF::hasBounds(Variable& var)
   // is supplied.
 
   int j;
-  std::string* type[2];
-  type[0] = &n_bounds;
-  type[1] = &n_climatology;
+  const std::vector<std::string> &type = {n_bounds, n_climatology} ;
 
   for( size_t i=0 ; i < 2 ; ++i )
   {
-    if( (j=var.getAttIndex( *type[i]) ) > -1 )
+    if( (j=var.getAttIndex( type[i]) ) > -1 )
     {
        int i2;
        if( (i2=pIn->getVarIndex( var.attValue[j][0] )) == -1 )
        {
          if( notes->inq(bKey + "71g") )
          {
-           std::string capt(hdhC::tf_att(var.name, *type[i]) ) ;
+           std::string capt(hdhC::tf_att(var.name, type[i]) ) ;
            capt += "declares non-existing " ;
            if(i)
               capt += n_climatology + hdhC::blank;
@@ -2209,11 +2207,9 @@ CF::isBounds(Variable& var)
   if( var.boundsOf.size() )
     return true;
 
-  std::string* str[2];
-  str[0] = &n_bounds;
-  str[1] = &n_climatology;
-  std::string t;
+  const std::vector<std::string> &str = {n_bounds, n_climatology} ;
 
+  std::string t;
   bool is=false;
 
   for( size_t ix=0 ; ix < pIn->varSz ; ++ix )
@@ -2226,18 +2222,18 @@ CF::isBounds(Variable& var)
     for( size_t n=0 ; n < 2 ; ++n )
     {
       // the value of the attribute
-      t = var2.getAttValue(*(str[n])) ;
+      t = var2.getAttValue(str[n]) ;
 
       if( t == var.name )
       {
         // test whether var2 is bounds and has bounds
-        if( var.isValidAtt(*(str[n])) )
+        if( var.isValidAtt(str[n]) )
         {
           if( notes->inq(bKey + "71i", var2.name) )
           {
             std::string capt(hdhC::tf_var(var.name)) ;
             capt += "should not be and have " ;
-            capt += *(str[n]) + " at the same time" ;
+            capt += str[n] + " at the same time" ;
 
             (void) notes->operate(capt) ;
             notes->setCheckStatus( n_CF, fail );
@@ -2298,52 +2294,6 @@ CF::initDefaults()
 
   bKey="CF_";
   fail="FAIL";
-
-  n_ancillary_variables="ancillary_variables";
-  n_area="area";
-  n_attribute="attribute";
-  n_axis="axis";
-  n_bounds="bounds";
-  n_calendar="calendar";
-  n_cell_measures="cell_measures";
-  n_cell_methods="cell_methods";
-  n_CF="CF";
-  n_cf_role="cf_role";
-  n_climatology="climatology";
-  n_compress="compress";
-  n_Conventions="Conventions";
-  n_coordinates="coordinates";
-  n_dimension="dimension";
-  n_featureType="featureType";
-  n_FillValue="_FillValue";
-  n_flag_masks="flag_masks";
-  n_flag_values="flag_values";
-  n_formula_terms="formula_terms";
-  n_global="global";
-  n_grid_mapping="grid_mapping";
-  n_instance_dimension="instance_dimension";
-  n_long_name="long_name";
-  n_latitude="latitude";
-  n_leap_month="leap_month";
-  n_leap_year="leap_year";
-  n_longitude="longitude";
-  n_missing_value="missing_value";
-  n_month_lengths="month_lengths";
-  n_NC_GLOBAL="NC_GLOBAL";
-  n_number_of_observations="number_of_observations";
-  n_positive="positive";
-  n_reco="CF Recommendation";
-  n_sample_dimension="sample_dimension";
-  n_standard_name="standard_name";
-  n_time="time";
-  n_units="units";
-  n_valid_min="valid_min";
-  n_valid_max="valid_max";
-  n_valid_range="valid_range";
-  n_variable="variable";
-
-  n_grid_latitude="grid_" + n_latitude;
-  n_grid_longitude="grid_" + n_longitude;
 
   NO_MT="NO_MT";
 
@@ -3964,8 +3914,7 @@ CF::chap23_reco(void)
 
    std::string case_ins;
    std::string case_sens;
-   std::vector<std::string*> type;
-   std::vector<std::string*> myAtt;
+   std::vector<std::string> type;
    std::vector<std::string> what;
 
    // dimensions
@@ -3982,7 +3931,7 @@ CF::chap23_reco(void)
 
        if( case_sens == case_ins )
        {
-          type.push_back(&n_dimension) ;
+          type.push_back(n_dimension) ;
           what.push_back(hdhC::tf_val(dims[i]) + "and" + hdhC::tf_val(dims[j]));
        }
      }
@@ -4002,7 +3951,7 @@ CF::chap23_reco(void)
 
        if( case_sens == case_ins )
        {
-          type.push_back(&n_variable) ;
+          type.push_back(n_variable) ;
           what.push_back(hdhC::tf_val(var.name, hdhC::blank)
                + "and" + hdhC::tf_val(pIn->variable[j].name));
        }
@@ -4021,7 +3970,7 @@ CF::chap23_reco(void)
 
          if( case_sens == case_ins )
          {
-            type.push_back(&var.name) ;
+            type.push_back(var.name) ;
             what.push_back(hdhC::tf_val(var.attName[ai], hdhC::blank)
                  + "and" + hdhC::tf_val(var.attName[aj]));
          }
@@ -4037,12 +3986,12 @@ CF::chap23_reco(void)
       {
         std::string capt(n_reco);
 
-        if( *(type[i]) == n_dimension )
+        if( type[i] == n_dimension )
           capt += " for dimensions" ;
-        else if( *(type[i]) == n_variable )
+        else if( type[i] == n_variable )
           capt += "for variables" ;
         else
-          capt += "for attributes of " + hdhC::tf_var(*(type[i])) ;
+          capt += "for attributes of " + hdhC::tf_var(type[i]) ;
 
         capt += ": Avoid same names when case is ignored";
         std::string text("Found " + what[i]);
@@ -4379,20 +4328,12 @@ CF::chap251(void)
 
       if( jxVRange > -1 && ( jxVMin > -1 || jxVMax > -1) )
       {
-         std::string  text[2];
-         std::string* ptext[2];
-         std::string* p_vm[2];
-         std::string* p_vr[2];
-         bool is[2];
+         std::vector<std::string>  text = {"Maximum", "minimum"};
+         std::vector<std::string> ptext = { n_valid_max, n_valid_min };
+         std::vector<std::string> p_vm  = { var.attValue[jxVMax][0], var.attValue[jxVMin][0]};
+         std::vector<std::string> p_vr  = { var.attValue[jxVRange][0], var.attValue[jxVRange][0]};
 
-         text[0] = "Maximum" ;
-         text[1] = "Minimum" ;
-         ptext[0] = &n_valid_max;
-         ptext[1] = &n_valid_min;
-         p_vm[0] = &var.attValue[jxVMax][0];
-         p_vm[1] = &var.attValue[jxVMin][0];
-         p_vr[0] = &var.attValue[jxVRange][1];
-         p_vr[1] = &var.attValue[jxVRange][0];
+         bool is[2];
          is[0] = jxVMax > -1 && range[1] != maxVal;
          is[1] = jxVMin > -1 && range[0] != minVal;
 
@@ -4401,9 +4342,9 @@ CF::chap251(void)
            if( is[i] && notes->inq(bKey + "251b", var.name) )
            {
              std::string capt("warning: " + text[i] + " of ");
-             capt += hdhC::tf_att(var.name, n_valid_range, *(p_vr[i]));
+             capt += hdhC::tf_att(var.name, n_valid_range, p_vr[i]);
              capt += "and " ;
-             capt += hdhC::tf_assign(*(ptext[i]), *(p_vm[i]) ) ;
+             capt += hdhC::tf_assign(ptext[i], p_vm[i] ) ;
              capt += " are different";
 
              (void) notes->operate(capt) ;
@@ -6981,7 +6922,7 @@ CF::chap56(void)
 
        // coordinates attribute issues
        if( isMapping )
-         chap56_attProps(var, mapCoord) ;
+         chap56_gridMappingCoords(var, mapCoord) ;
     }
   }
 
@@ -7026,91 +6967,8 @@ CF::chap56(void)
   return;
 }
 
-int
-CF::chap56_gridMappingVar(Variable& var, std::string &s, std::string gmn)
-{
-   // Param s: the grid_mapping attribute of the data variable.
-   //     gmn: name of a particular grid mapping method
-
-   // return: 0: found grid_mapping variable with valid grid_mapping_name
-   //         1: found no grid_mapping variable
-   //         2: found grid_mapping variable with missing grid_mapping_name
-   //    3 + ix: found grid_mapping variable with invalid grid_mapping_name
-
-
-   // find grid_mapping variable gmn
-   // and check existence of grid_mapping_name att
-   int ix = pIn->getVarIndex(s);  // index of the grid mapping variable
-
-   int retVal=1;
-
-   if( ix > -1 )
-   {
-     Variable& var_gmv = pIn->variable[ix] ;
-     var_gmv.isMapVar=true;
-     var_gmv.addAuxCount();
-     var.push_aux(var_gmv.name);
-
-     retVal=2;
-
-     if( var_gmv.isValidAtt(n_grid_mapping + "_name") )
-     {
-        // the grid mapping variabel must have attribute grid_mapping_name
-        std::string str( var_gmv.getAttValue(n_grid_mapping +"_name") );
-
-        if( str.size() )
-        {
-          var_gmv.isVoid=true;  // no data
-
-          if( gmn.size() == 0 )
-          {
-            // all methods defined in CF
-            std::vector<std::string> vs_gmn;
-            vs_gmn.push_back("albers_conical_equal_area");
-            vs_gmn.push_back("azimuthal_equidistant");
-            vs_gmn.push_back("lambert_azimuthal_equal_area");
-            vs_gmn.push_back("lambert_conformal_conic");
-            vs_gmn.push_back("lambert_cylindrical_equal_area");
-            vs_gmn.push_back("latitude_longitude");
-            vs_gmn.push_back("mercator");
-            vs_gmn.push_back("oblique_mercator");
-            vs_gmn.push_back("orthographic");
-            vs_gmn.push_back("polar_stereographic");
-            vs_gmn.push_back("rotated_latitude_longitude");
-            vs_gmn.push_back("stereographic");
-            vs_gmn.push_back("transverse_mercator");
-            vs_gmn.push_back("vertical_perspective");
-
-            if( hdhC::isAmong(str, vs_gmn) )
-              gmn = str;
-          }
-
-          retVal = (str == gmn) ? 0 : (3+ix);
-        }
-        else
-          retVal = 0 ;  // caught elsewhere
-     }
-
-     // recommendation: grid mapping variable should not have dimensions
-     if( followRecommendations && var_gmv.dimName.size() )
-     {
-        if( notes->inq(bKey + "56d", var_gmv.name, NO_MT) )
-        {
-          std::string capt(n_reco + ":: Grid_mapping-") ;
-          capt += hdhC::tf_assign(n_variable, var_gmv.name) ;
-          capt += " should not have " + n_dimension + "s" ;
-
-          (void) notes->operate(capt) ;
-          notes->setCheckStatus( n_CF );
-        }
-     }
-   }
-
-   return retVal;
-}
-
 void
-CF::chap56_attProps(
+CF::chap56_gridMappingCoords(
   Variable& dataVar,       // variable with a grid_mapping attribute
   std::string mCV[] )      // required std_names of coord vars
 {
@@ -7182,6 +7040,337 @@ CF::chap56_attProps(
    }
 
    return;
+}
+
+void
+CF::chap56_gridMappingParams(Variable &var, std::string &gmn)
+{
+    std::vector<std::string> gmp ;
+    if( gmn == n_albers_conical_equal_area )
+    {
+        gmp.push_back(n_standard_parallel);
+        gmp.push_back(n_longitude_of_projection_origin);
+        gmp.push_back(n_latitude_of_projection_origin);
+        gmp.push_back(n_false_easting);
+        gmp.push_back(n_false_northing) ;
+    }
+    else if( gmn == n_azimuthal_equidistant )
+    {
+        gmp.push_back(n_longitude_of_projection_origin);
+        gmp.push_back(n_latitude_of_projection_origin);
+        gmp.push_back(n_false_easting);
+        gmp.push_back(n_false_northing) ;
+    }
+    else if( gmn == n_geostationary )
+    {
+        gmp.push_back(n_longitude_of_projection_origin);
+        gmp.push_back(n_latitude_of_projection_origin);
+        gmp.push_back(n_perspective_point_height);
+        gmp.push_back(n_false_easting);
+        gmp.push_back(n_false_northing) ;
+        gmp.push_back(n_sweep_angle_axis);
+        gmp.push_back(n_fixed_angle_axis);
+    }
+    else if( gmn == n_lambert_azimuthal_equal_area )
+    {
+        gmp.push_back(n_longitude_of_projection_origin);
+        gmp.push_back(n_latitude_of_projection_origin);
+        gmp.push_back(n_false_easting);
+        gmp.push_back(n_false_northing) ;
+    }
+    else if( gmn == n_lambert_conformal_conic )
+    {
+        gmp.push_back(n_standard_parallel);
+        gmp.push_back(n_longitude_of_central_meridian);
+        gmp.push_back(n_latitude_of_projection_origin);
+        gmp.push_back(n_false_easting);
+        gmp.push_back(n_false_northing) ;
+    }
+    else if( gmn == n_lambert_cylindrical_equal_area )
+    {
+        gmp.push_back(n_longitude_of_central_meridian);
+        gmp.push_back(n_standard_parallel);
+        gmp.push_back(n_scale_factor_at_projection_origin);
+        gmp.push_back(n_false_easting);
+        gmp.push_back(n_false_northing) ;
+    }
+    else if( gmn == n_latitude_longitude )
+    {
+        ;  // none
+    }
+    else if( gmn == n_mercator )
+    {
+        gmp.push_back(n_longitude_of_projection_origin);
+        gmp.push_back(n_standard_parallel);
+        gmp.push_back(n_scale_factor_at_projection_origin);
+        gmp.push_back(n_false_easting);
+        gmp.push_back(n_false_northing) ;
+    }
+    else if( gmn == n_oblique_mercator )
+    {
+        gmp.push_back(n_azimuth_of_central_line);
+        gmp.push_back(n_latitude_of_projection_origin);
+        gmp.push_back(n_longitude_of_projection_origin);
+        gmp.push_back(n_scale_factor_at_projection_origin);
+        gmp.push_back(n_false_easting);
+        gmp.push_back(n_false_northing) ;
+    }
+    else if( gmn == n_orthographic )
+    {
+        gmp.push_back(n_longitude_of_projection_origin);
+        gmp.push_back(n_latitude_of_projection_origin);
+        gmp.push_back(n_false_easting);
+        gmp.push_back(n_false_northing) ;
+    }
+    else if( gmn == n_polar_stereographic )
+    {
+        gmp.push_back(n_straight_vertical_longitude_from_pole);
+        gmp.push_back(n_latitude_of_projection_origin);
+        gmp.push_back(n_standard_parallel);
+        gmp.push_back(n_scale_factor_at_projection_origin);
+        gmp.push_back(n_false_easting);
+        gmp.push_back(n_false_northing) ;
+    }
+    else if( gmn == n_rotated_latitude_longitude )
+    {
+        gmp.push_back(n_grid_north_pole_latitude);
+        gmp.push_back(n_grid_north_pole_longitude);
+        // gmp.push_back(n_north_pole_grid_longitude);  // optional
+    }
+    else if( gmn == n_sinusodial )
+    {
+        gmp.push_back(n_longitude_of_projection_origin);
+        gmp.push_back(n_false_easting);
+        gmp.push_back(n_false_northing) ;
+    }
+    else if( gmn == n_stereographic )
+    {
+        gmp.push_back(n_longitude_of_projection_origin);
+        gmp.push_back(n_latitude_of_projection_origin);
+        gmp.push_back(n_scale_factor_at_projection_origin);
+        gmp.push_back(n_false_easting);
+        gmp.push_back(n_false_northing) ;
+    }
+    else if( gmn == n_transverse_mercator )
+    {
+        gmp.push_back(n_scale_factor_at_central_meridian);
+        gmp.push_back(n_latitude_of_projection_origin);
+        gmp.push_back(n_longitude_of_central_meridian);
+        gmp.push_back(n_false_easting);
+        gmp.push_back(n_false_northing) ;
+    }
+    else if( gmn == n_vertical_perspective )
+    {
+        gmp.push_back(n_latitude_of_projection_origin);
+        gmp.push_back(n_longitude_of_projection_origin);
+        gmp.push_back(n_perspective_point_height) ;
+        gmp.push_back(n_false_easting);
+        gmp.push_back(n_false_northing) ;
+    }
+
+    std::vector<size_t> miss_ix;
+    bool is_alt=true;
+
+    for( size_t i=0 ; i < gmp.size() ; ++i )
+    {
+        if( ! hdhC::isAmong(gmp[i], var.attName) )
+        {
+            // special
+            bool is_special=false;
+            if(gmn == n_lambert_cylindrical_equal_area)
+                is_special=true;
+            else if( gmn == n_mercator )
+                is_special=true;
+            else if( gmn == n_polar_stereographic )
+                is_special=true;
+
+            if( is_special && is_alt )
+            {
+                if( gmp[i] == n_standard_parallel )
+                {
+                    if( hdhC::isAmong(n_scale_factor_at_projection_origin, var.attName) )
+                        is_alt=false;
+                    else
+                       miss_ix.push_back(i);
+                }
+                else if( gmp[i] == n_scale_factor_at_projection_origin )
+                {
+                    if( hdhC::isAmong(n_standard_parallel, var.attName) )
+                        is_alt = false ;
+                    else
+                       miss_ix.push_back(i);
+                }
+            }
+            else
+                miss_ix.push_back(i);
+        }
+
+        // another special
+        if( gmn == n_lambert_cylindrical_equal_area )
+        {
+            if( gmp[i] == n_scale_factor_at_projection_origin )
+            {
+                if( notes->inq(bKey + "56i", var.name) )
+                {
+                    std::string capt(hdhC::tf_var(var.name, hdhC::colon)) ;
+                    capt += "Warning: Grid_mapping parameter " ;
+                    capt += gmp[i] ;
+                    capt += " is deprecated." ;
+
+                    (void) notes->operate(capt) ;
+                    notes->setCheckStatus( n_CF );
+                }
+            }
+        }
+
+        // even one more
+        if( gmn == n_polar_stereographic && gmp[i] == n_latitude_of_projection_origin )
+        {
+            size_t j;
+            if( hdhC::isAmong(gmp[i], var.attName, j ) )
+            {
+                double val = hdhC::string2Double(var.attValue[j][0]) ;
+                if( ! ( val == 90. || val == -90. ) )
+                {
+                   if( notes->inq(bKey + "56j", var.name) )
+                   {
+                      std::string capt(hdhC::tf_var(var.name, hdhC::colon)) ;
+                      capt += "grid mapping parameter " ;
+                      capt += gmp[i] ;
+                      capt += " must be either +90. or -90. " ;
+
+                      (void) notes->operate(capt) ;
+                      notes->setCheckStatus( n_CF );
+                   }
+                }
+            }
+        }
+    }
+
+    if( miss_ix.size() )
+    {
+        if( notes->inq(bKey + "56h", var.name) )
+        {
+            std::string capt(hdhC::tf_var(var.name, hdhC::colon)) ;
+            capt += "Grid_mapping parameter" ;
+            if( miss_ix.size() > 1 )
+                capt += 's';
+
+            for( size_t i=0 ; i < miss_ix.size() ; ++i )
+            {
+              if(i)
+                  capt += ',' ;
+
+              capt += hdhC::empty + gmp[miss_ix[i]] ;
+            }
+
+            if( miss_ix.size() > 1 )
+                capt += " is";
+            else
+                capt += " are";
+
+            capt += "missing" ;
+
+            (void) notes->operate(capt) ;
+            notes->setCheckStatus( n_CF );
+        }
+    }
+
+    return;
+}
+
+int
+CF::chap56_gridMappingVar(Variable& var, std::string &s, std::string gmn)
+{
+   // Param s: the grid_mapping attribute of the data variable.
+   //     gmn: grid mapping name
+
+   // return: 0: found grid_mapping variable with valid grid_mapping_name
+   //         1: found no grid_mapping variable
+   //         2: found grid_mapping variable with missing grid_mapping_name
+   //    3 + ix: found grid_mapping variable with invalid grid_mapping_name
+
+
+   // find grid_mapping variable gmn
+   // and check existence of grid_mapping_name att
+   int ix = pIn->getVarIndex(s);  // index of the grid mapping variable
+
+   int retVal=1;
+
+   if( ix > -1 )
+   {
+     Variable& var_gmv = pIn->variable[ix] ;
+     var_gmv.isMapVar=true;
+     var_gmv.addAuxCount();
+     var.push_aux(var_gmv.name);
+
+     retVal=2;
+
+     if( var_gmv.isValidAtt(n_grid_mapping + "_name") )
+     {
+        // the grid mapping variabel must have attribute grid_mapping_name
+        std::string str( var_gmv.getAttValue(n_grid_mapping +"_name") );
+
+        if( str.size() )
+        {
+          var_gmv.isVoid=true;  // no data
+
+          if( gmn.size() == 0 )
+          {
+            // all methods defined in CF
+            std::vector<std::string> vs_gmn;
+            vs_gmn.push_back(n_albers_conical_equal_area);
+            vs_gmn.push_back(n_azimuthal_equidistant);
+            vs_gmn.push_back(n_lambert_azimuthal_equal_area);
+            vs_gmn.push_back(n_lambert_conformal_conic);
+            vs_gmn.push_back(n_lambert_cylindrical_equal_area);
+            vs_gmn.push_back(n_latitude_longitude);
+            vs_gmn.push_back(n_mercator);
+            vs_gmn.push_back(n_orthographic);
+            vs_gmn.push_back(n_polar_stereographic);
+            vs_gmn.push_back(n_rotated_latitude_longitude);
+            vs_gmn.push_back(n_stereographic);
+            vs_gmn.push_back(n_transverse_mercator);
+            vs_gmn.push_back(n_vertical_perspective);
+
+            if( cFVal > 16 )
+            {
+               vs_gmn.push_back(n_geostationary);
+               vs_gmn.push_back(n_oblique_mercator);
+               vs_gmn.push_back(n_sinusodial);
+            }
+
+            if( hdhC::isAmong(str, vs_gmn) )
+            {
+              gmn = str;
+
+              // check grid-mapping parameters
+              chap56_gridMappingParams(var_gmv, gmn);
+            }
+          }
+
+          retVal = (str == gmn) ? 0 : (3+ix);
+        }
+        else
+          retVal = 0 ;  // caught elsewhere
+     }
+
+     // recommendation: grid mapping variable should not have dimensions
+     if( followRecommendations && var_gmv.dimName.size() )
+     {
+        if( notes->inq(bKey + "56d", var_gmv.name, NO_MT) )
+        {
+          std::string capt(n_reco + ":: Grid_mapping-") ;
+          capt += hdhC::tf_assign(n_variable, var_gmv.name) ;
+          capt += " should not have " + n_dimension + "s" ;
+
+          (void) notes->operate(capt) ;
+          notes->setCheckStatus( n_CF );
+        }
+     }
+   }
+
+   return retVal;
 }
 
 void
@@ -7632,24 +7821,24 @@ CF::chap71(void)
        if( isFault[f] )
        {
          std::string tag;
-         std::string* att;
+         std::string att;
          if( f )
          {
            tag = "71e";
-           att = &n_standard_name ;
+           att = n_standard_name ;
          }
          else
          {
            tag = "71f";
-           att = &n_units ;
+           att = n_units ;
          }
 
          if( notes->inq(bKey + tag , var_is.name) )
          {
            std::string capt(
-                hdhC::tf_att(var_is.name, *att, var_is.getAttValue(*att))) ;
+                hdhC::tf_att(var_is.name, att, var_is.getAttValue(att))) ;
            capt +=  + "and " ;
-           capt += hdhC::tf_att(var_has.name, *att, var_has.getAttValue(*att)) ;
+           capt += hdhC::tf_att(var_has.name, att, var_has.getAttValue(att)) ;
            capt += "are different" ;
 
            (void) notes->operate(capt) ;
@@ -7659,9 +7848,7 @@ CF::chap71(void)
     }
   }
 
-    std::string* s[2];
-    s[0] = &n_FillValue;
-    s[1] = &n_missing_value;
+    const std::vector<std::string> &s = {n_FillValue, n_missing_value} ;
 
     for( size_t i=0 ; i < ix.size() ; ++i )
     {
@@ -7669,14 +7856,14 @@ CF::chap71(void)
 
       for( size_t i=0 ; i < 2 ; ++i )
       {
-        if( var_is.isValidAtt( *s[i]) )
+        if( var_is.isValidAtt(s[i]) )
         {
           if( notes->inq(bKey + "251e", var_is.name) )
           {
             std::string capt("Coordinate variable");
             capt += hdhC::tf_val(var_is.name, hdhC::blank) ;
             capt += "should not have " ;
-            capt += hdhC::tf_att( *s[i]) ;
+            capt += hdhC::tf_att(s[i]) ;
 
             std::string text("Appendix A: Not allowed for coordinate data " );
             text += "except in the case of auxiliary coordinate variables in ";
@@ -9026,7 +9213,7 @@ CF::chap734b(Variable& var,
                     || x_cm_name[x] == n_latitude) )
       {
         std::string meaning("none");
-        std::string *kind=0;  // for preventing compiler warnings when -O2
+        std::string kind=0;  // for preventing compiler warnings when -O2
 
         int i_lat, i_lon;
         i_lat = i_lon = -1 ;
@@ -9067,31 +9254,31 @@ CF::chap734b(Variable& var,
             meaning="meridional";
 
           if( meaning.size() )
-            kind=&n_area;
+            kind=n_area;
         }
 
         else if( i_lon == -1 && x_cm_name[x] == n_longitude )
         {
           meaning="meridional";
-          kind=&n_longitude;
+          kind=n_longitude;
         }
 
         else if( i_lat == -1 && x_cm_name[x] == n_latitude )
         {
           meaning="zonal";
-          kind=&n_latitude;
+          kind=n_latitude;
         }
 
         if( meaning != n_global && notes->inq(bKey + "734a", var.name) )
         {
           std::string capt(n_reco + " for " + hdhC::tf_att(var.name, n_cell_methods, hdhC::colon)) ;
-          capt += hdhC::tf_assign("Name", *kind +hdhC::colon) + " for " + meaning ;
+          capt += hdhC::tf_assign("Name", kind +hdhC::colon) + " for " + meaning ;
           capt += " scope should have size-one-dimensioned " + n_variable;
 
           if( meaning == n_global )
             capt += "s <" + n_longitude + "> and <" + n_latitude ;
           else
-            capt += " <" + *kind ;
+            capt += " <" + kind ;
 
           capt += "> with bounds" ;
 
@@ -9773,12 +9960,8 @@ CF::chap9(void)
     return ;  // checks are selected to be discarded by 'D'
 
   // discrete sampling geometries
-  std::vector<std::string*> dsg_att;
-
-  dsg_att.push_back(&n_featureType);
-  dsg_att.push_back(&n_cf_role);
-  dsg_att.push_back(&n_instance_dimension);
-  dsg_att.push_back(&n_sample_dimension);
+  const std::vector<std::string> &dsg_att = {
+     n_featureType, n_cf_role, n_instance_dimension, n_sample_dimension} ;
 
   if( cFVal < 16 )
   {
@@ -9789,10 +9972,10 @@ CF::chap9(void)
       Variable& var = pIn->variable[i] ;
       for( size_t j=0 ; j < dsg_att.size() ; ++j )
       {
-         if( var.isValidAtt(*(dsg_att[j])) )
+         if( var.isValidAtt(dsg_att[j]) )
          {
-            if( !hdhC::isAmong(*(dsg_att[j]), coll) )
-               coll.push_back(*(dsg_att[j])) ;
+            if( !hdhC::isAmong(dsg_att[j], coll) )
+               coll.push_back(dsg_att[j]) ;
          }
       }
     }
@@ -9842,12 +10025,12 @@ CF::chap9(void)
   // which are confusing when global
   for( size_t i=1 ; i < dsg_att.size() ; ++i )
   {
-     if( glob.isValidAtt(*(dsg_att[i])) )
+     if( glob.isValidAtt(dsg_att[i]) )
      {
         if( notes->inq(bKey + "9c", n_global) )
         {
           std::string capt("warning:") ;
-          capt += hdhC::tf_val(*(dsg_att[i]), hdhC::blank) ;
+          capt += hdhC::tf_val(dsg_att[i], hdhC::blank) ;
           capt += "should not be a global " + n_attribute;
 
           (void) notes->operate(capt) ;
