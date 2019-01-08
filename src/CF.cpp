@@ -11298,3 +11298,108 @@ CF::chap9_trajectoryProfile(std::vector<int>& xyzt_ix, std::vector<size_t>& dv_i
 
   return true;
 }
+
+void
+CF::chapA_useCase(void)
+{
+  // Appendix A: Attributes: column 'Use'
+
+  // test for some typos; also for global attributes
+  for( size_t i=0 ; i < pIn->variable.size() ; ++i )
+  {
+    Variable& var = pIn->variable[i];
+
+    for( size_t j=0 ; j < var.attName.size() ; ++j)
+    {
+      // would accept same names when case is ignored; this is trapped elsewhere.
+      std::string t(hdhC::Lower()(var.attName[j])) ;
+      bool is=false;
+      for( size_t jj=0 ; jj < var.attName.size() ; ++jj )
+      {
+        if( j != jj )
+        {
+          if( t == hdhC::Lower()(var.attName[jj]) )
+          {
+            is=true;
+            break;
+          }
+        }
+      }
+      if( is )
+        continue;
+
+      size_t k;
+      std::string cf_attName;
+      size_t sz = CF_Attribute.size() ;
+
+      std::vector<std::string> use= { "C", "D", "G"};
+
+      for( k=0 ; k < sz ; ++k)
+      {
+        if( CF_Attribute[k].size() == 1 )
+            continue;
+
+        cf_attName=CF_Attribute[k];
+        ++k ;
+
+        bool is=true;
+
+        while( CF_Attribute[k+1].size() == 1 )
+        {
+          ++k;
+
+          if( ! (k < sz) )
+              break;
+
+          if( CF_Attribute[k] == use[0] )
+          {
+              if( var.isCoordinate() )
+                is=false ;
+
+              var.addAuxCount(5);
+          }
+          else if( CF_Attribute[k] == use[1] )
+          {
+              if( var.isDataVar() )
+                is=false ;
+
+              var.addDataCount(5);
+          }
+          else if( CF_Attribute[k] == use[2] )
+          {
+              if( var.name == n_NC_GLOBAL )
+                is=false ;
+
+              var.addWeight(-1);
+              --var.countData ;
+          }
+        }
+
+        if(is)
+        {
+            if( notes->inq(bKey + "Ac", var.name) )
+            {
+                std::string rate;
+                if( var.isCoordinate() )
+                    rate="coordinate";
+                else if( var.isDataVar() )
+                    rate="non-coordinate";
+                else if( var.name == n_NC_GLOBAL)
+                    rate="global" ;
+
+                std::string capt(hdhC::tf_var(var.name, hdhC::colon) ) ;
+                capt += "is rated " + rate ;
+                capt += ", but does not match appendix A ";
+                capt += hdhC::tf_att(cf_attName);
+
+                (void) notes->operate(capt) ;
+                notes->setCheckStatus( n_CF, fail );
+            }
+        }
+      }
+
+    }
+  }
+
+  return;
+}

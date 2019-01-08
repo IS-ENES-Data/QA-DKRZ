@@ -146,6 +146,8 @@ class CF : public IObj
   bool   chap9_trajectory(std::vector<int>& xyzt_ix, std::vector<size_t>& dv_ix);
   bool   chap9_trajectoryProfile(std::vector<int>& xyzt_ix, std::vector<size_t>& dv_ix);
 
+  void   chapA_useCase(void) ;
+
   void   applyOptions(void);
   void   analyseCoordWeights(void);
   void   attributeSpellCheck(void);
