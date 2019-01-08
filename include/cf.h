@@ -1,5 +1,5 @@
-#ifndef _CF_14_H
-#define _CF_14_H
+#ifndef _CF_17_H
+#define _CF_17_H
 
 #include "hdhC.h"
 #include "iobj.h"
@@ -299,14 +299,99 @@ template <typename T>
   std::string NO_MT;
 
   std::vector<std::string>        associatedGroups;
-  static std::vector<std::string> attName;
-  static std::vector<char>        attType;  // S: string, N: numeric, D: data type
   std::vector<std::string>        dimensions;
   std::vector<size_t>             effDims_ix;
 
   // properties of coordinates attributes
   std::vector<std::pair<int, int> > ca_pij;
   std::vector<std::vector<std::string> > ca_vvs ;
+
+  std::vector<std::string> CF_Attribute = {
+  // cf-1.2 Grid Mapping Attributes
+  "earth_radius", "N",
+  "false_easting", "N",
+  "false_northing", "N",
+  "grid_mapping_name", "N",
+  "grid_north_pole_latitude", "N",
+  "grid_north_pole_longitude", "N",
+  "inverse_flattening", "N",
+  "latitude_of_projection_origin", "N",
+  "longitude_of_central_meridian", "N",
+  "longitude_of_prime_meridian", "N",
+  "longitude_of_projection_origin", "N",
+  "north_pole_grid_longitude", "N",
+  "perspective_point_height", "N",
+  "scale_factor_at_central_meridian", "N",
+  "scale_factor_at_projection_origin", "N",
+  "semi_major_axis", "N",
+  "semi_minor_axis", "N",
+  "standard_parallel", "N",
+  "straight_vertical_longitude_from_pole", "N",
+
+  // cf-1.7 new Grid Mapping Attributes
+  "azimuth_of_central_line", "N",
+  "crs_wkt", "S",
+  "geographic_crs_name", "S",
+  "geoid_name", "S",
+  "geopotential_datum_name", "S",
+  "horizontal_datum_name", "S",
+  "prime_meridian_name", "S",
+  "projected_crs_name", "S",
+  "reference_ellipsoid_name", "S",
+  "towgs84", "N",
+
+  // cf-1.0 attributes
+  "add_offset", "N", "D",
+  "ancillary_variables", "S", "D",
+  "axis", "S", "C",
+  "bounds", "S", "C",
+  "calendar", "S", "C",
+  "cell_measures", "S", "D",
+  "cell_methods", "S", "D",
+  "climatology", "S", "C",
+  "comment", "S", "G" ,"D",
+  "compress", "S", "C",
+  "Conventions", "S", "G",
+  "coordinates", "S", "D",
+  "_FillValue", "D", "D",
+  "flag_meanings", "S", "D",
+  "flag_values", "D", "D",
+  "formula_terms", "S", "C",
+  "grid_mapping", "S", "D",
+  "history", "S", "G",
+  "institution", "S", "G", "D",
+  "leap_month", "N", "C",
+  "leap_year", "N", "C",
+  "long_name", "S", "C,D",
+  "missing_value", "D", "D",
+  "month_lengths", "N", "C",
+  "positive", "S", "C",
+  "references", "S", "G", "D",
+  "scale_factor", "N", "D",
+  "source", "S", "G", "D",
+  "standard_error_multiplier", "N", "D",
+  "standard_name", "S", "C", "D",
+  "title", "S", "G",
+  "units", "S", "C", "D",
+  "valid_max", "N", "C", "D",
+  "valid_min", "N", "C", "D",
+  "valid_range", "N", "C", "D",
+
+  // cf-1.3 new attributes
+  "flag_masks", "D," "D",
+
+  // cf-1.6 new attributes
+  "cf_role", "C", "C",
+  "featureType", "C", "G",
+  "instance_dimension", "N", "D",
+  "sample_dimension", "N", "D",
+
+  // cf-1.7 new attributes
+  "actual_range", "N", "C,D",
+  "computed_standard_name", "S", "C",
+  "external_variables", "S", "G"
+  };
+
 };
 
 #endif

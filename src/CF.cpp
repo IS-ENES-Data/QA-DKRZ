@@ -261,7 +261,6 @@ void
 CF::attributeSpellCheck(void)
 {
   double editDistance, eDMin;
-  size_t eDMin_ix;
 
   // test for some typos; also for global attributes
   for( size_t i=0 ; i < pIn->variable.size() ; ++i )
@@ -289,56 +288,56 @@ CF::attributeSpellCheck(void)
 
       size_t k;
       eDMin=100.;
-      for( k=0 ; k < CF::attName.size() ; ++k)
+      std::string cf_attName;
+
+      for( k=0 ; k < CF_Attribute.size() ; ++k)
       {
-        std::string s=CF::attName[k];
-        editDistance = wagnerFischerAlgo(var.attName[j], CF::attName[k]);
+        if( CF_Attribute[k].size() == 1 )
+            continue;
+
+        cf_attName=CF_Attribute[k];
+        editDistance = wagnerFischerAlgo(var.attName[j], cf_attName);
 
         if( editDistance < eDMin )
-        {
            eDMin = editDistance ;
-           eDMin_ix = k;
-        }
 
         if( editDistance == 0 )
           break;
       }
 
-      if( eDMin < 0.25 && ! var.isValidAtt(CF::attName[eDMin_ix]) )
+      if( eDMin < 0.25 && ! var.isValidAtt(cf_attName) )
       {
-        if( notes->inq(bKey + "0h", var.name) )
-        {
-          std::string capt("is " ) ;
-          if( var.name == n_NC_GLOBAL )
-          {
-            capt += "global " + n_attribute ;
-            capt += hdhC::tf_val(var.attName[j]) ;
-          }
-          else
-            capt += hdhC::tf_att(var.name,var.attName[j]) ;
+         if( notes->inq(bKey + "0h", var.name) )
+         {
+            std::string capt("is " ) ;
+            if( var.name == n_NC_GLOBAL )
+            {
+              capt += "global " + n_attribute ;
+              capt += hdhC::tf_val(var.attName[j]) ;
+            }
+            else
+              capt += hdhC::tf_att(var.name,var.attName[j]) ;
 
-          capt += " misspelled? Did you mean " ;
-          capt += CF::attName[eDMin_ix] + "?";
+            capt += " misspelled? Did you mean " ;
+            capt += cf_attName + "?";
 
-          (void) notes->operate(capt) ;
-          notes->setCheckStatus( n_CF, fail );
-        }
+            (void) notes->operate(capt) ;
+            notes->setCheckStatus( n_CF, fail );
+         }
 
-        // correction for internal use
-        std::map<std::string, int>:: iterator it
-            = var.attNameMap.find(var.attName[j]);
+         // correction for internal use
+         std::map<std::string, int>:: iterator it
+              = var.attNameMap.find(var.attName[j]);
 
-        var.attName[j] = CF::attName[eDMin_ix] ;
+         var.attName[j] = cf_attName ;
 
-        if (it != var.attNameMap.end())
-        {
-          int value = it->second;
-          var.attNameMap.erase(it);
-          var.attNameMap[var.attName[j]] = value;
-        }
-
+         if (it != var.attNameMap.end())
+         {
+            int value = it->second;
+            var.attNameMap.erase(it);
+            var.attNameMap[var.attName[j]] = value;
+         }
       }
-
     }
   }
 
@@ -4445,6 +4444,35 @@ CF::chap26(void)
    // note that there is no explicit rq_chap26_2; it is already
    // checked here.
 
+   // seperation of CF attributes and value types
+   std::vector<std::string> cf_attName;
+   std::vector<char> cf_attType;
+   for( size_t i=0 ; i < CF_Attribute.size() ; ++i )
+   {
+     if( CF_Attribute[i].size() > 1 )
+     {
+         cf_attName.push_back(CF_Attribute[i++]);
+         cf_attType.push_back(CF_Attribute[i++][0]);
+     }
+   }
+
+   bool isConstraintChecked;
+   std::vector<std::string> att_constraint;
+   std::string c_s0;
+   std::string c_s1;
+
+   if( cFVal > 16 )
+   {
+       c_s0="projected_crs_name";
+       c_s1="geographic_crs_name";
+
+       isConstraintChecked=false;
+       att_constraint.push_back("reference_ellipsoid_name");
+       att_constraint.push_back("prime_meridian_name");
+       att_constraint.push_back("horizontal_datum_name");
+       att_constraint.push_back(c_s1);
+   }
+
    // indices of variables and attributes
    for( size_t i=0 ; i < pIn->varSz ; ++i )
    {
@@ -4465,9 +4493,9 @@ CF::chap26(void)
        }
 
        size_t k;
-       if( hdhC::isAmong(aName, CF::attName, k) )
+       if( hdhC::isAmong(aName, cf_attName, k) )
        {
-          if( CF::attType[k] == 'D' )
+          if( cf_attType[k] == 'D' )
           {
             if( var.attType[j] != var.type )
             {
@@ -4487,7 +4515,7 @@ CF::chap26(void)
             }
           }
 
-          else if( CF::attType[k] == 'S' )
+          else if( cf_attType[k] == 'S' )
           {
             if( var.attType[j] != NC_CHAR )
             {
@@ -4504,9 +4532,9 @@ CF::chap26(void)
             }
           }
 
-          else if( CF::attType[k] == 'N' )
+          else if( cf_attType[k] == 'N' )
           {
-            if( ! pIn->nc.isNumericType(var.name, CF::attName[k] ) )
+            if( ! pIn->nc.isNumericType(var.name, cf_attName[k] ) )
             {
               if( notes->inq(bKey + "26c", var.name) )
               {
@@ -4518,6 +4546,64 @@ CF::chap26(void)
                 notes->setCheckStatus( n_CF, fail );
               }
             }
+          }
+       }
+
+       if( cFVal > 16 )
+       {
+          if( ! isConstraintChecked )
+          {
+             if( hdhC::isAmong(aName, att_constraint) )
+             {
+                 isConstraintChecked = true;
+
+                 for( size_t v=0 ; v < att_constraint.size() ; ++v )
+                 {
+                    std::string &cName = att_constraint[v] ;
+
+                    if( aName != cName )
+                    {
+                        if( ! hdhC::isAmong(cName, pIn->variable[i].attName) )
+                        {
+                           if( notes->inq(bKey + "Aa", var.name) )
+                           {
+                             std::string capt(hdhC::tf_att(var.name, aName, hdhC::colon));
+                             capt += hdhC::tf_att(cName);
+                             capt += " must also be defined" ;
+
+                             (void) notes->operate(capt) ;
+                             notes->setCheckStatus( n_CF, fail );
+                           }
+                        }
+                    }
+                 }
+             }
+          }
+
+          bool c0(false);
+
+          if( (c0 = aName == c_s0 ) )
+          {
+             bool is_0(false);
+
+             if( c0 )
+             {
+               if( ! hdhC::isAmong(c_s1, pIn->variable[i].attName) )
+                  is_0=true;
+             }
+
+             if(is_0)
+             {
+                if( notes->inq(bKey + "Ab", var.name) )
+                {
+                    std::string capt(hdhC::tf_att(var.name, aName, hdhC::colon));
+                    capt += hdhC::tf_att(c_s1);
+                    capt += " must also be defined" ;
+
+                    (void) notes->operate(capt) ;
+                    notes->setCheckStatus( n_CF, fail );
+                }
+             }
           }
        }
      }
@@ -11017,50 +11103,3 @@ CF::chap9_trajectoryProfile(std::vector<int>& xyzt_ix, std::vector<size_t>& dv_i
 
   return true;
 }
-
-// note that the last group are not names of attributes, but commonly used words
-// to help the spell checker.
-// IMPORTANT: CF_AttType.size() only for real attributes
-
-const char* CF_AttName[] = {
-  "standard_error_multiplier"          ,
-  "ancillary_variables", "axis"        , "calendar"     , "bounds"       , "cell_measures"
-, "cell_methods"       , "climatology" , "comment"      , "compress"     , "Conventions"
-, "coordinates"        , "_FillValue"  , "flag_masks"   , "flag_meanings", "flag_values"
-, "formula_terms"      , "grid_mapping", "history"      , "institution"  , "leap_month"
-, "leap_year"          , "long_name"   , "missing_value", "month_lengths", "positive"
-, "references"         , "scale_factor", "source"       , "add_offset"   , "valid_range"
-, "standard_name"      , "title"       , "units"        , "valid_max"    , "valid_min"
-, "grid_mapping_name"
-
-, "earth_radius"                    , "false_easting"                       , "false_northing"
-, "grid_north_pole_latitude"        , "grid_north_pole_longitude"           , "inverse_flattening"
-, "latitude_of_projection_origin"   , "longitude_of_central_meridian"       , "longitude_of_prime_meridian"
-, "longitude_of_projection_origin"  , "north_pole_grid_longitude"           , "perspective_point_height"
-, "scale_factor_at_central_meridian", "scale_factor_at_projection_origin"   , "semi_major_axis"
-, "semi_minor_axis"                 , "standard_parallel"   , "straight_vertical_longitude_from_pole"
-
-, "variance"
-};
-
-const char CF_AttType[] = {
-  'N'
-, 'S'                  , 'S'           , 'S'            , 'S'            , 'S'
-, 'S'                  , 'S'           , 'S'            , 'S'            , 'S'
-, 'S'                  , 'D'           , 'D'            , 'S'            , 'D'
-, 'S'                  , 'S'           , 'S'            , 'S'            , 'N'
-, 'N'                  , 'S'           , 'D'            , 'N'            , 'S'
-, 'S'                  , 'N'           , 'S'            , 'N'            , 'N'
-, 'S'                  , 'S'           , 'S'            , 'N'            , 'N'
-, 'S'
-
-,'N', 'N', 'N'
-,'N', 'N', 'N'
-,'N', 'N', 'N'
-,'N', 'N', 'N'
-,'N', 'N', 'N'
-,'N', 'N', 'N'
-};
-
-std::vector<std::string> CF::attName(CF_AttName, CF_AttName + 56);
-std::vector<char>        CF::attType(CF_AttType, CF_AttType + 55);
