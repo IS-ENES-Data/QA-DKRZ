@@ -940,24 +940,24 @@ if [ ${isUpdate} ] ; then
   fi
 fi
 
-# store for alien users
-if [ ! -f ${QA_SRC}/.qa-dkrz/config.txt -a ${isCondaBuild:-f} = f ] ; then
-  mkdir ${QA_SRC}/.qa-dkrz
-  # sed -n "${QA_SRC//\//\\\/}/,/^[:space]*$/ p" ~/.qa-dkrz/config.txt \
-
-  echo "${QA_SRC}:" > ${QA_SRC}/.qa-dkrz/config.txt
-
-  line_num=$( grep -n ${QA_SRC}: ~/.qa-dkrz/config.txt )
-  line_num=$(( ${line_num%%:*} + 1 ))
-
-  sed -n "${line_num},/^[:space]*$/ p" ~/.qa-dkrz/config.txt \
-      >> ${QA_SRC}/.qa-dkrz/config.txt
-
-  chmod -R o-w ${QA_SRC}/.qa-dkrz
-  chmod -R o+r ${QA_SRC}/.qa-dkrz
-fi
-
 if [ ${isShip} ] ; then
+  # store for alien users
+  if [ ! -f ${QA_SRC}/.qa-dkrz/config.txt -a ${isCondaBuild:-f} = f ] ; then
+    mkdir ${QA_SRC}/.qa-dkrz
+    # sed -n "${QA_SRC//\//\\\/}/,/^[:space]*$/ p" ~/.qa-dkrz/config.txt \
+
+    echo "${QA_SRC}:" > ${QA_SRC}/.qa-dkrz/config.txt
+
+    line_num=$( grep -n ${QA_SRC}: ~/.qa-dkrz/config.txt )
+    line_num=$(( ${line_num%%:*} + 1 ))
+
+    sed -n "${line_num},/^[:space]*$/ p" ~/.qa-dkrz/config.txt \
+        >> ${QA_SRC}/.qa-dkrz/config.txt
+
+    chmod -R o-w ${QA_SRC}/.qa-dkrz
+    chmod -R o+r ${QA_SRC}/.qa-dkrz
+  fi
+
    ship ${shipOpt}
    exit_fnct 41
 fi

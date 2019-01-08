@@ -422,7 +422,7 @@ class QaConfig(object):
 
         parser.add_argument('--unship', dest='UNSHIP',
             action="store_true",
-            help='''Initialisation after shippingi at path.''')
+            help='''Initialisation after shipping at path.''')
 
         parser.add_argument('--up', '--update', dest='CMD_UPDATE',
             nargs='?',  const='freeze',
@@ -793,14 +793,14 @@ class QaConfig(object):
         self.home = os.path.join( os.environ['HOME'], '.qa-dkrz')
         qa_src_qaconf=os.path.join(self.qa_src, '.qa-dkrz')
 
-        if os.path.isfile( os.path.join(qa_src_qaconf, 'config.txt') ):
+        if os.path.isfile( os.path.join(self.home, 'config.txt') ):
+           self.cfg_file=os.path.join(self.home, 'config.txt')
+        elif os.path.isfile( os.path.join(qa_src_qaconf, 'config.txt') ):
            self.cfg_file=os.path.join(qa_src_qaconf, 'config.txt')
         elif os.path.isfile( os.path.join(self.qa_src, '.qa-config.txt') ):
            self.cfg_file=os.path.join(self.qa_src, '.qa-config.txt')
         elif os.path.isfile( os.path.join(self.qa_src, '.qa.cfg') ):
            self.cfg_file=os.path.join(self.qa_src, '.qa.cfg')
-        elif os.path.isfile( os.path.join(self.home, 'config.txt') ):
-           self.cfg_file=os.path.join(self.home, 'config.txt')
         else:
            self.cfg_file=os.path.join(self.home, 'qa.cfg')
 
