@@ -69,13 +69,13 @@ class CF : public IObj
   bool   chap41(Variable&);    // lat/lon coordinate
   bool   chap43(Variable&);    // vertical coordinate
   bool   chap431(Variable&);  // vertical dimensional coord
-  void   chap432(void);       // vertical dimensionless coord
-  bool   chap432(Variable&, std::vector<std::string>&, std::vector<std::string>&,
-                 int valid_ft_ix, int valid_sn_ix, int ft_jx, int sn_jx,
-                 std::vector<std::pair<std::string, std::string> > &) ;
   // Check of standard_name vs. formula_terms (case: dimless vertical coord).
   // The chapter ordering has changed; this is valid sind v1.7
   void   chap432(Variable&, std::string &units);
+  void   chap433(void);       // vertical dimensionless coord
+  bool   chap433(Variable&, std::vector<std::string>&, std::vector<std::string>&,
+                 int valid_ft_ix, int valid_sn_ix, int ft_jx, int sn_jx,
+                 std::vector<std::pair<std::string, std::string> > &) ;
   bool   chap433_checkSNvsFT( Variable& var,
             std::vector<std::string>& valid_sn,
             std::vector<std::string>& valid_ft,

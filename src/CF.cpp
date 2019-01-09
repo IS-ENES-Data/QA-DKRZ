@@ -5894,7 +5894,7 @@ CF::chap433(Variable& var,
      fTerms.push_back( x_fTerms[i] );
 
   // after return, fTerms contains associated variables.
-  chap43_verify_FT(var,valid_ft_ix,
+  chap433_verify_FT(var,valid_ft_ix,
           valid_ft[ valid_ft_ix ], att_ft_ix, fTerms, att_ft_pv);
 
   size_t ft_sz = fTerms.size();
@@ -5938,7 +5938,7 @@ CF::chap433(Variable& var,
 }
 
 bool
-CF::chap43_checkSNvsFT( Variable& var,
+CF::chap433_checkSNvsFT( Variable& var,
    std::vector<std::string>& valid_sn,
    std::vector<std::string>& valid_ft,
    int& valid_sn_ix,
