@@ -772,7 +772,7 @@ CF::checkGroupRelation(void)
           if( var.isScalar )
             capt += "Scalar c";
           else
-            capt += "C";
+            capt += n_C;
 
           capt += "oordinate " ;
           capt += hdhC::tf_var(var.name, hdhC::colon) ;
@@ -4438,6 +4438,8 @@ CF::chap26(void)
        {
           if( cf_attType[k] == 'D' )
           {
+            var.addDataCount();
+
             if( var.attType[j] != var.type )
             {
               if( notes->inq(bKey + "26a", var.name) )
@@ -11332,7 +11334,7 @@ CF::chapA_useCase(void)
       std::string cf_attName;
       size_t sz = CF_Attribute.size() ;
 
-      std::vector<std::string> use= { "C", "D", "G"};
+      std::vector<std::string> use= { n_C, n_D, n_G};
 
       for( k=0 ; k < sz ; ++k)
       {
