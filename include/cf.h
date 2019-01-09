@@ -73,19 +73,20 @@ class CF : public IObj
   bool   chap432(Variable&, std::vector<std::string>&, std::vector<std::string>&,
                  int valid_ft_ix, int valid_sn_ix, int ft_jx, int sn_jx,
                  std::vector<std::pair<std::string, std::string> > &) ;
-  // check of standard_name vs. formula_terms (case: dimless vertical coord)
-  bool   chap432_checkSNvsFT( Variable& var,
+  // Check of standard_name vs. formula_terms (case: dimless vertical coord).
+  // The chapter ordering has changed; this is valid sind v1.7
+  void   chap432(Variable&, std::string &units);
+  bool   chap433_checkSNvsFT( Variable& var,
             std::vector<std::string>& valid_sn,
             std::vector<std::string>& valid_ft,
             int& valid_sn_ix,
             int& ft_ix, int& sn_ix, std::string& units );
-  void   chap432_deprecatedUnits(Variable&, std::string &units);
-  void   chap432_getParamVars( Variable&,
+  void   chap433_getParamVars( Variable&,
             std::vector<std::string>& valid_sn,
             std::vector<std::string>& valid_ft,
             int& valid_ft_ix, int& valid_sn_ix, int att_ft_ix,
             std::vector<std::pair<std::string, std::string> >& att_ft_pv) ;
-  void   chap432_verify_FT(Variable&, int, std::string &reqFormTerms,
+  void   chap433_verify_FT(Variable&, int, std::string &reqFormTerms,
             int att_ft_ix, std::vector<std::string> &fTerms,
             std::vector<std::pair<std::string, std::string> >& p_found_ft);
   bool   chap44(Variable&);    // time

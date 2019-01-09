@@ -1257,9 +1257,7 @@ CF::finalAtt_axis(void)
 
           if( ! (var.coord.isBasicType[0] || var.coord.isBasicType[1]) )
           {
-             std::string tag(bKey + "5d");
-
-             if( notes->inq(tag, var.name) )
+             if( notes->inq(bKey + "5d", var.name) )
              {
                 std::string capt("reco: Horizontal coordinate ");
                 capt += hdhC::tf_var(var.name) ;
@@ -2733,7 +2731,7 @@ CF::run()
      return false;  // undefined Convention is specified
 
    // dimensionless vertical coordinate? Could set var.isChecked=true
-   chap432() ;  // preponed to make processing easier
+   chap433() ;  // preponed to make processing easier
 
    // a) Indexes to variables and attributes.
    // b) It is difficult to find faults in CF-1.4 time-series files
@@ -3001,8 +2999,7 @@ CF::setCheck(std::string &s)
    }
    else
    {
-     std::string tag(bKey+"261b");
-     if( notes->inq(tag) )
+     if( notes->inq(bKey+"261b") )
      {
        std::string capt("undefined Conventions=" + s);
        capt += ", restart with providing a valid convention, e.g. 'CF-1.4'";
@@ -3695,7 +3692,7 @@ void
 CF::chap(void)
 {
    // dimensionless vertical coordinate? Could set var.isChecked=true
-   // chap432() ;  // was checked before
+   // chap433() ;  // was checked before
 
    chap2();  // NetCDF Files and Components
    chap3();  // Description of the Data
@@ -3978,11 +3975,9 @@ CF::chap23_reco(void)
      }
    }
 
-   std::string tag(bKey + "23b");
-
    for( size_t i=0 ; i < what.size() ; ++i )
    {
-      if( notes->inq(tag) )
+      if( notes->inq(bKey + "23b") )
       {
         std::string capt(n_reco);
 
@@ -4111,8 +4106,7 @@ CF::chap24_reco(void)
       {
         if( dIx[j-1] > dIx[j] )
         {
-          std::string tag(bKey + "24b");
-          if( notes->inq(tag, var.name) )
+          if( notes->inq(bKey + "24b", var.name) )
           {
             std::string capt(n_reco + ": The order of " + n_dimension + "s of ");
             capt += hdhC::tf_var(var.getDimNameStr(true));
@@ -4168,20 +4162,6 @@ CF::chap251(void)
       Variable& var = pIn->variable[ix];
 
       int jxMV     = var.getAttIndex(n_missing_value) ;
-
-      if( jxMV > -1 && cFVal == 14)
-      {
-        if( notes->inq(bKey + "251c", NO_MT) )
-        {
-          std::string capt(n_reco + " for CF-1.4: " + hdhC::tf_att(n_missing_value));
-          capt += " is deprecated";
-
-          std::string text("Note that this recommendation is only given for CF-1.4");
-
-          (void) notes->operate(capt) ;
-          notes->setCheckStatus( n_CF );
-        }
-      }
 
       int jxFV     = var.getAttIndex(n_FillValue) ;
       int jxVRange = var.getAttIndex(n_valid_range) ;
@@ -4352,20 +4332,31 @@ CF::chap251(void)
            }
          }
       }
+
+      if( countMV == 1 && countFV == 0)
+      {
+        if( notes->inq(bKey + "251d", var.name) )
+        {
+          std::string capt(n_reco + ": " + hdhC::tf_att(n_missing_value));
+          capt += " should be replaced by _FillValue";
+
+          (void) notes->operate(capt) ;
+          notes->setCheckStatus( n_CF );
+        }
+      }
+
+      if( (countMV || countFV) && var.coord.isCoordVar )
+      {
+        if( notes->inq(bKey + "251c", var.name) )
+        {
+          std::string capt(hdhC::tf_att(var.name, n_missing_value));
+          capt += " is not allowed for coordinate variables";
+
+          (void) notes->operate(capt) ;
+          notes->setCheckStatus( n_CF );
+        }
+      }
   }
-
-  if( countMV == 1 && countFV == 0)
-  {
-    if( notes->inq(bKey + "251d", NO_MT) )
-    {
-      std::string capt(n_reco + ": " + hdhC::tf_att(n_missing_value));
-      capt += " should be replaced by _FillValue";
-
-      (void) notes->operate(capt) ;
-      notes->setCheckStatus( n_CF );
-    }
-  }
-
   return;
 }
 
@@ -4638,8 +4629,7 @@ CF::chap261(void)
 
   if( isMissingPrefix )
   {
-      std::string tag(bKey+"261b");
-      if( notes->inq(tag) )
+      if( notes->inq(bKey+"261b") )
       {
         std::string capt("undefined global ") ;
         capt += hdhC::tf_att(hdhC::empty, n_Conventions, glob_cf);
@@ -4651,8 +4641,7 @@ CF::chap261(void)
   else if( isCorrected )
   {
     // test whether "CF-" is missing
-    std::string tag(bKey+"261b");
-    if( notes->inq(tag) )
+    if( notes->inq(bKey+"261b") )
     {
         std::string capt("global ") ;
         capt += hdhC::tf_att(hdhC::empty, n_Conventions, glob_cf);
@@ -4783,9 +4772,10 @@ CF::chap3_reco(void)
 void
 CF::chap33(void)
 {
-   // standard_name and some more, comparable to
+   // standard_name and more, comparable to
    // http://cf-pcmdi.llnl.gov/documents/cf-standard-names/cf-standard-name-table.xml,
    // which was read in getSN_TableEntry().
+   // Note that computed_standard_name is also checked here.
 
    // note that units, amip and/or grib are only checkable for a valid standard_name.
 
@@ -5662,7 +5652,7 @@ CF::chap431(Variable& var)
 }
 
 void
-CF::chap432(void)
+CF::chap433(void)
 {
   // dimensionless vertical coordinate?
 
@@ -5773,7 +5763,7 @@ CF::chap432(void)
         // formula_terms by vector of pairs: 1st=key: 2nd=param_varName
         att_ft_pv.clear() ;
 
-        chap432_getParamVars(var, valid_sn, valid_ft, valid_ft_ix, valid_sn_ix,
+        chap433_getParamVars(var, valid_sn, valid_ft, valid_ft_ix, valid_sn_ix,
                    j, att_ft_pv) ;
 
         if( valid_ft_ix > -1 )
@@ -5789,8 +5779,8 @@ CF::chap432(void)
      if( valid_ft_ix == -1 )
        continue;
 
-     // if( chap432(var, valid_sn, valid_ft, ij_fT[i], ij_sN[i]) )
-     if( chap432(var, valid_sn, valid_ft, valid_ft_ix, valid_sn_ix,
+     // if( chap433(var, valid_sn, valid_ft, ij_fT[i], ij_sN[i]) )
+     if( chap433(var, valid_sn, valid_ft, valid_ft_ix, valid_sn_ix,
                  ft_jx, sn_jx, att_ft_pv ) )
      {
          var.coord.isC[2]    = true;
@@ -5798,6 +5788,42 @@ CF::chap432(void)
          var.addWeight(2);
          var.addAuxCount();
          var.isChecked=true;
+
+         if( cFVal > 16 )
+         {
+             if( followRecommendations && ! hdhC::isAmong(n_computed_standard_name, var.attName) )
+             {
+               if( notes->inq(bKey+"433k", var.name) )
+               {
+                  std::string capt(n_reco + ": ");
+                  capt += hdhC::tf_att(var.name, n_computed_standard_name);
+                  capt += " is strongly recommended";
+
+                  (void) notes->operate(capt) ;
+                  notes->setCheckStatus( n_CF );
+                }
+             }
+
+            for( size_t l=0 ; l < pIn->varSz ; ++l )
+            {
+               if( l == i )
+                   continue;
+
+               Variable& var_l = pIn->variable[l] ;
+
+               if( hdhC::isAmong(n_computed_standard_name, var_l.attName) )
+               {
+                 if( notes->inq(bKey+"433l", var.name) )
+                 {
+                    std::string capt(hdhC::tf_att(var.name, n_computed_standard_name));
+                    capt += " is only allowed for data variables";
+
+                    (void) notes->operate(capt) ;
+                    notes->setCheckStatus( n_CF );
+                  }
+               }
+            }
+         }
      }
   }
 
@@ -5805,7 +5831,7 @@ CF::chap432(void)
 }
 
 bool
-CF::chap432(Variable& var,
+CF::chap433(Variable& var,
    std::vector<std::string>& valid_sn,
    std::vector<std::string>& valid_ft,
    int valid_ft_ix, int valid_sn_ix,
@@ -5820,11 +5846,11 @@ CF::chap432(Variable& var,
     // tolerated units for COARDS compatibility: level, layer, sigma_level;
     // would change deprecated units forms to "1"
     units = var.attValue[att_units_jx][0];
-    chap432_deprecatedUnits(var, units) ;
+    chap432(var, units) ;
   }
 
   // cross-check of standard_name vs. formula_terms
-  if( chap432_checkSNvsFT(var, valid_sn, valid_ft, valid_sn_ix,
+  if( chap433_checkSNvsFT(var, valid_sn, valid_ft, valid_sn_ix,
                    att_ft_ix, att_sn_ix, units) )
     return false; // no formula_terms case
 
@@ -5868,7 +5894,7 @@ CF::chap432(Variable& var,
      fTerms.push_back( x_fTerms[i] );
 
   // after return, fTerms contains associated variables.
-  chap432_verify_FT(var,valid_ft_ix,
+  chap43_verify_FT(var,valid_ft_ix,
           valid_ft[ valid_ft_ix ], att_ft_ix, fTerms, att_ft_pv);
 
   size_t ft_sz = fTerms.size();
@@ -5912,7 +5938,7 @@ CF::chap432(Variable& var,
 }
 
 bool
-CF::chap432_checkSNvsFT( Variable& var,
+CF::chap43_checkSNvsFT( Variable& var,
    std::vector<std::string>& valid_sn,
    std::vector<std::string>& valid_ft,
    int& valid_sn_ix,
@@ -5999,7 +6025,7 @@ CF::chap432_checkSNvsFT( Variable& var,
 }
 
 void
-CF::chap432_deprecatedUnits(Variable& var, std::string &units)
+CF::chap432(Variable& var, std::string &units)
 {
    // units level, layer and sigma_level are deprecated
 
@@ -6007,8 +6033,7 @@ CF::chap432_deprecatedUnits(Variable& var, std::string &units)
   {
     if( followRecommendations )
     {
-      std::string tag(bKey+"31a");
-      if( notes->inq(tag, var.name) )
+      if( notes->inq(bKey+"31a", var.name) )
       {
         std::string capt(n_reco + ": ");
         capt += hdhC::tf_att(var.name, n_units, units, hdhC::upper);
@@ -6026,7 +6051,7 @@ CF::chap432_deprecatedUnits(Variable& var, std::string &units)
 }
 
 void
-CF::chap432_getParamVars( Variable& var,
+CF::chap433_getParamVars( Variable& var,
    std::vector<std::string>& valid_sn,
    std::vector<std::string>& valid_ft,
    int& valid_ft_ix, int& valid_sn_ix,
@@ -6165,7 +6190,7 @@ CF::chap432_getParamVars( Variable& var,
 }
 
 void
-CF::chap432_verify_FT(
+CF::chap433_verify_FT(
   Variable& var,
   int valid_ft_ix,
   std::string &valid_ft,
@@ -6429,8 +6454,7 @@ CF::chap44(Variable& var)
 
     if( !isUnits )
     {
-      std::string tag(bKey + "44a");
-      if( notes->inq(tag, var.name) )
+      if( notes->inq(bKey + "44a", var.name) )
       {
         std::string capt(hdhC::tf_var(var.name));
         capt += "was rated a T-coordinate, but ";
