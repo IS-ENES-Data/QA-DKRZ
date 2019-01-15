@@ -29,7 +29,7 @@ class CF : public IObj
   };
 
   CF();
-  ~CF(){;}
+  ~CF(){if( ifs_std_name.isOpen()) ifs_std_name.close();}
 
   //! coresponding to virtual methods in IObj
   bool   closeEntryTime(void){return false;}
@@ -73,22 +73,26 @@ class CF : public IObj
   // The chapter ordering has changed; this is valid sind v1.7
   void   chap432(Variable&, std::string &units);
   void   chap433(void);       // vertical dimensionless coord
-  bool   chap433(Variable&, std::vector<std::string>&, std::vector<std::string>&,
-                 int valid_ft_ix, int valid_sn_ix, int ft_jx, int sn_jx,
+  bool   chap433(Variable&,
+                 std::vector<std::string>&,
+                 std::vector<std::string>&,
+                 std::vector<std::string>&,
+                 int& valid_ix, int ft_jx, int sn_jx,
                  std::vector<std::pair<std::string, std::string> > &) ;
   bool   chap433_checkSNvsFT( Variable& var,
-            std::vector<std::string>& valid_sn,
-            std::vector<std::string>& valid_ft,
-            int& valid_sn_ix,
-            int& ft_ix, int& sn_ix, std::string& units );
+            std::vector<std::string> &valid_sn,
+            std::vector<std::string> &valid_ft,
+            std::vector<std::string> &valid_units,
+            int& valid_ix, int& ft_ix, int& sn_ix, std::string &units );
   void   chap433_getParamVars( Variable&,
-            std::vector<std::string>& valid_sn,
-            std::vector<std::string>& valid_ft,
-            int& valid_ft_ix, int& valid_sn_ix, int att_ft_ix,
-            std::vector<std::pair<std::string, std::string> >& att_ft_pv) ;
-  void   chap433_verify_FT(Variable&, int, std::string &reqFormTerms,
-            int att_ft_ix, std::vector<std::string> &fTerms,
-            std::vector<std::pair<std::string, std::string> >& p_found_ft);
+            std::vector<std::string> &valid_sn,
+            std::vector<std::string> &valid_ft,
+            int& valid_ft_ix, int att_ft_ix,
+            std::vector<std::pair<std::string, std::string> > &att_ft_pv) ;
+  void   chap433_verify_FT(Variable&,
+            std::string &valid_ft, std::string &valid_sn, std::string &valid_units,
+            int valid_ix, int att_ft_ix, std::vector<std::string> &fTerms,
+            std::vector<std::pair<std::string, std::string> > &p_found_ft);
   bool   chap44(Variable&);    // time
   void   chap44a_reco(Variable&);   // ref time 0
   bool   chap441(Variable&);  // calendar
@@ -102,6 +106,9 @@ class CF : public IObj
 //  void   chap54(void);  // time series of station data
 //  void   chap55(void);  // trajectories: checked implicitely
   void   chap56(void);  // grid mapping
+  void   chap56_simple(Variable&, size_t,  // grid mapping att naming a grid-mapping variable
+            std::vector<std::pair<std::string, std::string> >& );
+  void   chap56_expanded(Variable&, size_t);  // expanded form of the grid mapping att
   int    chap56_gridMappingVar(Variable& dv, std::string &, std::string);
   void   chap56_gridMappingCoords(Variable& dataVar, std::string mCV[]);
   void   chap56_gridMappingParams(Variable &var, std::string &gm_name)   ;
@@ -118,9 +125,9 @@ class CF : public IObj
   bool   chap73_cellMethods_Name(std::string&, Variable&) ;
   void   chap73_inqBounds(Variable&,  std::vector<std::string>& name,
                           std::vector<std::string>& method, bool );
+  bool   chap734a(std::string&) ;
   void   chap73b_reco(Variable&, std::vector<std::string> &dim );
   bool   chap733(std::string& method, Variable&, std::string mode) ;
-  bool   chap734a(std::string&) ;
   void   chap734b(Variable&, std::vector<std::string> &dim, std::vector<std::string> &method);
   void   chap74a(void);  // climatological statistics
   bool   chap74b(Variable&, std::vector<std::string> &name, std::vector<std::string> &method) ;
@@ -166,6 +173,7 @@ template <typename T>
   bool   checkRelationCF16(std::vector<bool>&);
   bool   checkRelationScalar(std::vector<bool>&);
   void   checkSN_Modifier(Variable &);
+  bool   check_standard_name(Variable&, std::string&, std::string mode="") ;
   bool   cmpUnits( std::string s, std::string ref);
   void   enableCheck(void){isCheck=true;}
   int    finally(int eCode=0);
@@ -205,7 +213,7 @@ template <typename T>
 
   bool   run(void);
   bool   scanStdNameTable(std::vector<int>& zx);
-  bool   scanStdNameTable(ReadLine&, Variable&, std::string);
+  bool   scanStdNameTable(Variable&, std::string);
   bool   setCheck(std::string&);
   void   setCheckStatus(std::string);
   void   setDataVarName(std::string s){ dataVarName = s;}
@@ -250,6 +258,13 @@ template <typename T>
   int         time_ix;
   int         compress_ix;
 
+  ReadLine ifs_std_name ;
+  bool is_ifs_std_name={true};
+  //std::vector<std::string> vs_std_name; // contains also computed_standard_names
+  //std::vector<size_t> vs_std_name_ix ; // index for vector Variable
+  std::vector<bool> vs_SNT_ix ; // index for variable.SN_TableEntry objects; not necessarily varSz
+  size_t SNT_ix ;               // 0: std_name, 1: computed_std_name
+
   // a few names of attributes used throughout the checks
   const std::string n_actual_range = {"actual_range"};
   const std::string n_add_offset = {"add_offset"};
@@ -272,7 +287,7 @@ template <typename T>
   const std::string n_dimension = {"dimension"};
   const std::string n_external_variables = {"external_variables"};
   const std::string n_featureType = {"featureType"};
-  const std::string n_FillValue = {"FillValue"};
+  const std::string n_FillValue = {"_FillValue"};
   const std::string n_flag_masks = {"flag_masks"};
   const std::string n_flag_meanings = {"flag_meanings"};
   const std::string n_flag_values = {"flag_values"};
@@ -363,7 +378,7 @@ template <typename T>
   const std::string n_D={"D"} ;
   const std::string n_G={"G"} ;
 
-  const std::vector<std::string> &CF_Attribute = {
+  const std::vector<std::string> CF_Attribute = {
   n_actual_range, n_N, n_C, n_D,
   n_add_offset, n_N, n_D,
   n_ancillary_variables, n_S, n_D,

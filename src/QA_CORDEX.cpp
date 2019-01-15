@@ -2004,7 +2004,7 @@ QA_Exp::domainFindTableTypeByRange(
 
    for(size_t i=0 ; i < pQA->pIn->varSz ; ++i )
    {
-      if( pQA->pIn->variable[i].isDATA )
+      if( pQA->pIn->variable[i].isDataVar() )
       {
          for(size_t j=0 ; j < pQA->pIn->variable[i].dimName.size() ; ++j )
          {
@@ -2744,7 +2744,7 @@ QA_Exp::createVarMetaData(void)
 
   // create instances of VariableMetaData. These have been identified
   // previously at the opening of the nc-file and marked as
-  // Variable::VariableMeta(Base)::isDATA == true. The index
+  // Variable::isDataVar() rturns true. The index
   // of identified targets is stored in vector in.dataVarIndex.
 
   size_t i;
@@ -3192,7 +3192,7 @@ QA_Exp::checkVariableType(void)
         {
           Variable& var = pQA->pIn->variable[v] ;
 
-          if( var.isDATA && tName == "DATA_VAR" )
+          if( var.isDataVar() && tName == "DATA_VAR" )
             checkVariableTypeX(v, i, j, tName);
           else if( var.isAUX && tName == "AUX_VAR" )
             checkVariableTypeX(v, i, j, tName);

@@ -205,7 +205,7 @@ CF::analyseCoordWeights(void)
     }
   }
 
-  // if stil undecided, but there is a coordinates attribute which has
+  // if still undecided, but there is a coordinates attribute which has
   // (without time) auxs or dims for the three coordinates including
   // this one
   for( size_t i=0 ; i < pIn->varSz ; ++i )
@@ -855,11 +855,11 @@ CF::checkSN_Modifier(Variable& var)
   valid_mod.push_back("standard_error");
   valid_mod.push_back("status_flag");
 
-  if( var.snTableEntry.remainder.size() == 0
-        && !var.snTableEntry.hasBlanks )
+  if( var.snTableEntry[0].remainder.size() == 0
+        && !var.snTableEntry[0].hasBlanks )
      return;
 
-  Split x_remainder( var.snTableEntry.remainder );
+  Split x_remainder( var.snTableEntry[0].remainder );
 
   int countValidMod=0;
 
@@ -871,7 +871,7 @@ CF::checkSN_Modifier(Variable& var)
 
   if( countValidMod )
   {
-    if( x_remainder.size() == 1 && ! var.snTableEntry.hasBlanks )
+    if( x_remainder.size() == 1 && ! var.snTableEntry[0].hasBlanks )
       return; // fine
 
     if( countValidMod > 1 && sz > 1 )
@@ -888,16 +888,16 @@ CF::checkSN_Modifier(Variable& var)
     }
   }
 
-  if( (countValidMod == 0 || var.snTableEntry.hasBlanks)
+  if( (countValidMod == 0 || var.snTableEntry[0].hasBlanks)
           && notes->inq(bKey + "33b", var.name) )
   {
     std::string capt(
       hdhC::tf_att(var.name, n_standard_name, var.std_name));
     capt += "contains " ;
-    if( countValidMod == 0 && var.snTableEntry.remainder.size()
-            && var.snTableEntry.hasBlanks )
+    if( countValidMod == 0 && var.snTableEntry[0].remainder.size()
+            && var.snTableEntry[0].hasBlanks )
       capt += "blanks or undefined modifier";
-    else if ( var.snTableEntry.hasBlanks )
+    else if ( var.snTableEntry[0].hasBlanks )
       capt += "blanks";
     else
       capt += "undefined modifier";
@@ -907,6 +907,35 @@ CF::checkSN_Modifier(Variable& var)
   }
 
   return ;
+}
+
+bool
+CF::check_standard_name(Variable& var, std::string& name, std::string mode)
+{
+  if( is_ifs_std_name )
+  {
+    ifs_std_name.open(std_name_table.getFile());
+    is_ifs_std_name=false;
+
+    if( ! ifs_std_name.isOpen() && notes->inq(bKey + "0t") )
+    {
+      std::string capt("fatal: the CF-standarad-name table could not be opened");
+
+      (void) notes->operate(capt) ;
+      notes->setCheckStatus( n_CF, fail );
+
+      return false ;
+    }
+  }
+  else if( mode == "rewind")
+    // standard_name not in the table
+    ifs_std_name.rewind();
+
+  ifs_std_name.clearSurroundingSpaces();
+
+  scanStdNameTable(var, name) ;
+
+  return false;
 }
 
 bool
@@ -2025,22 +2054,32 @@ CF::getSN_TableEntry(void)
    for( size_t i=0 ; i < pIn->varSz ; ++i )
    {
       Variable& var = pIn->variable[i] ;
-      var.snTableEntry.found=false;
-      var.snTableEntry.hasBlanks=false;
 
       int j;
       if( (j=var.getAttIndex(n_standard_name)) > -1 )
       {
         var.std_name = var.attValue[j][0] ;
-        var.snTableEntry.std_name=var.std_name;  // initially, just for a test
+        var.snTableEntry[0].std_name=var.std_name;  // initially, just for a test
+        vs_SNT_ix.push_back(0);
         zx.push_back(i) ;
       }
       else if( (j=var.getAttIndex(n_long_name)) > -1 )   // try long_name
       {
         // however, long-name should have no blanks
-        var.snTableEntry.std_name = var.attValue[j][0];
-        if( var.snTableEntry.std_name.find(" ") == std::string::npos )
+        var.snTableEntry[0].std_name = var.attValue[j][0];
+        if( var.snTableEntry[0].std_name.find(" ") == std::string::npos )
+        {
+          vs_SNT_ix.push_back(0);
           zx.push_back(i) ;
+        }
+      }
+
+      if( (j=var.getAttIndex(n_computed_standard_name)) > -1 )
+      {
+        //var.std_name = var.attValue[j][0] ;
+        var.snTableEntry[1].std_name=var.attValue[j][0];
+        vs_SNT_ix.push_back(1);
+        zx.push_back(i) ;
       }
 
       if( (j=var.getAttIndex(n_units)) > -1 )
@@ -2051,14 +2090,14 @@ CF::getSN_TableEntry(void)
    // for efficiency: sort standard_names: if these are all CF conform, then
    // the table will be read only once.
    size_t v_swap;
-   int sz=static_cast<int>(zx.size());
+   size_t sz=static_cast<int>(zx.size());
 
-   for( int i=0 ; i < sz ; ++i )
+   for( size_t i=0 ; i < sz-1 ; ++i )
    {
-     for( int j=i+1 ; j < sz-1 ; ++j )
+     for( size_t j=i+1 ; j < sz ; ++j )
      {
-        std::string &var_i = pIn->variable[ zx[i] ].snTableEntry.std_name;
-        std::string &var_j = pIn->variable[ zx[j] ].snTableEntry.std_name;
+        std::string &var_i = pIn->variable[ zx[i] ].snTableEntry[vs_SNT_ix[i]].std_name;
+        std::string &var_j = pIn->variable[ zx[j] ].snTableEntry[vs_SNT_ix[j]].std_name;
 
         if( var_j <  var_i )
         {
@@ -2793,30 +2832,16 @@ CF::scanStdNameTable(std::vector<int> &zx)
   if( !std_name_table.is() )  // name of the table
      return false;
 
-  ReadLine ifs( std_name_table.getFile() ) ;
+  std::string testName;
 
-  if( !ifs.isOpen() )
-  {
-    if( notes->inq(bKey + "0t") )
-    {
-      std::string capt("fatal: the CF-standard-name table could not be opened");
-
-      (void) notes->operate(capt) ;
-      notes->setCheckStatus( n_CF, fail );
-    }
-
-    return false;
-  }
-
-  ifs.clearSurroundingSpaces();
-
-  std::string testName[zx.size()];
   for( size_t i=0 ; i < zx.size() ; ++i )
   {
      Variable& var = pIn->variable[zx[i]];
 
+     SNT_ix = vs_SNT_ix[zx[i]] ;
+
      // remember the original test name
-     testName[i] = var.snTableEntry.std_name;
+     testName=var.snTableEntry[SNT_ix].std_name ;
 
      bool isCont=false;
 
@@ -2825,27 +2850,36 @@ CF::scanStdNameTable(std::vector<int> &zx)
      {
        Variable& var_k = pIn->variable[zx[k]];
 
-       if( var.snTableEntry.std_name == testName[k] )
+       for( size_t m=0 ; m < 2 ; ++m )
        {
-         var.snTableEntry.std_name  = var_k.snTableEntry.std_name ;
-         var.snTableEntry.found     = var_k.snTableEntry.found ;
-         var.snTableEntry.alias     = var_k.snTableEntry.alias;
-         var.snTableEntry.amip      = var_k.snTableEntry.amip;
-         var.snTableEntry.grib      = var_k.snTableEntry.grib;
-         var.snTableEntry.remainder = var_k.snTableEntry.remainder ;
-         var.snTableEntry.canonical_units = var_k.snTableEntry.canonical_units;
-         isCont=true;
-         break;
+          if( i == k && m == SNT_ix )
+              continue;
+
+          if( var_k.snTableEntry[m].std_name == testName )
+          {
+            var.snTableEntry[SNT_ix].std_name  = var_k.snTableEntry[m].std_name ;
+            var.snTableEntry[SNT_ix].found     = var_k.snTableEntry[m].found ;
+            var.snTableEntry[SNT_ix].alias     = var_k.snTableEntry[m].alias;
+            var.snTableEntry[SNT_ix].amip      = var_k.snTableEntry[m].amip;
+            var.snTableEntry[SNT_ix].grib      = var_k.snTableEntry[m].grib;
+            var.snTableEntry[SNT_ix].remainder = var_k.snTableEntry[m].remainder ;
+            var.snTableEntry[SNT_ix].canonical_units = var_k.snTableEntry[m].canonical_units;
+            isCont=true;
+            break;
+          }
+
+          if( isCont )
+             break;
        }
      }
 
      if( isCont )
        continue;
 
-     Split x_sn_name(testName[i]) ;
+     Split x_sn_name(testName) ;
 
      if( x_sn_name.size() == 1 )
-       scanStdNameTable(ifs, var, testName[i]) ;
+       check_standard_name(var, testName);
      else
      {
        // try successively the blank separated sub-strings;
@@ -2854,21 +2888,21 @@ CF::scanStdNameTable(std::vector<int> &zx)
        std::string s;
        for( j=static_cast<int>(x_sn_name.size()-1) ; j > -1 ; --j )
        {
-         s = x_sn_name[0];
+         s = x_sn_name[SNT_ix];
          for( int l=1 ; l <= j ; ++l )
            s += "_" + x_sn_name[l] ;
 
-         scanStdNameTable(ifs, var, s) ;
+         check_standard_name(var, s);
 
-         if( var.snTableEntry.found )
+         if( var.snTableEntry[SNT_ix].found )
          {
-            if( testName[i].size() > s.size() )
-              s = testName[i].substr(s.size()) ;
-            var.snTableEntry.remainder = hdhC::stripSides(s) ;
+            if( testName.size() > s.size() )
+              s = testName.substr(s.size()) ;
+            var.snTableEntry[SNT_ix].remainder = hdhC::stripSides(s) ;
 
             // if sn is right, but there is something with the modifier
-            if( x_sn_name[0] != var.snTableEntry.std_name )
-              var.snTableEntry.hasBlanks = true ;
+            if( x_sn_name[SNT_ix] != var.snTableEntry[SNT_ix].std_name )
+              var.snTableEntry[SNT_ix].hasBlanks = true ;
 
             break;
          }
@@ -2876,16 +2910,14 @@ CF::scanStdNameTable(std::vector<int> &zx)
      }
   }
 
-  ifs.close();
-
   return true;
 }
 
 bool
-CF::scanStdNameTable(ReadLine& ifs, Variable& var, std::string testName)
+CF::scanStdNameTable(Variable& var, std::string testName)
 {
   // Find entries, aliases and units.
-  // Units are only avaialble for entries.
+  // Units are only available for entries.
 
   // Table: a block of entries comes first followed by a block of alias entries.
   //        alphabetically ordered.
@@ -2910,20 +2942,20 @@ CF::scanStdNameTable(ReadLine& ifs, Variable& var, std::string testName)
 
   while ( true )
   {
-    while( ! ifs.getLine(line) )
+    while( ! ifs_std_name.getLine(line) )
     {
       // look for standard name entries
       x_line = line ;
 
       if( x_line[1] == testName )
       {
-        if( x_line[0] == beg_entry)
+        if( x_line[SNT_ix] == beg_entry)
         {
-           var.snTableEntry.std_name = testName ;
-           var.snTableEntry.found=true;
+           var.snTableEntry[SNT_ix].std_name = testName ;
+           var.snTableEntry[SNT_ix].found=true;
 
            // exploit entry block
-           while( ! ifs.getLine(line) )
+           while( ! ifs_std_name.getLine(line) )
            {
               if( line.find(end_entry) < std::string::npos )
                 break;
@@ -2931,12 +2963,12 @@ CF::scanStdNameTable(ReadLine& ifs, Variable& var, std::string testName)
               x_line = line ;
               if( x_line.size() > 1 )
               {
-                if( x_line[0] == canonical_units )
-                  var.snTableEntry.canonical_units = x_line[1] ;
-                else if( x_line[0] == n_grib )
-                  var.snTableEntry.grib = x_line[1] ;
-                else if( x_line[0] == n_amip )
-                  var.snTableEntry.amip = x_line[1] ;
+                if( x_line[SNT_ix] == canonical_units )
+                  var.snTableEntry[SNT_ix].canonical_units = x_line[1] ;
+                else if( x_line[SNT_ix] == n_grib )
+                  var.snTableEntry[SNT_ix].grib = x_line[1] ;
+                else if( x_line[SNT_ix] == n_amip )
+                  var.snTableEntry[SNT_ix].amip = x_line[1] ;
               }
            }
 
@@ -2945,10 +2977,10 @@ CF::scanStdNameTable(ReadLine& ifs, Variable& var, std::string testName)
         else if( line.find(beg_alias) < std::string::npos )
         {
            // try again later with the real entry
-           var.snTableEntry.alias=testName;
+           var.snTableEntry[SNT_ix].alias=testName;
            --countRewinds;
 
-           if( ifs.getLine(line) )  // only the next line
+           if( ifs_std_name.getLine(line) )  // only the next line
               break; // should not happen
 
            x_line = line ;
@@ -2959,7 +2991,7 @@ CF::scanStdNameTable(ReadLine& ifs, Variable& var, std::string testName)
     }
 
     // standard_name not in the table
-    ifs.rewind();
+    ifs_std_name.rewind();
 
     if( ++countRewinds == 2 )
        break;
@@ -4220,6 +4252,18 @@ CF::chap251(void)
          mfv.push_back(hdhC::string2Double(mfvStr[1]) );
       }
 
+      if( (jxMV > -1 || jxFV > -1) && var.coord.isCoordVar )
+      {
+        if( notes->inq(bKey + "251c", var.name) )
+        {
+          std::string capt(hdhC::tf_att(var.name, n_missing_value));
+          capt += " is not allowed for coordinate variables";
+
+          (void) notes->operate(capt) ;
+          notes->setCheckStatus( n_CF );
+        }
+      }
+
       for( size_t k=0 ; k < mfvStr.size() ; ++k )
       {
          if( followRecommendations && mfName[k].size() == 0 )
@@ -4345,17 +4389,6 @@ CF::chap251(void)
         }
       }
 
-      if( (countMV || countFV) && var.coord.isCoordVar )
-      {
-        if( notes->inq(bKey + "251c", var.name) )
-        {
-          std::string capt(hdhC::tf_att(var.name, n_missing_value));
-          capt += " is not allowed for coordinate variables";
-
-          (void) notes->operate(capt) ;
-          notes->setCheckStatus( n_CF );
-        }
-      }
   }
   return;
 }
@@ -4751,7 +4784,7 @@ CF::chap3_reco(void)
      if( ! (var.isValidAtt(n_standard_name) || var.isValidAtt(n_long_name) ) )
      {
         // there is an exception for grid_mapping variables
-        if( ! var.isValidAtt(n_grid_mapping +"_name") )
+        if( ! var.isValidAtt(n_grid_mapping_name) )
         {
           if( notes->inq(bKey + "32a", var.name) )
           {
@@ -4789,12 +4822,12 @@ CF::chap33(void)
 
       // take into account that a standard name may contain blanks (error)
       // or a modifier may be appended
-      if( ! var.snTableEntry.found )
+      if( ! var.snTableEntry[0].found )
       {
         if( notes->inq(  bKey + "33a", var.name) )
         {
           std::string capt(hdhC::tf_att(var.name, n_standard_name, var.std_name));
-          capt += "is not CF conform" ;
+          capt += "is not CF compliant" ;
 
           (void) notes->operate(capt) ;
           notes->setCheckStatus( n_CF, fail );
@@ -4803,26 +4836,26 @@ CF::chap33(void)
         continue; // disable the following units check
       }
 
-      if( var.snTableEntry.remainder.size() || var.snTableEntry.hasBlanks )
+      if( var.snTableEntry[0].remainder.size() || var.snTableEntry[0].hasBlanks )
         checkSN_Modifier(var) ;
 
       // units convertable to the canonical one. Note that udunits can not
       // discern degrees_north and degrees_east. This will be done in chap41.
 
       // special: standard_name with modifier=number_of_observations requires units=1
-      if( var.units.size() && var.snTableEntry.canonical_units.size() )
+      if( var.units.size() && var.snTableEntry[0].canonical_units.size() )
       {
-        bool ordCase = cmpUnits( var.units, var.snTableEntry.canonical_units) ;
-        bool spcCase = var.snTableEntry.remainder == n_number_of_observations ;
+        bool ordCase = cmpUnits( var.units, var.snTableEntry[0].canonical_units) ;
+        bool spcCase = var.snTableEntry[0].remainder == n_number_of_observations ;
         bool dimlessZ=false;
 
-        if( var.units == "level" && var.snTableEntry.canonical_units == "1" )
+        if( var.units == "level" && var.snTableEntry[0].canonical_units == "1" )
            dimlessZ = true;
 
 
         if( !ordCase && !spcCase && !dimlessZ )
         {
-           if( var.snTableEntry.canonical_units == "s" )
+           if( var.snTableEntry[0].canonical_units == "s" )
            {
                Split x_units(var.units) ;
                if( x_units.size() > 2
@@ -4837,7 +4870,7 @@ CF::chap33(void)
            {
              std::string capt(hdhC::tf_att(var.name, n_units, var.units));
              capt += "is not CF compatible with " ;
-             capt += hdhC::tf_assign(n_standard_name, var.snTableEntry.std_name) ;
+             capt += hdhC::tf_assign(n_standard_name, var.snTableEntry[0].std_name) ;
 
              (void) notes->operate(capt) ;
              notes->setCheckStatus( n_CF, fail );
@@ -4866,7 +4899,7 @@ CF::chap33(void)
       int j;
       if( (j=var.getAttIndex("amip", lowerCase)) > -1 )
       {
-        Split x_amip(var.snTableEntry.amip );
+        Split x_amip(var.snTableEntry[0].amip );
         std::vector<std::string> vs(x_amip.getItems());
 
         if( !hdhC::isAmong(var.attValue[j][0], vs) )
@@ -4876,7 +4909,7 @@ CF::chap33(void)
             std::string capt(hdhC::tf_var(var.name, hdhC::colon));
             capt += hdhC::tf_assign("AMIP code", var.attValue[j][0]) ;
             capt += " is not CF compatible, expected " ;
-            capt += var.snTableEntry.amip ;
+            capt += var.snTableEntry[0].amip ;
 
             (void) notes->operate(capt) ;
             notes->setCheckStatus( n_CF, fail );
@@ -4887,7 +4920,7 @@ CF::chap33(void)
       // grib
       if( (j=var.getAttIndex("grib", lowerCase)) > -1 )
       {
-        Split x_grib(var.snTableEntry.grib );
+        Split x_grib(var.snTableEntry[0].grib );
         std::vector<std::string> vs(x_grib.getItems());
 
         if( !hdhC::isAmong(var.attValue[j][0], vs) )
@@ -4897,7 +4930,7 @@ CF::chap33(void)
             std::string capt(hdhC::tf_var(var.name, hdhC::colon));
             capt += hdhC::tf_assign("GRIP code", var.attValue[j][0]);
             capt += " is not CF compatible, expected " ;
-            capt += var.snTableEntry.grib;
+            capt += var.snTableEntry[0].grib;
 
             (void) notes->operate(capt) ;
             notes->setCheckStatus( n_CF, fail );
@@ -5508,7 +5541,7 @@ CF::chap41(Variable& var)
     bool is=false;
     if( var.coord.isBasicType[ix] )
     {
-      std::string sn_coordType( units_lon_lat(var, var.snTableEntry.canonical_units) );
+      std::string sn_coordType( units_lon_lat(var, var.snTableEntry[0].canonical_units) );
       if( sn_coordType != coordType )
         is=true;
     }
@@ -5562,7 +5595,7 @@ CF::chap431(Variable& var)
   std::string units( var.getAttValue(n_units) ) ;
   std::string axis( var.getAttValue(n_axis, lowerCase) ) ;
   std::string positive( var.getAttValue(n_positive, lowerCase) ) ;
-  std::string& canon_u = var.snTableEntry.canonical_units;
+  std::string& canon_u = var.snTableEntry[0].canonical_units;
 
   bool isP=false;
   bool isM=false;
@@ -5656,44 +5689,76 @@ CF::chap433(void)
 {
   // dimensionless vertical coordinate?
 
+  // parameters of f_t att
   // valid standard names
   std::vector<std::string> valid_sn;
-  valid_sn.push_back("atmosphere_ln_pressure_coordinate");
-  valid_sn.push_back("atmosphere_sigma_coordinate");
-  valid_sn.push_back("atmosphere_hybrid_sigma_pressure_coordinate");
-  valid_sn.push_back("atmosphere_hybrid_height_coordinate");
-  valid_sn.push_back("atmosphere_sleve_coordinate");
-  valid_sn.push_back("ocean_sigma_coordinate");
-  valid_sn.push_back("ocean_sigma_coordinate");
-  valid_sn.push_back("ocean_sigma_z_coordinate");
-  valid_sn.push_back("ocean_double_sigma_coordinate");
 
   //variables in formula_terms; order doesn't matter
   std::vector<std::string> valid_ft;
-  valid_ft.push_back("p0: lev:");
-  valid_ft.push_back("sigma: ps: ptop:");
-  valid_ft.push_back("a: p0: b: ps:");
-  valid_ft.push_back("a: b: orog:");
-  valid_ft.push_back("a: b1: b2: ztop: zsurf1: zsurf2:");
-  valid_ft.push_back("sigma: eta: depth:");
-  valid_ft.push_back("s: eta: depth: a: b: depth_c:");
-  valid_ft.push_back("sigma: eta: depth: depth_c: nsigma: zlev:");
-  valid_ft.push_back("sigma: depth: z1: z2: a: href: k_c:");
 
-  // alternative to the case a: p0: b: ps: ;
-  // this will be substituted, if true
-  valid_ft.push_back("ap: b: ps:");
+  // valid units of parameters
+  std::vector<std::string> valid_units;
+
+  valid_sn.push_back("atmosphere_ln_pressure_coordinate");
+  valid_ft.push_back("p0: lev:");
+  valid_units.push_back("Pa 1");
+
+  valid_sn.push_back("atmosphere_sigma_coordinate");
+  valid_ft.push_back("sigma: ps: ptop:");
+  valid_units.push_back("1 Pa Pa");
+
+  valid_sn.push_back("atmosphere_hybrid_sigma_pressure_coordinate");
+  valid_ft.push_back("a: b: ps: p0: ");
+  valid_units.push_back("1 1 Pa Pa");
+
+  valid_sn.push_back("atmosphere_hybrid_sigma_pressure_coordinate");
+  valid_ft.push_back("ap: b: ps:");  // <-- alternative
+  valid_units.push_back("Pa 1 Pa");
+
+  valid_sn.push_back("atmosphere_hybrid_height_coordinate");
+  valid_ft.push_back("a: b: orog:");
+  valid_units.push_back("m 1 m") ;
+
+  valid_sn.push_back("atmosphere_sleve_coordinate");
+  valid_ft.push_back("a: b1: b2: ztop: zsurf1: zsurf2:");
+  valid_units.push_back("1 1 1 m m m");
+
+  valid_sn.push_back("ocean_sigma_coordinate");
+  valid_ft.push_back("sigma: eta: depth:");
+  valid_units.push_back("1 m m");
+
+  valid_sn.push_back("ocean_s_coordinate");
+  valid_ft.push_back("s: eta: depth: a: b: depth_c:");
+  valid_units.push_back("1 m m 1 1 m");
+
+  valid_sn.push_back("ocean_s_coordinate_g1");
+  valid_ft.push_back("s: C: eta: depth: depth_c:");
+  valid_units.push_back("1 1 m m m");
+
+  valid_sn.push_back("ocean_s_coordinate_g2");
+  valid_ft.push_back("s: C: eta: depth: depth_c:");
+  valid_units.push_back("1 m m 1 1 m");
+
+  valid_sn.push_back("ocean_sigma_z_coordinate");
+  valid_ft.push_back("sigma: eta: depth: depth_c: nsigma: zlev:");
+  valid_units.push_back("1 m m m 1 1");
+
+  valid_sn.push_back("ocean_double_sigma_coordinate");
+  valid_ft.push_back("sigma: depth: z1: z2: a: href: k_c:");
+  valid_units.push_back("1 m m m 1 m 1");
 
   // two ways to identify a dimless vertical coord.
   // a) a formula_terms attribute,
   // b) a standard name indicating a valid dimless method
   std::vector<std::pair<std::string, std::string> > att_ft_pv ;
 
+  // index of data var depending on formula_term coordinate
+  std::vector<size_t> dv_ftc;
+
   for( size_t i=0 ; i < pIn->varSz ; ++i )
   {
      // index of an ft att and corresponding standard_name
-     int valid_ft_ix=-1;
-     int valid_sn_ix=-1;
+     int valid_ix=-1;
 
      int ft_jx=-1;
      int sn_jx=-1;
@@ -5742,6 +5807,8 @@ CF::chap433(void)
 
      for( size_t j=0 ; j < var.attName.size() ; ++j )
      {
+        int J= static_cast<int>(j);
+
         if( ft_jx == -1 )
         {
            if( var.attName[j] == n_cell_measures
@@ -5759,14 +5826,15 @@ CF::chap433(void)
            if( x_av_sz % 2 || var.attValue[j][0].find(':') == std::string::npos )
              continue;
         }
+        else
+            J=ft_jx;
 
         // formula_terms by vector of pairs: 1st=key: 2nd=param_varName
         att_ft_pv.clear() ;
 
-        chap433_getParamVars(var, valid_sn, valid_ft, valid_ft_ix, valid_sn_ix,
-                   j, att_ft_pv) ;
+        chap433_getParamVars(var, valid_sn, valid_ft, valid_ix, J, att_ft_pv) ;
 
-        if( valid_ft_ix > -1 )
+        if( valid_ix > -1 )
         {
             if( ft_jx == -1 )
                ft_jx = j ;
@@ -5776,12 +5844,13 @@ CF::chap433(void)
      }
 
      // not a ft type; try for another variable
-     if( valid_ft_ix == -1 )
+     if( valid_ix == -1 )
        continue;
 
+
      // if( chap433(var, valid_sn, valid_ft, ij_fT[i], ij_sN[i]) )
-     if( chap433(var, valid_sn, valid_ft, valid_ft_ix, valid_sn_ix,
-                 ft_jx, sn_jx, att_ft_pv ) )
+     if( chap433(var, valid_sn, valid_ft, valid_units,
+                   valid_ix, ft_jx, sn_jx, att_ft_pv ) )
      {
          var.coord.isC[2]    = true;
          var.coord.isZ_DL = true;
@@ -5789,42 +5858,82 @@ CF::chap433(void)
          var.addAuxCount();
          var.isChecked=true;
 
+         dv_ftc.push_back(i);
+
          if( cFVal > 16 )
          {
-             if( followRecommendations && ! hdhC::isAmong(n_computed_standard_name, var.attName) )
+             if( followRecommendations
+                    && ! hdhC::isAmong(n_computed_standard_name, var.attName) )
              {
                if( notes->inq(bKey+"433k", var.name) )
                {
                   std::string capt(n_reco + ": ");
                   capt += hdhC::tf_att(var.name, n_computed_standard_name);
-                  capt += " is strongly recommended";
+                  capt += "is strongly recommended";
 
                   (void) notes->operate(capt) ;
                   notes->setCheckStatus( n_CF );
                 }
              }
+         }
 
-            for( size_t l=0 ; l < pIn->varSz ; ++l )
+         // No specific coordinate: area or a valid standard name that is neither
+         // a dimensions nor a coordinate variable.
+         std::string aVal = var.getAttValue(n_computed_standard_name) ;
+
+         if( aVal.size() )
+         {
+            Variable var_csn;
+            SNT_ix=0 ;
+            var_csn.snTableEntry[SNT_ix].found=false;
+            var_csn.std_name = aVal;
+
+            check_standard_name(var_csn, aVal, "rewind");
+
+            if( ! var_csn.snTableEntry[SNT_ix].found )
             {
-               if( l == i )
-                   continue;
+                if( notes->inq(bKey + "433m", var.name) )
+                {
+                   std::string capt(hdhC::tf_att(var.name, n_computed_standard_name, aVal));
+                   capt += " is not a valid " + n_standard_name;
 
-               Variable& var_l = pIn->variable[l] ;
-
-               if( hdhC::isAmong(n_computed_standard_name, var_l.attName) )
-               {
-                 if( notes->inq(bKey+"433l", var.name) )
-                 {
-                    std::string capt(hdhC::tf_att(var.name, n_computed_standard_name));
-                    capt += " is only allowed for data variables";
-
-                    (void) notes->operate(capt) ;
-                    notes->setCheckStatus( n_CF );
-                  }
-               }
+                   (void) notes->operate(capt) ;
+                   notes->setCheckStatus( n_CF, fail );
+                }
             }
          }
      }
+  }
+
+  if( cFVal > 16 )
+  {
+    size_t j;
+    size_t sz=dv_ftc.size() ;
+
+    for( size_t i=0 ; i < pIn->varSz ; ++i )
+    {
+        // skip data variables depending on form_term coord
+        for(j=0 ; j < sz ; ++j)
+          if( i == dv_ftc[j] )
+              break;
+
+        if( j < sz)
+            continue;
+
+        Variable& var = pIn->variable[i] ;
+
+        if( hdhC::isAmong(n_computed_standard_name, var.attName) )
+        {
+            if( notes->inq(bKey+"433l", var.name) )
+            {
+                std::string capt(hdhC::tf_att(var.name, n_computed_standard_name));
+                capt += " is only allowed for data variables";
+
+                (void) notes->operate(capt) ;
+                notes->setCheckStatus( n_CF );
+            }
+        }
+    }
   }
 
   return;
@@ -5834,8 +5943,8 @@ bool
 CF::chap433(Variable& var,
    std::vector<std::string>& valid_sn,
    std::vector<std::string>& valid_ft,
-   int valid_ft_ix, int valid_sn_ix,
-   int att_ft_ix, int att_sn_ix,
+   std::vector<std::string>& valid_units,
+   int& valid_ix, int att_ft_ix, int att_sn_ix,
    std::vector<std::pair<std::string, std::string> > &att_ft_pv)
 {
   // dimensionless vertical coordinate
@@ -5850,25 +5959,28 @@ CF::chap433(Variable& var,
   }
 
   // cross-check of standard_name vs. formula_terms
-  if( chap433_checkSNvsFT(var, valid_sn, valid_ft, valid_sn_ix,
-                   att_ft_ix, att_sn_ix, units) )
+  if( chap433_checkSNvsFT(var, valid_sn, valid_ft, valid_units, valid_ix,
+                          att_ft_ix, att_sn_ix, units) )
     return false; // no formula_terms case
 
   // sn and ft from the same valid algorithm?
-  if( att_sn_ix > -1 && valid_ft_ix > -1 && valid_ft_ix != valid_sn_ix)
+  if( att_sn_ix > -1 && valid_ix > -1)
   {
-    if( notes->inq(bKey + "432e", var.name) )
+    if( var.attValue[att_sn_ix][0] != valid_sn[valid_ix] )
     {
-      std::string capt(hdhC::tf_var(var.name, hdhC::colon));
-      capt += "The attributes " + n_formula_terms + " and " ;
-      capt += n_standard_name + " are not compatible";
+      if( notes->inq(bKey + "432e", var.name) )
+      {
+        std::string capt(hdhC::tf_var(var.name, hdhC::colon));
+        capt += "The attributes " + n_formula_terms + " and " ;
+        capt += n_standard_name + " are not compatible";
 
-      std::string text("Tried ") ;
-      text += hdhC::tf_att(var.name, n_standard_name, var.attValue[att_sn_ix][0]) + " vs. " ;
-      text += hdhC::tf_att(var.name,n_formula_terms, var.attValue[att_ft_ix][0]) ;
+        std::string text("Tried ") ;
+        text += hdhC::tf_att(var.name, n_standard_name, var.attValue[att_sn_ix][0]) + " vs. " ;
+        text += hdhC::tf_att(var.name,n_formula_terms, var.attValue[att_ft_ix][0]) ;
 
-      (void) notes->operate(capt, text) ;
-      notes->setCheckStatus( n_CF, fail );
+        (void) notes->operate(capt, text) ;
+        notes->setCheckStatus( n_CF, fail );
+      }
     }
   }
 
@@ -5889,13 +6001,13 @@ CF::chap433(Variable& var,
   }
 
   std::vector<std::string> fTerms;
-  Split x_fTerms( valid_ft[valid_ft_ix] );
+  Split x_fTerms( valid_ft[valid_ix] );
   for( size_t i=0 ; i < x_fTerms.size() ; ++i )
      fTerms.push_back( x_fTerms[i] );
 
   // after return, fTerms contains associated variables.
-  chap433_verify_FT(var,valid_ft_ix,
-          valid_ft[ valid_ft_ix ], att_ft_ix, fTerms, att_ft_pv);
+  chap433_verify_FT(var, valid_ft[valid_ix], valid_sn[valid_ix], valid_units[valid_ix],
+                      valid_ix, att_ft_ix, fTerms, att_ft_pv);
 
   size_t ft_sz = fTerms.size();
 
@@ -5928,6 +6040,7 @@ CF::chap433(Variable& var,
            checkCoordinateValues(pIn->variable[i], true); // no monotony test
 
            pIn->variable[i].coord.isCoordVar = false;
+           pIn->variable[i].addAuxCount();
            pIn->variable[i].isChecked=true;
          }
        }
@@ -5941,8 +6054,8 @@ bool
 CF::chap433_checkSNvsFT( Variable& var,
    std::vector<std::string>& valid_sn,
    std::vector<std::string>& valid_ft,
-   int& valid_sn_ix,
-   int& att_ft_ix, int& att_sn_ix, std::string& units)
+   std::vector<std::string>& valid_units,
+   int& valid_ix, int& att_ft_ix, int& att_sn_ix, std::string& units)
 {
   // return true for no formula_terms.
 
@@ -5959,7 +6072,7 @@ CF::chap433_checkSNvsFT( Variable& var,
     {
       if( str == valid_sn[j] )
       {
-        valid_sn_ix = j ;
+        valid_ix = j ;
         break;
       }
     }
@@ -6054,8 +6167,7 @@ void
 CF::chap433_getParamVars( Variable& var,
    std::vector<std::string>& valid_sn,
    std::vector<std::string>& valid_ft,
-   int& valid_ft_ix, int& valid_sn_ix,
-   int att_ft_ix,
+   int& valid_ix, int att_ft_ix,
    std::vector<std::pair<std::string, std::string> >& att_ft_pv)
 {
   // test for a valid ft att
@@ -6068,6 +6180,7 @@ CF::chap433_getParamVars( Variable& var,
   std::vector<int> pv_ix;
 
   int sz=x_att_ft.size() ;
+
   for(int i=0 ; i < sz ; ++i )
   {
     std::string &s0 = x_att_ft[i] ;
@@ -6076,6 +6189,10 @@ CF::chap433_getParamVars( Variable& var,
     else
       pv_ix.push_back(i);
   }
+
+  // not the signature of a formula_terms attribute; even if broken
+  if( ! key_ix.size() )
+     return ;
 
   // build a pair: 1st=key, 2nd=paramVar
   size_t kp_sz = key_ix.size() ;
@@ -6111,7 +6228,21 @@ CF::chap433_getParamVars( Variable& var,
   }
 
   if( isFault )
+  {
     att_ft_pv.push_back( std::pair<std::string, std::string> (hdhC::empty,hdhC::empty) );
+
+    if( notes->inq(bKey + "433n", var.name) )
+    {
+        std::string capt(hdhC::tf_att(var.name, n_formula_terms, att_ft));
+        capt += " with syntax fault";
+
+        (void) notes->operate(capt) ;
+        notes->setCheckStatus( n_CF, fail );
+    }
+
+    att_ft_pv.push_back( std::pair<std::string, std::string> (hdhC::empty,hdhC::empty) );
+    return;
+  }
 
   // formula_terms attribute was found, now get the indices in the valid vectors.
   // This is more tricky for found_ft_ix than for found_sn_ix above.
@@ -6122,39 +6253,35 @@ CF::chap433_getParamVars( Variable& var,
 
   for( size_t i=0 ; i < valid_ft.size() ; ++i )
   {
-     num.push_back( 0 );
+     num.push_back( static_cast<int>(0) );
      x_valid_ft.push_back( Split(valid_ft[i]) ) ;
   }
 
   // compare to the parameters provided by CF (appendix D)
   size_t v_ft_sz = valid_ft.size() ;
+
   for( size_t i=0 ; i < att_ft_pv.size() ; ++i )
   {
      for( size_t j=0 ; j < v_ft_sz ; ++j )
      {
        for( size_t k=0 ; k < x_valid_ft[j].size() ; ++k )
-       {
-         if( x_valid_ft[j][k] == att_ft_pv[i].first )
-         {
-            for( size_t iv=0 ; iv < pIn->varSz ; ++iv )
-               if( pIn->variable[iv].name == att_ft_pv[i].second )
-                 ++num[j];
-         }
-       }
+           if( x_valid_ft[j][k] == att_ft_pv[i].first )
+                  ++num[j];
      }
   }
 
   // sort indices according to the highest number
-  size_t v_swap;
   std::vector<int> zx;
-  sz=static_cast<int>(num.size());
-  for( int i=0 ; i < sz ; ++i )
-    zx.push_back(i);
+  size_t v_swap;
 
-  sz=static_cast<int>(zx.size());
-  for( int i=0 ; i < sz-1 ; ++i )
+  for( size_t i=0 ; i < num.size() ; ++i )
+    zx.push_back( static_cast<int>(i) );
+
+  int zx_sz=static_cast<int>(zx.size());
+
+  for( int i=0 ; i < zx_sz-1 ; ++i )
   {
-    for( int j=i+1 ; j < sz ; ++j )
+    for( int j=i+1 ; j < zx_sz ; ++j )
     {
        if( num[zx[j]] >  num[zx[i]] )
        {
@@ -6167,24 +6294,13 @@ CF::chap433_getParamVars( Variable& var,
 
   if( num[zx[0]] && num[zx[0]] == num[zx[1]] )
   {
-     // could not identify unambiguously the valid_ft index. Thus, if one
-     // of them matches valid_sn_ix, then take it.
-     if( zx[0] == valid_sn_ix )
-        valid_ft_ix = zx[0] ;
-     else if( zx[1] == valid_sn_ix )
-        valid_ft_ix = zx[1] ;
+     // could not identify unambiguously the valid_ft index.
+     valid_ix = -1 ;
   }
   else if( zx[0] == 0 )
-    valid_ft_ix = -1 ; //
+    valid_ix = -1 ; //
   else
-    valid_ft_ix = zx[0] ;
-
-  // special for the alternative hybrid sigma pressure coord.
-  if( valid_ft_ix == static_cast<int>(v_ft_sz-1) && att_ft_pv.size() == 3 )
-  {
-     valid_ft_ix = 2 ;
-     valid_ft[valid_ft_ix]="ap: b: ps:";
-  }
+    valid_ix = zx[0] ;
 
   return ;
 }
@@ -6192,9 +6308,8 @@ CF::chap433_getParamVars( Variable& var,
 void
 CF::chap433_verify_FT(
   Variable& var,
-  int valid_ft_ix,
-  std::string &valid_ft,
-  int att_ft_ix,
+  std::string &valid_ft, std::string &valid_sn, std::string &valid_units,
+  int valid_ix, int att_ft_ix,
   std::vector<std::string> &fTerms,
   std::vector<std::pair<std::string, std::string> >& att_ft_pv)
 {
@@ -6204,21 +6319,7 @@ CF::chap433_verify_FT(
   // Vector fTerms contains a list of term: strings.
   // Note that it will contain existing var-names on return.
 
-  std::vector<std::string> valid_units;
-  valid_units.push_back("Pa 1");
-  valid_units.push_back("1 Pa Pa");
-  valid_units.push_back("1 Pa 1 Pa");
-  valid_units.push_back("m 1 m");
-  valid_units.push_back("1 1 1 m m m");
-  valid_units.push_back("1 m m");
-  valid_units.push_back("1 m m 1 1 m");
-  valid_units.push_back("1 m m m 1 m");
-  valid_units.push_back("1 m m m 1 m 1");
-
-  if( valid_ft_ix == 2 && att_ft_pv.size() == 3 )
-    valid_units[valid_ft_ix] = "Pa 1 Pa" ;
-
-  Split x_fUnits(valid_units[valid_ft_ix]);
+  Split x_fUnits(valid_units);
 
   std::vector<std::string> assoc;
   std::vector<std::pair<std::string, std::string> > paramVarUnits;
@@ -6859,10 +6960,14 @@ CF::chap52(void)
 void
 CF::chap56(void)
 {
-  // data var, grid_mapping attribute value == grid_mapping variable
-  std::vector<std::pair<std::string, std::string> > dv_gmv;
+  // data var contains a grid_mapping attribute with either :
+  //    a) value == grid_mapping variable
+  // or b) "grid_mapping_variable: coordinate_variable, [coordinate_variable ....]
+  //        [grid_mapping_variable: ...]"
 
-  std::string mapCoord[2];
+  std::vector<std::pair<std::string, std::string> > vps_gmv;
+
+  //std::string mapCoord[2];
 
   // scan for attribute 'grid_mapping'
   for( size_t ix=0 ; ix < pIn->varSz ; ++ix )
@@ -6874,83 +6979,98 @@ CF::chap56(void)
 
     if( (j=var.getAttIndex(n_grid_mapping)) > -1 )
     {
-       std::string& str = var.attValue[j][0] ;
+       var.addAuxCount();
 
-       if( str.size() == 0 )
-         continue;
-
-       size_t j;
-       for( j=0 ; j < dv_gmv.size() ; ++j )
-          if( dv_gmv[j].second == str )
-             break;
-
-       if( j == dv_gmv.size() )
-         dv_gmv.push_back(
-            std::pair<std::string, std::string> (var.name, str)) ;
-
-       int retVal;
-       bool isMapping=true;
-
-       if( ! (retVal=chap56_gridMappingVar(var, str, "latitude_longitude")) )
-       {
-         isMapping=false;
-       }
-       else if( ! (retVal=chap56_gridMappingVar(var, str, "rotated_latitude_longitude")) )
-       {
-         mapCoord[0] = n_grid_longitude ;
-         mapCoord[1] = n_grid_latitude ;
-       }
-       else if( ! (retVal=chap56_gridMappingVar(var, str, hdhC::empty)) )
-       {
-         mapCoord[0] = "projection_x_coordinate" ;
-         mapCoord[1] = "projection_y_coordinate" ; // value for most methods
-       }
+       if( var.attValue[j].size() > 1
+              || var.attValue[j][0].find(' ') < std::string::npos )
+           chap56_expanded(var, j); // to be done
        else
-       {
-         if( retVal == 1 )
-         {
-           if( str.size() && notes->inq(bKey + "56c") )
-           {
-             std::string capt(hdhC::tf_att(var.name, n_grid_mapping));
-             capt += "names non-existing ";
-             capt += hdhC::tf_var(var.getAttValue(n_grid_mapping));
-
-             (void) notes->operate(capt) ;
-             notes->setCheckStatus( n_CF, fail );
-           }
-         }
-
-         else if( retVal == 2 && notes->inq(bKey + "56f") )
-         {
-           std::string capt(hdhC::tf_var(str, hdhC::colon));
-           capt += "Missing " ;
-           capt += hdhC::tf_att(n_grid_mapping +"_name");
-
-           (void) notes->operate(capt) ;
-           notes->setCheckStatus( n_CF, fail );
-         }
-
-         else if( retVal > 2 && notes->inq(bKey + "56g") )
-         {
-           // index==retVal-3 takes back an action done in chap56_gridMappingVar()
-           std::string gmn(n_grid_mapping +"_name");
-
-           std::string capt("grid mapping " + hdhC::tf_var(str) );
-           capt += "with undefined " + gmn ;
-           capt += hdhC::tf_val(pIn->variable[retVal-3].getAttValue(gmn));
-
-           (void) notes->operate(capt) ;
-           notes->setCheckStatus( n_CF, fail );
-         }
-
-         continue;
-       }
-
-       // coordinates attribute issues
-       if( isMapping )
-         chap56_gridMappingCoords(var, mapCoord) ;
+          chap56_simple(var, j, vps_gmv);
     }
   }
+
+  return;
+}
+
+void
+CF::chap56_simple(Variable& var, size_t jx,
+    std::vector<std::pair<std::string, std::string> >& vps_gmv)
+{
+  // data var contains a grid_mapping attribute with value == name of grid_mapping variable
+
+  std::string mapCoord[2];
+  std::string& str = var.attValue[jx][0] ;
+
+  size_t j;
+  for( j=0 ; j < vps_gmv.size() ; ++j )
+    if( vps_gmv[j].second == str )
+       break;
+
+  if( j == vps_gmv.size() )
+     vps_gmv.push_back(
+      std::pair<std::string, std::string> (var.name, str)) ;
+
+  int retVal;
+  bool isMapping=true;
+
+  if( ! (retVal=chap56_gridMappingVar(var, str, "latitude_longitude")) )
+  {
+    isMapping=false;
+  }
+  else if( ! (retVal=chap56_gridMappingVar(var, str, "rotated_latitude_longitude")) )
+  {
+    mapCoord[0] = n_grid_longitude ;
+    mapCoord[1] = n_grid_latitude ;
+  }
+  else if( ! (retVal=chap56_gridMappingVar(var, str, hdhC::empty)) )
+  {
+    mapCoord[0] = "projection_x_coordinate" ;
+    mapCoord[1] = "projection_y_coordinate" ; // value for most methods
+  }
+  else
+  {
+    if( retVal == 1 )
+    {
+      if( str.size() && notes->inq(bKey + "56c") )
+      {
+        std::string capt(hdhC::tf_att(var.name, n_grid_mapping));
+        capt += "names non-existing ";
+        capt += hdhC::tf_var(var.getAttValue(n_grid_mapping));
+
+        (void) notes->operate(capt) ;
+        notes->setCheckStatus( n_CF, fail );
+      }
+    }
+
+    else if( retVal == 2 && notes->inq(bKey + "56f") )
+    {
+      std::string capt(hdhC::tf_var(str, hdhC::colon));
+      capt += "Missing " ;
+      capt += hdhC::tf_att(n_grid_mapping +"_name");
+
+      (void) notes->operate(capt) ;
+      notes->setCheckStatus( n_CF, fail );
+    }
+
+    else if( retVal > 2 && notes->inq(bKey + "56g") )
+    {
+      // index==retVal-3 takes back an action done in chap56_gridMappingVar()
+      std::string gmn(n_grid_mapping +"_name");
+
+      std::string capt("grid mapping " + hdhC::tf_var(str) );
+      capt += "with undefined " + gmn ;
+      capt += hdhC::tf_val(pIn->variable[retVal-3].getAttValue(gmn));
+
+      (void) notes->operate(capt) ;
+      notes->setCheckStatus( n_CF, fail );
+    }
+
+    return;
+  }
+
+  // coordinates attribute issues
+  if( isMapping )
+    chap56_gridMappingCoords(var, mapCoord) ;
 
   // look for an existing grid-mapping variables which has not been declared
   // by a grip_mapping attribute of a data variable.
@@ -6963,11 +7083,11 @@ CF::chap56(void)
 
     // exclude previously found grid mapping variables
     size_t j;
-    for( j=0 ; j < dv_gmv.size() ; ++j )
-       if( dv_gmv[j].second == var.name )
+    for( j=0 ; j < vps_gmv.size() ; ++j )
+       if( vps_gmv[j].second == var.name )
          break;
 
-    if( j == dv_gmv.size() )
+    if( j == vps_gmv.size() )
     {
       if( var.isValidAtt(n_grid_mapping + "_name") )
       {
@@ -6991,6 +7111,14 @@ CF::chap56(void)
   }
 
   return;
+}
+
+void
+CF::chap56_expanded(Variable& var, size_t j)
+{
+  // "grid_mapping_variable: coordinate_variable, [coordinate_variable ....]
+  //        [grid_mapping_variable: ...]"
+    return;
 }
 
 void
@@ -7335,7 +7463,7 @@ CF::chap56_gridMappingVar(Variable& var, std::string &s, std::string gmn)
      if( var_gmv.isValidAtt(n_grid_mapping + "_name") )
      {
         // the grid mapping variabel must have attribute grid_mapping_name
-        std::string str( var_gmv.getAttValue(n_grid_mapping +"_name") );
+        std::string str( var_gmv.getAttValue(n_grid_mapping_name) );
 
         if( str.size() )
         {
@@ -8124,7 +8252,7 @@ CF::chap73(void)
       continue;
 
     // only data variables may have this attribute
-    if( !var.isDataVar() || var.coord.isAny || var.isAUX || var.isFormulaTermsVar )
+    if( !var.isDataVar()  )
     {
       if( notes->inq(bKey + "73f", var.name) )
       {
@@ -8473,6 +8601,8 @@ CF::chap73(void)
     //  chap734b(var, cm_name, cm_method);
   }
 
+  if( ifs_std_name.isOpen() )
+      ifs_std_name.close() ;
   return;
 }
 
@@ -8597,11 +8727,14 @@ CF::chap73_cellMethods_Method(std::string &str0, Variable& var)
   // method str0 must begin with one of the terms
   Split x_methods(str0);
 
+  // case is not significant
+  x_methods.assign(0, hdhC::Lower()(x_methods[0]) );
+
   if( x_methods.size() == 0 )
     // should not happen, caught elsewhere
     return true;
 
-  if( !hdhC::isAmong(x_methods[0], term) )
+  if( ! hdhC::isAmong(x_methods[0], term) )
   {
     if( notes->inq(bKey + "73d", var.name) )
     {
@@ -8681,16 +8814,16 @@ CF::chap73_cellMethods_Name(std::string &name, Variable& var)
 
     // No specific coordinate: area or a valid standard name that is neither
     // a dimensions nor a coordinate variable.
-    if( chap734a(x_name[x]) )
-      continue;
-
-    if( notes->inq(bKey + "73c", var.name) )
+    if( ! chap734a(x_name[x]) )
     {
-      std::string capt(hdhC::tf_att(var.name, n_cell_methods, hdhC::colon));
-      capt += "Invalid name" + hdhC::tf_val(x_name[x]+hdhC::colon);
+        if( notes->inq(bKey + "73c", var.name) )
+        {
+            std::string capt(hdhC::tf_att(var.name, n_cell_methods, hdhC::colon));
+            capt += "Invalid name" + hdhC::tf_val(x_name[x]+hdhC::colon);
 
-      (void) notes->operate(capt) ;
-      notes->setCheckStatus( n_CF, fail );
+            (void) notes->operate(capt) ;
+            notes->setCheckStatus( n_CF, fail );
+        }
     }
   }
 
@@ -9170,7 +9303,7 @@ CF::chap734a(std::string& name)
    if( name == n_area )
      return true;
 
-   // special: a two common valid standard_name
+   // special: two common valid standard_names
    if( name == n_longitude || name == n_latitude )
         return true;
 
@@ -9180,33 +9313,13 @@ CF::chap734a(std::string& name)
   if( std_name_table.is() )  // cf-standard-name-table.xml
      return false;
 
-  ReadLine ifs( std_name_table.getFile() ) ;
-
-  if( ! ifs.isOpen() )
-  {
-    if( notes->inq(bKey + "0t") )
-    {
-      std::string capt("fatal: the CF-standarad-name table could not be opened");
-
-      (void) notes->operate(capt) ;
-      notes->setCheckStatus( n_CF, fail );
-    }
-
-    return false ;
-  }
-
-  ifs.clearSurroundingSpaces();
-
   Variable var;
-  var.snTableEntry.found=false;
+  var.snTableEntry[0].found=false;
+  SNT_ix = 0;
 
-  scanStdNameTable(ifs, var, name) ;
-  ifs.close();
+  check_standard_name(var, name, "rewind") ;
 
-  if( var.snTableEntry.found )
-    return true;
-
-  return false;
+  return var.snTableEntry[0].found ;
 }
 
 void

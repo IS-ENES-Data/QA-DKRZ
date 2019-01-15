@@ -56,14 +56,14 @@ class VariableMeta
   {
      std::string std_name;
      std::string remainder;
-     bool        found;
-     bool        hasBlanks;
+     bool        found={false};
+     bool        hasBlanks={false};
      std::string alias;
      std::string canonical_units;
      std::string amip;
      std::string grib;
   };
-  SN_TableEntry snTableEntry;
+  SN_TableEntry snTableEntry[2];
 
   struct Coordinates
   {
