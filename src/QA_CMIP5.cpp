@@ -1668,8 +1668,8 @@ CMOR::checkMIPT_dim_boundsQuest(
 
   if( notes->inq( key, vMD.var->name) )
   {
-    std::string capt(QA_Exp::getCaptionIntroDim(f_DMD, "bounds?" ));
-    capt += "missing bounds-variable as requested by the CMOR table" ;
+    std::string capt(hdhC::ft_var(vMD.var->name, hdhC::colon));
+    capt += "missing bounds-variable as requested by the CMOR table in column 'bounds?'" ;
 
     (void) notes->operate(capt) ;
     notes->setCheckStatus("CV", pQA->n_fail);
@@ -3101,12 +3101,10 @@ CMOR::checkStringValues( struct DimensionMetaData& f_DMD,
 
     if( notes->inq( key, f_DMD.var->name) )
     {
-      std::string capt(QA_Exp::getCaptionIntroDim(f_DMD, cName ));
-      capt += "mismatch of number of data values, found";
+      std::string capt(hdhC::tf_var(f_DMD.var->name, hdhC::colon));
+      capt += "Mismatch of number of data value(s) between file and table, found";
       capt += hdhC::tf_val(hdhC::double2String(vs_values.size()));
-      capt += " items in the file and ";
-      capt += hdhC::tf_assign(cName, hdhC::double2String(x_tVal.size()));
-      capt += " in the table";
+      capt += ", exptected " + hdhC::tf_assign(cName, hdhC::double2String(x_tVal.size()));
 
       (void) notes->operate(capt) ;
       notes->setCheckStatus("CV", pQA->n_fail);
@@ -3281,12 +3279,12 @@ CMOR::checkWithTolerance( struct DimensionMetaData& f_DMD,
 
     if( notes->inq( key, f_DMD.var->name) )
     {
-      std::string capt(QA_Exp::getCaptionIntroDim(f_DMD, cName ));
-      capt += "mismatch of number of data values, found";
+      std::string capt(hdhC::tf_var(f_DMD.var->name, hdhC::colon));
+      capt += "Mismatch of number of ";
+      capt += " data value(s) between file and table, found";
       capt += hdhC::tf_val(hdhC::double2String(ma.size()));
-      capt += " items in the file and ";
-      capt += hdhC::tf_assign(cName, hdhC::double2String(x_tVal.size()));
-      capt += " in the table";
+      capt += ", exptected ";
+      capt += hdhC::tf_assign(cname, hdhC::double2String(x_tVal.size()));
 
       (void) notes->operate(capt) ;
       notes->setCheckStatus("CV", pQA->n_fail);
@@ -3337,15 +3335,16 @@ CMOR::checkWithTolerance( struct DimensionMetaData& f_DMD,
 
   if( notes->inq( key, f_DMD.var->name) )
   {
-    std::string capt(QA_Exp::getCaptionIntroDim(f_DMD, cName ));
-    capt += "Mismatch of data values between file and table, found";
-    capt += hdhC::tf_val(hdhC::double2String(ma[i]));
-    capt += ", expected ";
-    capt += hdhC::tf_assign(cName, x_tVal[i]);
+      std::string capt(hdhC::tf_var(f_DMD.var->name, hdhC::colon));
+      capt += "Mismatch of ";
+      capt += cName + " data value(s) between file and table, found";
+      capt += hdhC::tf_val(hdhC::double2String(ma[i]));
+      capt += ", exptected ";
+      capt += hdhC::tf_assign(cname, hdhC::double2String(x_tVal[i]));
 
-    (void) notes->operate(capt) ;
-    notes->setCheckStatus("CV", pQA->n_fail);
-    pQA->setExitState( notes->getExitState() ) ;
+      (void) notes->operate(capt) ;
+      notes->setCheckStatus("CV", pQA->n_fail);
+      pQA->setExitState( notes->getExitState() ) ;
   }
 
   return;
