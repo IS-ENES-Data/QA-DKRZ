@@ -1668,7 +1668,7 @@ CMOR::checkMIPT_dim_boundsQuest(
 
   if( notes->inq( key, vMD.var->name) )
   {
-    std::string capt(hdhC::ft_var(vMD.var->name, hdhC::colon));
+    std::string capt(hdhC::tf_var(vMD.var->name, hdhC::colon));
     capt += "missing bounds-variable as requested by the CMOR table in column 'bounds?'" ;
 
     (void) notes->operate(capt) ;
@@ -1810,7 +1810,7 @@ CMOR::checkMIPT_dim_outname(
 
   if( notes->inq( key, vMD.var->name) )
   {
-    std::string capt(QA_Exp::getCaptionIntroDim(f_DMD);
+    std::string capt(QA_Exp::getCaptionIntroDim(f_DMD));
     capt += "missing output dimensions name in the file";
 
     (void) notes->operate(capt) ;
@@ -3136,7 +3136,7 @@ CMOR::checkStringValues( struct DimensionMetaData& f_DMD,
 
   if( notes->inq( key, f_DMD.var->name) )
   {
-    std::string capt(hdhC::tv_var(f_DMD.var->name, colon ));
+    std::string capt(hdhC::tf_var(f_DMD.var->name, hdhC::colon ));
     capt += "mismatch of data values between file and table, expected also";
     capt += hdhC::tf_assign(cName, x_tVal[i]);
 
@@ -3249,7 +3249,7 @@ CMOR::checkWithTolerance( struct DimensionMetaData& f_DMD,
          std::string key("4_1p");
          if( notes->inq( key, f_DMD.var->name) )
          {
-           std::string capt("Dimension " + hdhC::tf_val(f_DMD.var->name);
+           std::string capt("Dimension " + hdhC::tf_val(f_DMD.var->name));
            capt += ": Max. no. of levels=(17+6), found";
            capt += hdhC::tf_val(hdhC::double2String(ma.size()));
 
@@ -3282,7 +3282,7 @@ CMOR::checkWithTolerance( struct DimensionMetaData& f_DMD,
       capt += " data value(s) between file and table, found";
       capt += hdhC::tf_val(hdhC::double2String(ma.size()));
       capt += ", exptected ";
-      capt += hdhC::tf_assign(cname, hdhC::double2String(x_tVal.size()));
+      capt += hdhC::tf_assign(cName, hdhC::double2String(x_tVal.size()));
 
       (void) notes->operate(capt) ;
       notes->setCheckStatus("CV", pQA->n_fail);
@@ -3338,7 +3338,7 @@ CMOR::checkWithTolerance( struct DimensionMetaData& f_DMD,
       capt += cName + " data value(s) between file and table, found";
       capt += hdhC::tf_val(hdhC::double2String(ma[i]));
       capt += ", exptected ";
-      capt += hdhC::tf_assign(cname, hdhC::double2String(x_tVal[i]));
+      capt += hdhC::tf_assign(cName, x_tVal[i]);
 
       (void) notes->operate(capt) ;
       notes->setCheckStatus("CV", pQA->n_fail);
