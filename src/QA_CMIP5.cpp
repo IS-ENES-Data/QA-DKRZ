@@ -1782,7 +1782,7 @@ CMOR::checkMIPT_dim_longName(
 
   if( notes->inq( key, vMD.var->name) )
   {
-    std::string capt(QA_Exp::getCaptionIntroDim(f_DMD, "long name" ));
+    std::string capt(QA_Exp::getCaptionIntroDim(f_DMD, "long_name" ));
     if( f_long_name.size() )
     {
       capt += "found";
@@ -1810,8 +1810,7 @@ CMOR::checkMIPT_dim_outname(
 
   if( notes->inq( key, vMD.var->name) )
   {
-    std::string capt(QA_Exp::getCaptionIntroDim(
-        f_DMD, "output dimension name" ));
+    std::string capt(QA_Exp::getCaptionIntroDim(f_DMD);
     capt += "missing output dimensions name in the file";
 
     (void) notes->operate(capt) ;
@@ -1838,7 +1837,6 @@ CMOR::checkMIPT_dim_positive(
   if( notes->inq( key, vMD.var->name) )
   {
     std::string capt(QA_Exp::getCaptionIntroDim(f_DMD, n_positive));
-    capt += hdhC::tf_att(n_positive);
     capt += "in the file does not match the request in the CMOR table";
 
     std::string text;
@@ -1905,7 +1903,7 @@ CMOR::checkMIPT_dim_stdName(
   if( notes->inq( key, vMD.var->name) )
   {
     std::string capt(QA_Exp::getCaptionIntroDim(f_DMD, "standard name" ));
-    capt += "not as the CMOR table requested";
+    capt += "not as requested by the CMOR table";
     if( f_DMD.attMap[n_standard_name].size() )
     {
       capt += ", found";
@@ -3073,8 +3071,8 @@ CMOR::checkStringValues( struct DimensionMetaData& f_DMD,
          std::string key("4_1p");
          if( notes->inq( key, f_DMD.var->name) )
          {
-           std::string capt(QA_Exp::getCaptionIntroDim(f_DMD, cName ));
-           capt += "provision of more than the requested max(17+6) levels, found";
+           std::string capt(hdhC::tf_var(f_DMD.var->name ));
+           capt += "there are more than the requested max(17+6) levels, found";
            capt += hdhC::tf_val(hdhC::double2String(vs_values.size()));
 
            (void) notes->operate(capt) ;
@@ -3138,7 +3136,7 @@ CMOR::checkStringValues( struct DimensionMetaData& f_DMD,
 
   if( notes->inq( key, f_DMD.var->name) )
   {
-    std::string capt(QA_Exp::getCaptionIntroDim(f_DMD, cName ));
+    std::string capt(hdhC::tv_var(f_DMD.var->name, colon ));
     capt += "mismatch of data values between file and table, expected also";
     capt += hdhC::tf_assign(cName, x_tVal[i]);
 
@@ -3251,8 +3249,8 @@ CMOR::checkWithTolerance( struct DimensionMetaData& f_DMD,
          std::string key("4_1p");
          if( notes->inq( key, f_DMD.var->name) )
          {
-           std::string capt(QA_Exp::getCaptionIntroDim(f_DMD, cName ));
-           capt += " max. no. of levels=(17+6), found";
+           std::string capt("Dimension " + hdhC::tf_val(f_DMD.var->name);
+           capt += ": Max. no. of levels=(17+6), found";
            capt += hdhC::tf_val(hdhC::double2String(ma.size()));
 
            (void) notes->operate(capt) ;
@@ -4113,7 +4111,7 @@ QA_Exp::getCaptionIntroDim(
   std::string intro ;
 
   if( att.size() )
-    intro = hdhC::tf_att(f_DMD.var->name, att, hdhC::colon);
+    intro = hdhC::tf_var(f_DMD.var->name, att, hdhC::colon);
   else
     intro = hdhC::tf_var(f_DMD.var->name, hdhC::colon);
 
