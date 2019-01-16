@@ -396,18 +396,29 @@ bool
 isAmong(std::string&, std::vector<std::vector<std::string> >& set,
         std::string mode="");
 
+bool
+isAmong(std::string&, std::vector<std::vector<std::string*> >& set,
+        std::string mode="");
+
 // size_t& outer, size_t inner fetch also the indeces of vector and position
 // of a first match
 bool
 isAmong(std::string&, std::vector<std::vector<std::string> >& set,
         size_t& outer, size_t& inner,  std::string mode="");
+bool
+isAmong(std::string&, std::vector<std::vector<std::string*> >& set,
+        size_t& outer, size_t& inner,  std::string mode="");
 
 bool
 isAmong(std::string&, std::vector<std::string>& set, std::string mode="");
+bool
+isAmong(std::string&, std::vector<std::string*>& set, std::string mode="");
 
 // get also the index of a first match
 bool
 isAmong(std::string&, std::vector<std::string>& set, size_t&, std::string mode="");
+bool
+isAmong(std::string&, std::vector<std::string*>& set, size_t&, std::string mode="");
 
 template <typename T>
 bool
