@@ -77,6 +77,7 @@ class CF : public IObj
                  std::vector<std::string>&,
                  std::vector<std::string>&,
                  std::vector<std::string>&,
+                 std::vector<std::string>&,
                  int& valid_ix, int ft_jx, int sn_jx,
                  std::vector<std::pair<std::string, std::string> > &) ;
   bool   chap433_checkSNvsFT( Variable& var,
@@ -84,10 +85,18 @@ class CF : public IObj
             std::vector<std::string> &valid_ft,
             std::vector<std::string> &valid_units,
             int& valid_ix, int& ft_ix, int& sn_ix, std::string &units );
+  void   chap433_computedStdName( Variable&,
+            std::string &valid_sn, std::string &valid_ft, std::string &valid_cmp_sn,
+            int valid_ix, int att_ft_ix,
+            std::vector<std::pair<std::string, std::string> > &att_ft_pv) ;
+  void   chap433_consistencyTableD1( Variable &var,
+            std::string &valid_sn, std::string &valid_ft, std::string &valid_cmp_sn,
+            int valid_ix, int att_ft_ix,
+            std::vector<std::pair<std::string, std::string> > &vp_param);
   void   chap433_getParamVars( Variable&,
             std::vector<std::string> &valid_sn,
             std::vector<std::string> &valid_ft,
-            int& valid_ft_ix, int att_ft_ix,
+            int& valid_ix, int att_ft_ix,
             std::vector<std::pair<std::string, std::string> > &att_ft_pv) ;
   void   chap433_verify_FT(Variable&,
             std::string &valid_ft, std::string &valid_sn, std::string &valid_units,
@@ -262,8 +271,8 @@ template <typename T>
   bool is_ifs_std_name={true};
   //std::vector<std::string> vs_std_name; // contains also computed_standard_names
   //std::vector<size_t> vs_std_name_ix ; // index for vector Variable
-  std::vector<bool> vs_SNT_ix ; // index for variable.SN_TableEntry objects; not necessarily varSz
-  size_t SNT_ix ;               // 0: std_name, 1: computed_std_name
+  std::vector<size_t> vs_SNT_ix ; // index for variable.SN_TableEntry objects; not necessarily varSz
+  size_t SNT_ix ;                 // 0: std_name, 1: computed_std_name
 
   // a few names of attributes used throughout the checks
   const std::string n_actual_range = {"actual_range"};
@@ -281,7 +290,7 @@ template <typename T>
   const std::string n_climatology = {"climatology"};
   const std::string n_comment = {"comment"};
   const std::string n_compress = {"compress"};
-  const std::string n_computed_standard_name = {"computed_standard_name"};
+  const std::string n_computed_std_name = {"computed_standard_name"};
   const std::string n_Conventions = {"Conventions"};
   const std::string n_coordinates = {"coordinates"};
   const std::string n_dimension = {"dimension"};
@@ -392,7 +401,7 @@ template <typename T>
   n_climatology, n_S, n_C,
   n_comment, n_S, n_G ,n_D,
   n_compress, n_S, n_C,
-  n_computed_standard_name, n_S, n_C,
+  n_computed_std_name, n_S, n_C,
   n_Conventions, n_S, n_G,
   n_coordinates, n_S, n_D,
   n_crs_wkt, n_S,
@@ -470,6 +479,13 @@ template <typename T>
   const std::string n_geostationary = {"geostationary"};
   const std::string n_oblique_mercator = {"oblique_mercator"};
   const std::string n_sinusodial = {"sinusodial"};
+
+  // parametric vertical coordinates
+  // valid comuted_standard names
+  const std::string n_Table_D1 = {"Table_D1"};
+  const std::string n_air_pressure = {"air_pressure"};
+  const std::string n_altitude = {"altitude"};
+  const std::string n_hagd = {"height_above_geopotential_datum"};
 
 };
 

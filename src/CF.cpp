@@ -926,12 +926,12 @@ CF::check_standard_name(Variable& var, std::string& name, std::string mode)
 
       return false ;
     }
+
+    ifs_std_name.clearSurroundingSpaces();
   }
   else if( mode == "rewind")
     // standard_name not in the table
     ifs_std_name.rewind();
-
-  ifs_std_name.clearSurroundingSpaces();
 
   scanStdNameTable(var, name) ;
 
@@ -2063,18 +2063,8 @@ CF::getSN_TableEntry(void)
         vs_SNT_ix.push_back(0);
         zx.push_back(i) ;
       }
-      else if( (j=var.getAttIndex(n_long_name)) > -1 )   // try long_name
-      {
-        // however, long-name should have no blanks
-        var.snTableEntry[0].std_name = var.attValue[j][0];
-        if( var.snTableEntry[0].std_name.find(" ") == std::string::npos )
-        {
-          vs_SNT_ix.push_back(0);
-          zx.push_back(i) ;
-        }
-      }
 
-      if( (j=var.getAttIndex(n_computed_standard_name)) > -1 )
+      if( (j=var.getAttIndex(n_computed_std_name)) > -1 )
       {
         //var.std_name = var.attValue[j][0] ;
         var.snTableEntry[1].std_name=var.attValue[j][0];
@@ -2104,6 +2094,10 @@ CF::getSN_TableEntry(void)
           v_swap = zx[i] ;
           zx[i] = zx[j];
           zx[j] = v_swap;
+
+          v_swap = vs_SNT_ix[i] ;
+          vs_SNT_ix[i] = vs_SNT_ix[j] ;
+          vs_SNT_ix[j] = v_swap ;
         }
      }
    }
@@ -2838,7 +2832,7 @@ CF::scanStdNameTable(std::vector<int> &zx)
   {
      Variable& var = pIn->variable[zx[i]];
 
-     SNT_ix = vs_SNT_ix[zx[i]] ;
+     SNT_ix = vs_SNT_ix[i] ;
 
      // remember the original test name
      testName=var.snTableEntry[SNT_ix].std_name ;
@@ -2888,7 +2882,7 @@ CF::scanStdNameTable(std::vector<int> &zx)
        std::string s;
        for( j=static_cast<int>(x_sn_name.size()-1) ; j > -1 ; --j )
        {
-         s = x_sn_name[SNT_ix];
+         s = x_sn_name[0];
          for( int l=1 ; l <= j ; ++l )
            s += "_" + x_sn_name[l] ;
 
@@ -2901,7 +2895,7 @@ CF::scanStdNameTable(std::vector<int> &zx)
             var.snTableEntry[SNT_ix].remainder = hdhC::stripSides(s) ;
 
             // if sn is right, but there is something with the modifier
-            if( x_sn_name[SNT_ix] != var.snTableEntry[SNT_ix].std_name )
+            if( x_sn_name[0] != var.snTableEntry[SNT_ix].std_name )
               var.snTableEntry[SNT_ix].hasBlanks = true ;
 
             break;
@@ -2949,7 +2943,7 @@ CF::scanStdNameTable(Variable& var, std::string testName)
 
       if( x_line[1] == testName )
       {
-        if( x_line[SNT_ix] == beg_entry)
+        if( x_line[0] == beg_entry)
         {
            var.snTableEntry[SNT_ix].std_name = testName ;
            var.snTableEntry[SNT_ix].found=true;
@@ -2963,11 +2957,11 @@ CF::scanStdNameTable(Variable& var, std::string testName)
               x_line = line ;
               if( x_line.size() > 1 )
               {
-                if( x_line[SNT_ix] == canonical_units )
+                if( x_line[0] == canonical_units )
                   var.snTableEntry[SNT_ix].canonical_units = x_line[1] ;
-                else if( x_line[SNT_ix] == n_grib )
+                else if( x_line[0] == n_grib )
                   var.snTableEntry[SNT_ix].grib = x_line[1] ;
-                else if( x_line[SNT_ix] == n_amip )
+                else if( x_line[0] == n_amip )
                   var.snTableEntry[SNT_ix].amip = x_line[1] ;
               }
            }
@@ -5685,6 +5679,32 @@ CF::chap431(Variable& var)
 }
 
 void
+CF::chap432(Variable& var, std::string &units)
+{
+   // units level, layer and sigma_level are deprecated
+
+  if( units == "level" || units == "layer" || units == "sigma_level" )
+  {
+    if( followRecommendations )
+    {
+      if( notes->inq(bKey+"31a", var.name) )
+      {
+        std::string capt(n_reco + ": ");
+        capt += hdhC::tf_att(var.name, n_units, units, hdhC::upper);
+        capt += "is deprecated";
+
+        (void) notes->operate(capt) ;
+        notes->setCheckStatus( n_CF );
+      }
+    }
+
+    units = "1" ;
+  }
+
+  return ;
+}
+
+void
 CF::chap433(void)
 {
   // dimensionless vertical coordinate?
@@ -5699,53 +5719,68 @@ CF::chap433(void)
   // valid units of parameters
   std::vector<std::string> valid_units;
 
+  // valid comuted_standard names
+  std::vector<std::string> valid_cmp_sn;
+
   valid_sn.push_back("atmosphere_ln_pressure_coordinate");
   valid_ft.push_back("p0: lev:");
   valid_units.push_back("Pa 1");
+  valid_cmp_sn.push_back(n_air_pressure);
 
   valid_sn.push_back("atmosphere_sigma_coordinate");
   valid_ft.push_back("sigma: ps: ptop:");
   valid_units.push_back("1 Pa Pa");
+  valid_cmp_sn.push_back(n_air_pressure);
 
   valid_sn.push_back("atmosphere_hybrid_sigma_pressure_coordinate");
   valid_ft.push_back("a: b: ps: p0: ");
   valid_units.push_back("1 1 Pa Pa");
+  valid_cmp_sn.push_back(n_air_pressure);
 
   valid_sn.push_back("atmosphere_hybrid_sigma_pressure_coordinate");
   valid_ft.push_back("ap: b: ps:");  // <-- alternative
   valid_units.push_back("Pa 1 Pa");
+  valid_cmp_sn.push_back(n_air_pressure);
 
   valid_sn.push_back("atmosphere_hybrid_height_coordinate");
   valid_ft.push_back("a: b: orog:");
   valid_units.push_back("m 1 m") ;
+  valid_cmp_sn.push_back(n_altitude + "|" + n_hagd);
 
   valid_sn.push_back("atmosphere_sleve_coordinate");
   valid_ft.push_back("a: b1: b2: ztop: zsurf1: zsurf2:");
   valid_units.push_back("1 1 1 m m m");
+  valid_cmp_sn.push_back(valid_cmp_sn.back());
 
   valid_sn.push_back("ocean_sigma_coordinate");
   valid_ft.push_back("sigma: eta: depth:");
   valid_units.push_back("1 m m");
+  valid_cmp_sn.push_back(n_Table_D1);
 
   valid_sn.push_back("ocean_s_coordinate");
   valid_ft.push_back("s: eta: depth: a: b: depth_c:");
   valid_units.push_back("1 m m 1 1 m");
+  valid_cmp_sn.push_back(n_Table_D1);
 
   valid_sn.push_back("ocean_s_coordinate_g1");
   valid_ft.push_back("s: C: eta: depth: depth_c:");
   valid_units.push_back("1 1 m m m");
+  valid_cmp_sn.push_back("");
 
   valid_sn.push_back("ocean_s_coordinate_g2");
   valid_ft.push_back("s: C: eta: depth: depth_c:");
   valid_units.push_back("1 m m 1 1 m");
+  valid_cmp_sn.push_back("");
 
   valid_sn.push_back("ocean_sigma_z_coordinate");
   valid_ft.push_back("sigma: eta: depth: depth_c: nsigma: zlev:");
   valid_units.push_back("1 m m m 1 1");
+  valid_cmp_sn.push_back(n_Table_D1);
 
   valid_sn.push_back("ocean_double_sigma_coordinate");
   valid_ft.push_back("sigma: depth: z1: z2: a: href: k_c:");
   valid_units.push_back("1 m m m 1 m 1");
+  valid_cmp_sn.push_back(n_Table_D1);
 
   // two ways to identify a dimless vertical coord.
   // a) a formula_terms attribute,
@@ -5848,8 +5883,7 @@ CF::chap433(void)
        continue;
 
 
-     // if( chap433(var, valid_sn, valid_ft, ij_fT[i], ij_sN[i]) )
-     if( chap433(var, valid_sn, valid_ft, valid_units,
+     if( chap433(var, valid_sn, valid_ft, valid_units, valid_cmp_sn,
                    valid_ix, ft_jx, sn_jx, att_ft_pv ) )
      {
          var.coord.isC[2]    = true;
@@ -5863,12 +5897,12 @@ CF::chap433(void)
          if( cFVal > 16 )
          {
              if( followRecommendations
-                    && ! hdhC::isAmong(n_computed_standard_name, var.attName) )
+                    && ! hdhC::isAmong(n_computed_std_name, var.attName) )
              {
                if( notes->inq(bKey+"433k", var.name) )
                {
-                  std::string capt(n_reco + ": ");
-                  capt += hdhC::tf_att(var.name, n_computed_standard_name);
+                  std::string capt(n_reco + ": Specification of ");
+                  capt += hdhC::tf_att(var.name, n_computed_std_name);
                   capt += "is strongly recommended";
 
                   (void) notes->operate(capt) ;
@@ -5879,7 +5913,7 @@ CF::chap433(void)
 
          // No specific coordinate: area or a valid standard name that is neither
          // a dimensions nor a coordinate variable.
-         std::string aVal = var.getAttValue(n_computed_standard_name) ;
+         std::string aVal = var.getAttValue(n_computed_std_name) ;
 
          if( aVal.size() )
          {
@@ -5894,7 +5928,7 @@ CF::chap433(void)
             {
                 if( notes->inq(bKey + "433m", var.name) )
                 {
-                   std::string capt(hdhC::tf_att(var.name, n_computed_standard_name, aVal));
+                   std::string capt(hdhC::tf_att(var.name, n_standard_name, aVal));
                    capt += " is not a valid " + n_standard_name;
 
                    (void) notes->operate(capt) ;
@@ -5922,11 +5956,11 @@ CF::chap433(void)
 
         Variable& var = pIn->variable[i] ;
 
-        if( hdhC::isAmong(n_computed_standard_name, var.attName) )
+        if( hdhC::isAmong(n_computed_std_name, var.attName) )
         {
             if( notes->inq(bKey+"433l", var.name) )
             {
-                std::string capt(hdhC::tf_att(var.name, n_computed_standard_name));
+                std::string capt(hdhC::tf_att(var.name, n_computed_std_name));
                 capt += " is only allowed for data variables";
 
                 (void) notes->operate(capt) ;
@@ -5944,6 +5978,7 @@ CF::chap433(Variable& var,
    std::vector<std::string>& valid_sn,
    std::vector<std::string>& valid_ft,
    std::vector<std::string>& valid_units,
+   std::vector<std::string>& valid_cmp_sn,
    int& valid_ix, int att_ft_ix, int att_sn_ix,
    std::vector<std::pair<std::string, std::string> > &att_ft_pv)
 {
@@ -6047,6 +6082,12 @@ CF::chap433(Variable& var,
      }
   }
 
+  // check computed_standard_name
+  if( cFVal > 16 )
+    chap433_computedStdName(var,
+        valid_ft[valid_ix], valid_sn[valid_ix], valid_cmp_sn[valid_ix],
+        valid_ix, att_ft_ix, att_ft_pv);
+
   return true;
 }
 
@@ -6138,29 +6179,165 @@ CF::chap433_checkSNvsFT( Variable& var,
 }
 
 void
-CF::chap432(Variable& var, std::string &units)
+CF::chap433_computedStdName( Variable &var,
+    std::string &valid_sn, std::string &valid_ft, std::string &valid_cmp_sn,
+    int valid_ix, int att_ft_ix,
+    std::vector<std::pair<std::string, std::string> > &vp_param)
 {
-   // units level, layer and sigma_level are deprecated
+    if( ! var.snTableEntry[1].std_name.size() )
+        return;  // annotated elsewhere
 
-  if( units == "level" || units == "layer" || units == "sigma_level" )
-  {
-    if( followRecommendations )
+    bool is=true;
+    size_t p0;
+
+    if( ! valid_cmp_sn.size() )
+       is=false;  // no rules for a computed_std_name
+    else if( valid_cmp_sn == n_Table_D1 )
     {
-      if( notes->inq(bKey+"31a", var.name) )
-      {
-        std::string capt(n_reco + ": ");
-        capt += hdhC::tf_att(var.name, n_units, units, hdhC::upper);
-        capt += "is deprecated";
+       chap433_consistencyTableD1(var,valid_sn, valid_ft, valid_cmp_sn,
+            valid_ix, att_ft_ix, vp_param);
 
-        (void) notes->operate(capt) ;
-        notes->setCheckStatus( n_CF );
-      }
+       return;
+    }
+    else if( (p0=valid_cmp_sn.find('|')) < std::string::npos )
+    {
+        std::string vcsn_0(valid_cmp_sn.substr(0,p0));
+        std::string vcsn_1(valid_cmp_sn.substr(++p0));
+
+        if( var.snTableEntry[1].std_name == vcsn_0 )
+            is=false;
+        else if( var.snTableEntry[1].std_name == vcsn_1 )
+            is=false;
+    }
+    else if( var.snTableEntry[1].std_name == valid_cmp_sn )
+            is=false;
+
+    if( is && notes->inq(bKey + "433o", var.name) )
+    {
+      std::string capt(hdhC::tf_att(var.name, n_computed_std_name, var.snTableEntry[1].std_name));
+      capt += "is invalid for parametric vertical coordinates ";
+      capt += hdhC::tf_val(valid_sn);
+
+      (void) notes->operate(capt) ;
+      notes->setCheckStatus( n_CF, fail );
     }
 
-    units = "1" ;
-  }
+    return;
+}
 
-  return ;
+void
+CF::chap433_consistencyTableD1( Variable &var,
+    std::string &valid_sn, std::string &valid_ft, std::string &valid_cmp_sn,
+    int valid_ix, int att_ft_ix,
+    std::vector<std::pair<std::string, std::string> > &vp_param)
+{
+    const std::string n_hare("height_above_reference_ellipsoid");
+    const std::string n_hamsl("height_above_mean_sea_level");
+    const std::string n_sfdbg("sea_floor_depth_below_geoid");
+    const std::string n_sfdbgd("sea_floor_depth_below_geopotentail_datum");
+    const std::string n_sfdbmsl("sea_floor_depth_below_mean_sea_level") ;
+    const std::string n_sfdbre("sea_floor_depth_below_reference_ellipsoid");
+    const std::string n_sshag("sea_surface_height_above_geoid");
+    const std::string n_sshagd("sea_surface_height_above_geopotential_datum");
+    const std::string n_sshamsl("sea_surface_height_above_mean_sea_level");
+    const std::string n_sshare("sea_surface_heigth_above_reference_ellipsoid");
+
+    // standard_name of computed dimensional coordinate
+    std::vector<std::string> sncdc = { n_altitude, n_hagd, n_hare, n_hamsl };
+
+    // formula term name
+    std::vector<std::string> ftn = { "zlev", "eta", "depth" } ;
+
+    // standard_name of formula term
+    std::vector<std::vector<const std::string*>> sn_ft ;
+
+    std::vector<const std::string*> sn_ft_0;
+    sn_ft_0.push_back(&n_altitude);
+    sn_ft_0.push_back(&n_sshag);
+    sn_ft_0.push_back(&n_sfdbg);
+
+    std::vector<const std::string*> sn_ft_1;
+    sn_ft_1.push_back(&n_hagd);
+    sn_ft_1.push_back(&n_sshagd);
+    sn_ft_1.push_back(&n_sfdbgd);
+
+    std::vector<const std::string*> sn_ft_2;
+    sn_ft_2.push_back(&n_hare);
+    sn_ft_2.push_back(&n_sshare);
+    sn_ft_2.push_back(&n_sfdbre);
+
+    std::vector<const std::string*> sn_ft_3;
+    sn_ft_2.push_back(&n_hamsl);
+    sn_ft_2.push_back(&n_sshamsl);
+    sn_ft_2.push_back(&n_sfdbmsl);
+
+    sn_ft.push_back(sn_ft_0);
+    sn_ft.push_back(sn_ft_1);
+    sn_ft.push_back(sn_ft_2);
+    sn_ft.push_back(sn_ft_3);
+
+    bool is_fault;
+    Variable* ftp_var;
+
+    for( size_t i=0 ; i < vp_param.size() ; ++i )
+    {
+        is_fault = false;
+
+        // standard_name of computed dimensional coordinate
+        size_t k0; // index for a match
+        if( ! hdhC::isAmong(var.snTableEntry[1].std_name, sncdc, k0) )
+        {
+            if( notes->inq(bKey + "433p", var.snTableEntry[1].std_name) )
+            {
+                std::string capt("Formula term " + hdhC::tf_val(var.name, hdhC::colon));
+                capt += n_computed_std_name;
+                capt += " is not consistent with Table D.1 for parametric vertical coordinates ";
+                capt += hdhC::tf_val(valid_sn);
+
+                std::string text("Found ");
+                text += hdhC::tf_val(var.snTableEntry[1].std_name) ;
+
+                (void) notes->operate(capt, text) ;
+                notes->setCheckStatus( n_CF, fail );
+            }
+
+            return;
+        }
+
+        // variable of ft parameter
+        for( size_t j=0 ; j < pIn->varSz ; ++j )
+        {
+            if( pIn->variable[j].name == vp_param[i].second )
+            {
+                ftp_var = &pIn->variable[j] ;
+
+                // this code assumes that the ft-parameters are identical for all cases;
+                // true for CF v.1.7
+
+                // the formula term name
+                size_t k1;
+                if( hdhC::isAmong(vp_param[i].first, ftn, k1) )
+                {
+                    // check the standard_name of formula term
+                    if( ftp_var->snTableEntry[0].std_name == *(sn_ft[k0][k1]) )
+                        is_fault=true;
+                }
+            }
+        }
+
+        if( ! is_fault && notes->inq(bKey + "433p", var.name) )
+        {
+            std::string capt("Formula term ");
+            capt += hdhC::tf_att(var.name, n_standard_name, var.snTableEntry[1].std_name) ;
+            capt += " is not consistent with Table D.1 for parametric vertical coordinates ";
+            capt += hdhC::tf_val(valid_sn);
+
+            (void) notes->operate(capt) ;
+            notes->setCheckStatus( n_CF, fail );
+        }
+    }
+
+    return;
 }
 
 void
