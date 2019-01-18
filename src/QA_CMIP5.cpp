@@ -846,7 +846,10 @@ DRS_CV::findFN_faults(Split& drs, Split& x_e,
     {
       capt  = "DRS (filename): ";
       text  = " DRS item " + hdhC::tf_assign(x_e[j], drs[j]);
-      text += " vs. global attribute " + hdhC::tf_assign(cvMap[x_e[j]], t) ;
+      if( cvMap[x_e[j]] == "*" )
+         text += " vs. global attribute " + hdhC::tf_val(t) ;
+      else
+         text += " vs. global attribute " + hdhC::tf_assign(cvMap[x_e[j]], t) ;
 
       return;
     }
