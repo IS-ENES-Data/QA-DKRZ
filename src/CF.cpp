@@ -2844,26 +2844,22 @@ CF::scanStdNameTable(std::vector<int> &zx)
      {
        Variable& var_k = pIn->variable[zx[k]];
 
-       for( size_t m=0 ; m < 2 ; ++m )
+       if( zx[i] == zx[k] )
+           continue;
+
+       size_t m = vs_SNT_ix[k] ;
+       if( var_k.snTableEntry[m].std_name == testName )
        {
-          if( i == k && m == SNT_ix )
-              continue;
-
-          if( var_k.snTableEntry[m].std_name == testName )
-          {
-            var.snTableEntry[SNT_ix].std_name  = var_k.snTableEntry[m].std_name ;
-            var.snTableEntry[SNT_ix].found     = var_k.snTableEntry[m].found ;
-            var.snTableEntry[SNT_ix].alias     = var_k.snTableEntry[m].alias;
-            var.snTableEntry[SNT_ix].amip      = var_k.snTableEntry[m].amip;
-            var.snTableEntry[SNT_ix].grib      = var_k.snTableEntry[m].grib;
-            var.snTableEntry[SNT_ix].remainder = var_k.snTableEntry[m].remainder ;
-            var.snTableEntry[SNT_ix].canonical_units = var_k.snTableEntry[m].canonical_units;
-            isCont=true;
-            break;
-          }
-
-          if( isCont )
-             break;
+          var.snTableEntry[SNT_ix].std_name  = var_k.snTableEntry[m].std_name ;
+          var.snTableEntry[SNT_ix].found     = var_k.snTableEntry[m].found ;
+          var.snTableEntry[SNT_ix].alias     = var_k.snTableEntry[m].alias;
+          var.snTableEntry[SNT_ix].amip      = var_k.snTableEntry[m].amip;
+          var.snTableEntry[SNT_ix].grib      = var_k.snTableEntry[m].grib;
+          var.snTableEntry[SNT_ix].remainder = var_k.snTableEntry[m].remainder ;
+          var.snTableEntry[SNT_ix].canonical_units =
+                                          var_k.snTableEntry[m].canonical_units;
+          isCont = true;
+          break;
        }
      }
 
@@ -5909,32 +5905,6 @@ CF::chap433(void)
                   notes->setCheckStatus( n_CF );
                 }
              }
-         }
-
-         // No specific coordinate: area or a valid standard name that is neither
-         // a dimensions nor a coordinate variable.
-         std::string aVal = var.getAttValue(n_computed_std_name) ;
-
-         if( aVal.size() )
-         {
-            Variable var_csn;
-            SNT_ix=0 ;
-            var_csn.snTableEntry[SNT_ix].found=false;
-            var_csn.std_name = aVal;
-
-            check_standard_name(var_csn, aVal, "rewind");
-
-            if( ! var_csn.snTableEntry[SNT_ix].found )
-            {
-                if( notes->inq(bKey + "433m", var.name) )
-                {
-                   std::string capt(hdhC::tf_att(var.name, n_standard_name, aVal));
-                   capt += " is not a valid " + n_standard_name;
-
-                   (void) notes->operate(capt) ;
-                   notes->setCheckStatus( n_CF, fail );
-                }
-            }
          }
      }
   }
