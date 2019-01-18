@@ -932,7 +932,7 @@ DRS_CV::findPath_faults(Split& drs, Split& x_e,
           continue;
       }
 
-      text += " DRS failure for global " + hdhC::tf_att(x_e[j],t);
+      text += " failure for DRS " + hdhC::tf_val(x_e[j]);
       text += ", found" + hdhC::tf_val(drs[i]) + " in the path" ;
       break;
     }
