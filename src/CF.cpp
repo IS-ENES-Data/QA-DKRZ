@@ -6237,9 +6237,9 @@ CF::chap433_consistencyTableD1( Variable &var,
     sn_ft_2.push_back(&n_sfdbre);
 
     std::vector<const std::string*> sn_ft_3;
-    sn_ft_2.push_back(&n_hamsl);
-    sn_ft_2.push_back(&n_sshamsl);
-    sn_ft_2.push_back(&n_sfdbmsl);
+    sn_ft_3.push_back(&n_hamsl);
+    sn_ft_3.push_back(&n_sshamsl);
+    sn_ft_3.push_back(&n_sfdbmsl);
 
     sn_ft.push_back(sn_ft_0);
     sn_ft.push_back(sn_ft_1);
@@ -6248,6 +6248,22 @@ CF::chap433_consistencyTableD1( Variable &var,
 
     bool is_fault;
     Variable* ftp_var;
+
+    // only ft parameters names required according the Param Vertical Coord.
+    std::vector<size_t> req_ix;
+
+    if(valid_sn == "ocean_sigma_coordinate"
+            || valid_sn == "ocean_s_coordinate" )
+    {
+        req_ix.push_back(1);
+        req_ix.push_back(2);
+    }
+    else if(valid_sn == "ocean_sigma_z_coordinate")
+    {
+        req_ix.push_back(1);
+        req_ix.push_back(2);
+        req_ix.push_back(5);
+    }
 
     for( size_t i=0 ; i < vp_param.size() ; ++i )
     {
@@ -6274,20 +6290,19 @@ CF::chap433_consistencyTableD1( Variable &var,
             return;
         }
 
-        // variable of ft parameter
-        for( size_t j=0 ; j < pIn->varSz ; ++j )
+        if( ! hdhC::isAmong(i, req_ix) )
+            continue;
+
+        size_t k1;
+        if( hdhC::isAmong(vp_param[i].first, ftn, k1) )
         {
-            if( pIn->variable[j].name == vp_param[i].second )
+            for( size_t j=0 ; j < pIn->varSz ; ++j )
             {
-                ftp_var = &pIn->variable[j] ;
-
-                // this code assumes that the ft-parameters are identical for all cases;
-                // true for CF v.1.7
-
-                // the formula term name
-                size_t k1;
-                if( hdhC::isAmong(vp_param[i].first, ftn, k1) )
+                if( pIn->variable[j].name == vp_param[i].second )
                 {
+                    ftp_var = &pIn->variable[j] ;
+
+                    // the formula term name
                     // check the standard_name of formula term
                     if( ftp_var->snTableEntry[0].std_name == *(sn_ft[k0][k1]) )
                         is_fault=true;
