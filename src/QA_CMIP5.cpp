@@ -999,26 +999,33 @@ DRS_CV::getPathBegIndex(
   for( size_t i=0 ; i < x_e.size() ; ++i)
       val.push_back(gM[ x_e[i] ]) ;
 
+  std::string s;
+  std::string sU;
+
   for( size_t i=0 ; i < drs.size() ; ++i)
   {
-    std::string s(drs[i]);
-    std::string sU = hdhC::Upper()(s);
+    s = drs[i] ;
+    sU = hdhC::Upper()(s);
 
     bool is=false;
 
-    if( hdhC::isAmong(s, val) )
+    // find the first valid DRS item
+    size_t k;
+    if( hdhC::isAmong(s, val, k) )
        is=true ;
-    else if( hdhC::isAmong(sU, val) )
+    else if( hdhC::isAmong(sU, val, k) )
        is=true ;
 
     if(is)
     {
-        ix = static_cast<int>(i);
+        ix = static_cast<int>(i-k);
+
         // the match could be a leading false one, requested is the last one, so
         // search another one.
+        std::string tU ;
         for( size_t j=i+1 ; j < drs.size() ; ++j)
         {
-            std::string tU = hdhC::Upper()(drs[j]);
+            tU = hdhC::Upper()(drs[j]);
 
             if( tU == sU )
                 ix = static_cast<int>(j);
