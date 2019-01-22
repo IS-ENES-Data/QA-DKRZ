@@ -94,7 +94,8 @@ class VariableMeta
   bool isExcluded;
   bool isFixed;  // isTime==false && isDataVar==true
   bool isFillValue;
-  bool isFormulaTermsVar;
+  bool isFT_paramVar;
+  bool isFT_pvc_var;
   bool isInstant;
   bool isLabel;
   bool isMapVar;

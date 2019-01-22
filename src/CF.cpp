@@ -764,7 +764,7 @@ CF::checkGroupRelation(void)
       // omitted in a coordinates attribute.
       if( isXYZinCoordAtt(i) )
         continue; // only once for all scalars
-      else if( ! (isCompressAux(var) || var.isFormulaTermsVar || var.boundsOf.size() ) )
+      else if( ! (isCompressAux(var) || var.isFT_paramVar || var.boundsOf.size() ) )
       {
         if( notes->inq(bKey + "0c", var.name) )
         {
@@ -1471,7 +1471,7 @@ CF::finalAtt_coordinates_B(void)
 
           if( aux.boundsOf.size() )
             continue;
-          if( aux.isFormulaTermsVar )
+          if( aux.isFT_paramVar )
             continue;
           else if( hdhC::isAmong(aux.name, ca_vvs[i]) )
             continue;
@@ -1563,7 +1563,7 @@ CF::finalAtt_coordinates_D(void)
      if( ! aux.isCoordinate() )
          continue;
 
-     if( aux.coord.isZ_DL || aux.isFormulaTermsVar)
+     if( aux.coord.isZ_DL || aux.isFT_paramVar)
          continue ;
 
      if( aux.boundsOf.size() )
@@ -1709,7 +1709,7 @@ CF::finalAtt_units(void)
       }
 
       // apparently a dimless Z without formula_terms attribute
-      if( notes->inq(bKey + "43d", var.name) )
+      if( var.isFT_pvc_var && notes->inq(bKey + "43d", var.name) )
       {
         std::string capt(hdhC::tf_var(var.name));
         capt += "was rated a Z-coordinate, but ";
@@ -5874,19 +5874,16 @@ CF::chap433(void)
         }
      }
 
-     // not a ft type; try for another variable
-     if( valid_ix == -1 )
-       continue;
-
-
-     if( chap433(var, valid_sn, valid_ft, valid_units, valid_cmp_sn,
-                   valid_ix, ft_jx, sn_jx, att_ft_pv ) )
+     if( valid_ix > 0
+            && chap433(var, valid_sn, valid_ft, valid_units, valid_cmp_sn,
+                       valid_ix, ft_jx, sn_jx, att_ft_pv ) )
      {
          var.coord.isC[2]    = true;
          var.coord.isZ_DL = true;
          var.addWeight(2);
          var.addAuxCount();
          var.isChecked=true;
+         var.isFT_pvc_var=true;
 
          dv_ftc.push_back(i);
 
@@ -5905,39 +5902,28 @@ CF::chap433(void)
                   notes->setCheckStatus( n_CF );
                 }
              }
+
+             for( size_t i=0 ; i < pIn->varSz ; ++i )
+             {
+                if( var.isFT_pvc_var )
+                    continue;
+
+                Variable& var_i = pIn->variable[i] ;
+
+                if( hdhC::isAmong(n_computed_std_name, var_i.attName) )
+                {
+                    if( notes->inq(bKey+"433l", var_i.name) )
+                    {
+                       std::string capt(hdhC::tf_att(var_i.name, n_computed_std_name));
+                       capt += " is only allowed for a parameterised vertical coordinate";
+
+                       (void) notes->operate(capt) ;
+                      notes->setCheckStatus( n_CF );
+                    }
+                }
+             }
          }
      }
-  }
-
-  if( cFVal > 16 )
-  {
-    size_t j;
-    size_t sz=dv_ftc.size() ;
-
-    for( size_t i=0 ; i < pIn->varSz ; ++i )
-    {
-        // skip data variables depending on form_term coord
-        for(j=0 ; j < sz ; ++j)
-          if( i == dv_ftc[j] )
-              break;
-
-        if( j < sz)
-            continue;
-
-        Variable& var = pIn->variable[i] ;
-
-        if( hdhC::isAmong(n_computed_std_name, var.attName) )
-        {
-            if( notes->inq(bKey+"433l", var.name) )
-            {
-                std::string capt(hdhC::tf_att(var.name, n_computed_std_name));
-                capt += " is only allowed for data variables";
-
-                (void) notes->operate(capt) ;
-                notes->setCheckStatus( n_CF );
-            }
-        }
-    }
   }
 
   return;
@@ -6011,8 +5997,9 @@ CF::chap433(Variable& var,
      fTerms.push_back( x_fTerms[i] );
 
   // after return, fTerms contains associated variables.
-  chap433_verify_FT(var, valid_ft[valid_ix], valid_sn[valid_ix], valid_units[valid_ix],
-                      valid_ix, att_ft_ix, fTerms, att_ft_pv);
+  chap433_verify_FT(var,
+        valid_ft[valid_ix], valid_sn[valid_ix], valid_units[valid_ix],
+        valid_ix, att_ft_ix, fTerms, att_ft_pv);
 
   size_t ft_sz = fTerms.size();
 
@@ -6040,7 +6027,7 @@ CF::chap433(Variable& var,
            pIn->variable[i].coord.isCoordVar = true;  // temporarily
            pIn->variable[i].coord.isAny = true;
            pIn->variable[i].isAUX = true;
-           pIn->variable[i].isFormulaTermsVar = true;
+           pIn->variable[i].isFT_paramVar = true;
 
            checkCoordinateValues(pIn->variable[i], true); // no monotony test
 
@@ -9423,7 +9410,7 @@ CF::chap733(std::string &method, Variable& var, std::string mode)
     int j = vIx[var.name];
     if( !hdhC::isAmong(tVar.name, ca_vvs[j]) )
     {
-      if( tVar.isFormulaTermsVar )
+      if( tVar.isFT_paramVar )
         return true;
 
       if( notes->inq(bKey + "5j", var.name, NO_MT) )
@@ -9612,7 +9599,7 @@ CF::chap74a(void)
     if( var.isValidAtt(n_climatology) )
     {
       // FTV may depend only on a dim without representation
-      if( !var.isFormulaTermsVar )
+      if( !var.isFT_paramVar )
         isClimatology = true;
 
       if( var.name != timeName )

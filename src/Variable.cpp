@@ -17,7 +17,8 @@ VariableMeta::VariableMeta()
   isExcluded=false;
   isFixed=false;
   isFillValue=false;
-  isFormulaTermsVar=false;
+  isFT_paramVar=false;
+  isFT_pvc_var=false;
   isInstant=false;
   isLabel=false;
   isMapVar=false;
