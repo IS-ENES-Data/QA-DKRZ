@@ -1678,16 +1678,12 @@ getFilenameBase()
   if [ ${QUERY_EMPTY_DIR:-f} = t ] ; then
     if find ${PROJECT_DATA}/${subPath} \
           -maxdepth 1 -type d -empty | grep -q .  ; then
-      if [ ${YAML:-f} = f ] ; then
-        gNV_log1 $1
-      else
-        y_impact=L2
-        y_caption="empty directory"
-        y_tag=M1
-        y_status=1
-        nextPath=${PROJECT_DATA}/${subPath}
-        gNV_Ylog 'N/A'
-      fi
+      y_impact=L2
+      y_caption="empty directory"
+      y_tag=M1
+      y_status=1
+      nextPath=${PROJECT_DATA}/${subPath}
+      initLog 'N/A'
 
       return
     fi
