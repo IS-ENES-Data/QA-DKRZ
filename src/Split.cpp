@@ -712,6 +712,8 @@ Split::insert(size_t i0, std::string t)
 
   if( i0 < items.size() )
     items.insert(items.begin()+i0, t);
+  else
+    items.push_back(t);
 
   return;
 }
