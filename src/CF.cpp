@@ -5874,7 +5874,7 @@ CF::chap433(void)
         }
      }
 
-     if( valid_ix > 0
+     if( valid_ix > -1
             && chap433(var, valid_sn, valid_ft, valid_units, valid_cmp_sn,
                        valid_ix, ft_jx, sn_jx, att_ft_pv ) )
      {
@@ -6323,16 +6323,31 @@ CF::chap433_getParamVars( Variable& var,
   std::string& att_ft = var.attValue[att_ft_ix][0];
   Split x_att_ft(att_ft);
 
+  // split also something like asdf:bsdf at colons
+  size_t pos;
+  //bool isMissingBlank=false;
+
+  for(size_t i=0 ; i < x_att_ft.size() ; ++i )
+  {
+      if( (pos=x_att_ft[i].find(':')) < std::string::npos
+             && pos < (x_att_ft[i].size() -1 ) )
+      {
+          x_att_ft.insert(i+1, x_att_ft[i].substr(pos+1));
+          x_att_ft.replace(i, x_att_ft[i].substr(0,pos+1));
+          //isMissingBlank=true;
+      }
+  }
+
   // the check of the attribute appears cumbersome, because a faulty composition of
   // formula_terms should be recognised in detail (and annotated).
   std::vector<int> key_ix;
   std::vector<int> pv_ix;
-
   int sz=x_att_ft.size() ;
 
   for(int i=0 ; i < sz ; ++i )
   {
     std::string &s0 = x_att_ft[i] ;
+
     if( s0[s0.size()-1] == ':' )
       key_ix.push_back(i);
     else
@@ -6348,52 +6363,47 @@ CF::chap433_getParamVars( Variable& var,
   if( key_ix.size() < pv_ix.size() )
      kp_sz = pv_ix.size() ;
 
-  for( size_t i=0 ; i < kp_sz ; ++i )
+  if( kp_sz < 2 )
+      return;
+
+  size_t k_i=0;
+  size_t pv_i=0;
+  size_t k_sz = key_ix.size();
+  size_t pv_sz = pv_ix.size();
+  int countPairs=0;
+  int countNonPairs=0;
+
+  while( k_i < k_sz && pv_i < pv_sz )
   {
-    att_ft_pv.push_back( std::pair<std::string, std::string> (hdhC::empty,hdhC::empty) );
+      if( (key_ix[k_i]+1) == pv_ix[pv_i] )
+      {
+         att_ft_pv.push_back( std::pair<std::string, std::string> (hdhC::empty,hdhC::empty) );
 
-    if( i < key_ix.size() )
-      att_ft_pv.back().first = x_att_ft[key_ix[i]] ;
-
-    if( i < pv_ix.size() )
-      att_ft_pv.back().second = x_att_ft[pv_ix[i]] ;
+         att_ft_pv.back().first = x_att_ft[key_ix[k_i++]] ;
+         att_ft_pv.back().second = x_att_ft[pv_ix[pv_i++]] ;
+         ++countPairs;
+      }
+      else if( key_ix[k_i] > pv_ix[pv_i] )
+      {
+          ++countNonPairs;
+          ++pv_i;
+      }
+      else if( key_ix[k_i] < pv_ix[pv_i] )
+      {
+          ++countNonPairs;
+          ++k_i;
+      }
   }
 
   // just for passing the result
   bool isFault=false;
-  if( key_ix.size() != pv_ix.size() )
+  if( countPairs < 2 || (countNonPairs - countPairs) > 1 )
+      return ;
+  else if( countNonPairs > 0 )
     isFault=true;
-  else
-  {
-    // test the sequence
-    for( size_t i=0 ; i < key_ix.size() ; ++i )
-    {
-        if( !i &&  key_ix[i] != 0 )
-          isFault=true;
 
-        if( key_ix[i]+1 != pv_ix[i] )
-          isFault=true;
-    }
-  }
-
-  if( isFault )
-  {
-    att_ft_pv.push_back( std::pair<std::string, std::string> (hdhC::empty,hdhC::empty) );
-
-    if( notes->inq(bKey + "433n", var.name) )
-    {
-        std::string capt(hdhC::tf_att(var.name, n_formula_terms, att_ft));
-        capt += " with syntax fault";
-
-        (void) notes->operate(capt) ;
-        notes->setCheckStatus( n_CF, fail );
-    }
-
-    att_ft_pv.push_back( std::pair<std::string, std::string> (hdhC::empty,hdhC::empty) );
-    return;
-  }
-
-  // formula_terms attribute was found, now get the indices in the valid vectors.
+  // a formula_terms attribute candidate was found, now try to get the indices
+  // of the valid vectors.
   // This is more tricky for found_ft_ix than for found_sn_ix above.
   // Take into account the term: strings and
   // find the number of existing variables for each valid_ft element.
@@ -6445,11 +6455,27 @@ CF::chap433_getParamVars( Variable& var,
   {
      // could not identify unambiguously the valid_ft index.
      valid_ix = -1 ;
+     att_ft_pv.push_back( std::pair<std::string, std::string> (hdhC::empty,hdhC::empty) );
   }
-  else if( zx[0] == 0 )
+  else if( zx[0] < 2 )
+  {
     valid_ix = -1 ; //
+    att_ft_pv.push_back( std::pair<std::string, std::string> (hdhC::empty,hdhC::empty) );
+  }
   else
     valid_ix = zx[0] ;
+
+  if( valid_ix > -1 && isFault )
+  {
+    if( notes->inq(bKey + "433n", var.name) )
+    {
+        std::string capt(hdhC::tf_att(var.name, n_formula_terms, att_ft));
+        capt += " with syntax fault";
+
+        (void) notes->operate(capt) ;
+        notes->setCheckStatus( n_CF, fail );
+    }
+  }
 
   return ;
 }
