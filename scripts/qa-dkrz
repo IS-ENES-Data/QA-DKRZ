@@ -2533,6 +2533,7 @@ getProjectTableName()
 {
   if [ ${PT_EXPLICIT_NAME} ] ; then
      PROJECT_TABLE=${PT_EXPLICIT_NAME}
+     return
   fi
 
   # decompose the path
