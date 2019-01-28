@@ -361,7 +361,9 @@ bind_checksum()
      email="-m ${email// /,}"
   fi
 
-  if [ ${#LOG_PATH_INDEX[*]} -gt 0 ] ; then
+  if [ ${EXPLICIT_LOGFILENAME} ] ; then
+    getExperimentName X ${nextFile[0]}
+  elif [ ${LOG_PATH_INDEX[0]} ] ; then
     if ! getExperimentName P ${subPath} ; then
       getExperimentName F ${fs[0]}
     fi
@@ -1477,7 +1479,9 @@ getAllExps()
       PROJECT_DATA=${PROJECT_DATAV[${line[0]}]}
 
       # generate an experiment name; CURR_LOG_FNAME gets a 'return value'
-      if [ ${#LOG_PATH_INDEX[*]} -gt 0 ] ; then
+      if [ ${EXPLICIT_LOGFILENAME} ] ; then
+        getExperimentName X ${nextFile[0]}
+      elif [ ${LOG_PATH_INDEX[0]} ] ; then
         if ! getExperimentName P ${subPath} ; then
           local fs=( $( ls ${PROJECT_DATA}/${subPath}/*.nc 2> /dev/null) )
           getExperimentName F ${fs[0]##*/}
@@ -1552,7 +1556,9 @@ getExperimentName()
   local mode=$1
   shift
 
-  if [ ${LOG_FNAME} ] ; then
+  if [ ${EXPLICIT_LOGFILENAME} ] ; then
+    CURR_LOG_FNAME=${EXPLICIT_LOGFILENAME}
+  elif [ ${LOG_FNAME} ] ; then
     CURR_LOG_FNAME=${LOG_FNAME:-'undefined-scope'}
   elif [ ${mode} = P ] ; then
     if ! getExperimentNameFromPath $1 ; then
@@ -3656,7 +3662,9 @@ log()
   done
 
   if [ ! ${out} ] ; then
-    if [ ${LOG_PATH_INDEX[0]} ] ; then
+    if [ ${EXPLICIT_LOGFILENAME} ] ; then
+      getExperimentName X ${nextFile[0]}
+    elif [ ${LOG_PATH_INDEX[0]} ] ; then
       if ! getExperimentName P ${subPath} ; then
         getExperimentName F ${nextFile[0]}
       fi
@@ -3906,7 +3914,9 @@ operatePipes()
     eval nFstore[${j}]=${xyz}
 
 #trace \
-    if [ ${LOG_PATH_INDEX[0]} ] ; then
+    if [ ${EXPLICIT_LOGFILENAME} ] ; then
+      getExperimentName X ${nextFile[0]}
+    elif [ ${LOG_PATH_INDEX[0]} ] ; then
       if ! getExperimentName P ${subPath} ; then
         getExperimentName F ${nextFile[0]}
       fi
@@ -4577,7 +4587,9 @@ testLocks()
   # conditions for clearing are described in the configuration file
   if [ ${CLEAR} ] ; then
 #trace \
-    if [ ${LOG_PATH_INDEX[0]} ] ; then
+    if [ ${EXPLICIT_LOGFILENAME} ] ; then
+      getExperimentName X ${nextFile[0]}
+    elif [ ${LOG_PATH_INDEX[0]} ] ; then
       if ! getExperimentName P ${subPath} ; then
         getExperimentName F $1
       fi
