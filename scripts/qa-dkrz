@@ -1981,7 +1981,8 @@ getNextVariable()
       y_tag=M4
       initLog ${nV_fls[l]}
 
-      finally
+      nextFile=  # ignore, try next
+      return 0
     fi
   done
 
