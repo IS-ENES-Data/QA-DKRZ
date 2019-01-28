@@ -2532,7 +2532,11 @@ getPaths()
 getProjectTableName()
 {
   if [ ${PT_EXPLICIT_NAME} ] ; then
-     PROJECT_TABLE=${PT_EXPLICIT_NAME}
+     if [ PROJECT_TABLE_PREFIX ] ; then
+       PROJECT_TABLE=${PROJECT_TABLE_PREFIX}_${PT_EXPLICIT_NAME}
+     else
+       PROJECT_TABLE=${PT_EXPLICIT_NAME}
+     fi
      return
   fi
 
