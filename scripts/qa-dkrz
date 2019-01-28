@@ -3217,8 +3217,7 @@ initLog()
 initProjectTableName()
 {
   if [ ${PROJECT_TABLE_PREFIX} ] ; then
-    local sz=${#PROJECT_TABLE_PREFIX}
-    test ${PROJECT_TABLE_PREFIX:$((sz-1)):1} != '_' && \
+    test ! ${PROJECT_TABLE_PREFIX##_} && \
        PROJECT_TABLE_PREFIX=${PROJECT_TABLE_PREFIX}_
   fi
 
