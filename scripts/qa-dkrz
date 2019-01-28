@@ -2531,6 +2531,10 @@ getPaths()
 
 getProjectTableName()
 {
+  if [ ${PT_EXPLICIT_NAME} ] ; then
+     PROJECT_TABLE=${PT_EXPLICIT_NAME}
+  fi
+
   # decompose the path
   local pcs
   declare -a pcs
