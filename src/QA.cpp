@@ -289,7 +289,7 @@ QA::closeEntry(void)
    }
 
    // This here is only for the regular QA time series file
-   if( qaTime.isTime && isCheckTimeValues )
+   if( qaTime.isTime && ! qaTime.isNoData && isCheckTimeValues )
      storeTime();
 
    ++currQARec;

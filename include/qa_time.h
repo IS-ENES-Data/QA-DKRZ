@@ -68,7 +68,9 @@ class QA_Time
   bool isFormattedDate;
   bool isMaxDateRange;
   bool isNoCalendar;
+  bool isNoData;
   bool isNoProgress;
+  bool isNoTBData;
   bool isRegularTimeSteps;
   bool isPrintTimeBoundDates;
   bool isReferenceDate;

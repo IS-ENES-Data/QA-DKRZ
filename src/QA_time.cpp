@@ -83,7 +83,7 @@ QA_Time::applyOptions(std::vector<std::string> &optStr)
 void
 QA_Time::finally(NcAPI *nc)
 {
-  if( ! (isTime || pQA->isCheckTime ) )
+  if( ! (isTime || pQA->isCheckTime ) || isNoData )
     return;
 
   timeOutputBuffer.flush();
@@ -96,7 +96,7 @@ QA_Time::finally(NcAPI *nc)
     std::string out( "PERIOD-BEG " );
 
     // if bounds are available, then use them
-    if( isTimeBounds )
+    if( isTimeBounds && ! isNoData )
     {
       out += refDate.getDate(firstTimeBoundsValue[0]).str();
       out += " - " ;
@@ -136,8 +136,11 @@ QA_Time::finally(NcAPI *nc)
     nc->setAtt( name+"_step", "last_time_step", tmp);
   }
 
-  nc->setAtt( name, "last_time_bnd_0", prevTimeBoundsValue[0]);
-  nc->setAtt( name, "last_time_bnd_1", prevTimeBoundsValue[1]);
+  if( ! isNoTBData )
+  {
+     nc->setAtt( name, "last_time_bnd_0", prevTimeBoundsValue[0]);
+     nc->setAtt( name, "last_time_bnd_1", prevTimeBoundsValue[1]);
+  }
 
   return;
 }
@@ -274,11 +277,20 @@ QA_Time::getDRSformattedDateRange(std::vector<Date> &period,
 double
 QA_Time::getTimeValue(int rec)
 {
+  if( isNoData )
+    return MAXDOUBLE ;
+
   double tv;
   MtrxArr<double> ma_t;
 
   if( (tv=pIn->nc.getData(ma_t, name, rec)) < MAXDOUBLE)
       tv += refTimeOffset;
+
+  if( ma_t.size() == 0 )
+  {
+      tv = MAXDOUBLE;
+      isNoData=true;
+  }
 
   return tv;
 }
@@ -292,6 +304,14 @@ QA_Time::getTimeBoundsValues(double* pair, size_t rec)
 
   pair[0]=m2D[0][0] + refTimeOffset;
   pair[1]=m2D[0][1] + refTimeOffset;
+
+  if( ma_tb.size() == 0 )
+  {
+      pair[0]=MAXDOUBLE;
+      pair[1]=MAXDOUBLE;
+
+      isNoTBData=true;
+  }
 
   return ;
 }
@@ -461,7 +481,10 @@ QA_Time::initAbsoluteTime(std::string &units)
   }
 
   if( (firstTimeValue = getTimeValue(0)) == MAXDOUBLE )
+  {
+     lastTimeValue=firstTimeValue;
      return true;
+  }
 
   size_t recSz = pIn->nc.getNumOfRows(name) ;
   lastTimeValue = getTimeValue(-1) ;
@@ -552,7 +575,9 @@ QA_Time::initDefaults(void)
    isFormattedDate=false;
    isMaxDateRange=false;
    isNoCalendar=true;
+   isNoData=false;
    isNoProgress=false;
+   isNoTBData=false;
    isPrintTimeBoundDates=false;
    isReferenceDate=true ;
    isRegularTimeSteps=true;
@@ -593,7 +618,10 @@ QA_Time::initRelativeTime(std::string &units)
    refDate.setDate( units );
 
    if( (firstTimeValue = getTimeValue(0)) == MAXDOUBLE )
+   {
+      lastTimeValue = firstTimeValue;
       return true;
+   }
 
    currTimeValue = firstTimeValue;
 
@@ -760,6 +788,9 @@ QA_Time::initTimeBounds(void)
   }
 
   getTimeBoundsValues(firstTimeBoundsValue, 0);
+
+  if( isNoTBData )
+      return false;
 
   size_t sz = pIn->nc.getNumOfRows(boundsName);
   if(sz)
@@ -1142,9 +1173,18 @@ QA_Time::openQA_NcContrib(NcAPI *nc)
    vs.clear();
    vs.push_back(name);
 
-   nc->setAtt( name, "first_time", firstTimeValue);
-   nc->setAtt( name, "first_date", refDate.getDate(firstTimeValue).str() );
-   nc->setAtt( name, "isTimeBoundsTest", static_cast<double>(0.));
+   if( isNoData )
+   {
+     nc->setAtt( name, "first_time", firstTimeValue);
+     nc->setAtt( name, "first_date", "00-00-00T00:00:00" );
+     nc->setAtt( name, "isTimeBoundsTest", 1.);
+   }
+   else
+   {
+     nc->setAtt( name, "first_time", firstTimeValue);
+     nc->setAtt( name, "first_date", refDate.getDate(firstTimeValue).str() );
+     nc->setAtt( name, "isTimeBoundsTest", static_cast<double>(0.));
+   }
 
    std::string str0(name+"_step");
    nc->defineVar( str0, NC_DOUBLE, vs);
@@ -1495,6 +1535,9 @@ QA_Time::testPeriod(Split& x_f)
   // If the end of the period exceeds the time data figure,
   // then the nc-file is considered to be not completely processed.
 
+  if( isNoData )
+      return false;
+
   // Does the filename have a trailing date range?
   std::vector<std::string> sd;
   sd.push_back( "" );
@@ -1543,11 +1586,11 @@ QA_Time::testPeriod(Split& x_f)
      pDates[i] = 0 ;
 
   pDates[2] = new Date(refDate);
-  if( firstTimeValue != 0. )
+  if( firstTimeValue != MAXDOUBLE )
     pDates[2]->addTime(firstTimeValue);
 
   pDates[3] = new Date(refDate);
-  if( lastTimeValue != 0. )
+  if( lastTimeValue != MAXDOUBLE )
     pDates[3]->addTime(lastTimeValue);
 
   if( isTimeBounds)
@@ -1576,12 +1619,12 @@ QA_Time::testPeriod(Split& x_f)
     pDates[5] = new Date(refDate);
 
     if( firstTimeValue != firstTimeBoundsValue[0] )
-        if( firstTimeBoundsValue[0] != 0 )
+        if( firstTimeBoundsValue[0] != MAXDOUBLE )
             pDates[4]->addTime(firstTimeBoundsValue[0]);
 
     // regular: filename Start/End time vs. TB 1st_min/last_max
     if( lastTimeValue != lastTimeBoundsValue[1] )
-        if( lastTimeBoundsValue[1] != 0 )
+        if( lastTimeBoundsValue[1] != MAXDOUBLE )
             pDates[5]->addTime(lastTimeBoundsValue[1]);
 
     if( notes->inq( "T_3b", getBoundsName() ) )
