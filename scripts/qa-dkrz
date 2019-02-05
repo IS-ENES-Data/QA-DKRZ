@@ -2716,10 +2716,10 @@ getSelectedPaths()
           test -d $entry && continue
 
           if [ ${QUERY_ONLY_NC:-f} = t ] ; then
-             test ${entry} = ${entry%.nc} && continue
+             test ${entry} = ${entry%.nc*} && continue
           elif [ ${QUERY_ALIEN_FILE:-f} = f ] ; then
-            if [ -d $entry -o ".${entry##*.}" != "nc" ] ; then
-              test -d $entry -o ".${entry##*.}" != "nc4" && continue
+            if [ -d $entry -o ".${entry##*.}" != ".nc" ] ; then
+               test -d $entry -o ".${entry##*.}" != ".nc4" && continue
             fi
           fi
 
