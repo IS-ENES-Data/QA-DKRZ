@@ -941,6 +941,8 @@ checkCorruptedQA()
 
 clear()
 {
+  test ! "${CLEAR}" && return 1
+
   local f fs t tx ts
   declare -a fs ts
 
@@ -948,7 +950,7 @@ clear()
   local isResume=f
   local isMessage=f
 
-  isClear=t  # global scope
+  isClear=f  # global scope
 
   local logF=$LOG_FNAME_DIR/${CURR_LOG_FNAME}.log
 
@@ -1000,7 +1002,7 @@ clear()
     elif [ ${f} != ${f/=/} -a ${f%=*} = var ] ; then
        # CLEAR=var=name
        if expr match ${fBase[ix]} "${f}" &> /dev/null ; then
-         if ls ${QA_RESULTS}/data/${subPath}/qa_lock_${fBase[ix]}* &> /dev/null
+         if ls ${QA_RESULTS}/data/${subPath}/*_${fBase[ix]}* &> /dev/null
          then
            isClear=t
          fi
@@ -1137,11 +1139,12 @@ QA result path: $QA_RESULTS/data\nDRS tree:\t${subPath}\n${note}"
 
       log_sessMessage "$headerText"
     fi
-
-    return 0
   fi
 
-  return 1
+  local retVal=1
+  test ${isClear} = f && retVal=0
+
+  return $retVal
 }
 
 copyPreamble()
@@ -4608,7 +4611,7 @@ testLocks()
       getExperimentName F $1
     fi
 
-    # if CLEAR=only or SHOW_CLEAR was set, then try another variable
+    # changed workflow: now, if CLEAR, then only these cases
     if clear ; then
       eval $2=
       return 1
