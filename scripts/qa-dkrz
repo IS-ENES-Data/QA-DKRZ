@@ -1000,7 +1000,7 @@ clear()
     elif [ ${f} != ${f/=/} -a ${f%=*} = var ] ; then
        # CLEAR=var=name
        if expr match ${fBase[ix]} "${f}" &> /dev/null ; then
-         if ls ${QA_RESULTS}/data/${subPath}/*_${fBase[ix]}* &> /dev/null
+         if ls ${QA_RESULTS}/data/${subPath}/qa_lock_${fBase[ix]}* &> /dev/null
          then
            isClear=t
          fi
