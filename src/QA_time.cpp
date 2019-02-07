@@ -1653,7 +1653,7 @@ QA_Time::testPeriod(Split& x_f)
 
     if( notes->inq( key, pQA->qaExp.getVarnameFromFilename()) )
     {
-      std::string capt("Missing time_bounds");
+      std::string capt("Missing time bounds");
 
       (void) notes->operate(capt) ;
       notes->setCheckStatus(pQA->drsF, pQA->n_fail );
