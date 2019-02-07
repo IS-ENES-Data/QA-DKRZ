@@ -941,8 +941,6 @@ checkCorruptedQA()
 
 clear()
 {
-  test ! "${CLEAR}" && return 1
-
   local f fs t tx ts
   declare -a fs ts
 
@@ -4611,10 +4609,10 @@ testLocks()
       getExperimentName F $1
     fi
 
-    # changed workflow: now, if CLEAR, then only these cases
+    # changed workflow: now, if CLEAR, then only cleared once
     if clear ; then
       eval $2=
-      return 1
+      return 0  # treated as a blocked one
     fi
   fi
 
