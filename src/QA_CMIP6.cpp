@@ -1414,11 +1414,7 @@ DRS_CV::checkNetCDF(NcAPI* p_nc)
 
   int fm = nc.inqNetcdfFormat();
 
-  if( fm == 1 || fm == 4 )
-    return;
-
-  std::string s("");
-
+  std::string s;
   bool is=false;
 
   if( fm == 1 )
@@ -1443,9 +1439,11 @@ DRS_CV::checkNetCDF(NcAPI* p_nc)
   {
     if( ! nc.inqDeflate())
     {
-      s+= " deflated (compressed)";
+      s += " not";
       is=true;
     }
+
+    s+= " deflated";
   }
 
   if(is)
@@ -1453,9 +1451,10 @@ DRS_CV::checkNetCDF(NcAPI* p_nc)
     std::string key("12");
     if( notes->inq( key, pQA->fileStr ) )
     {
-      std::string capt("format does not conform to netCDF classic");
+      std::string capt("Recommendation: use netCDF-4 deflated");
 
       std::string text("Found " + s) ;
+      text += "; post-processing by e.g. nccopy -k 4 -d1 -s infile outfile";
 
       (void) notes->operate( capt, text) ;
       notes->setCheckStatus("CV", pQA->n_fail);
