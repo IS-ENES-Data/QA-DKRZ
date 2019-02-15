@@ -1414,47 +1414,61 @@ DRS_CV::checkNetCDF(NcAPI* p_nc)
 
   int fm = nc.inqNetcdfFormat();
 
-  std::string s;
-  bool is=false;
+  std::string found;
+  bool notCMIP6=false;
+  bool isDeflated=false;
 
   if( fm == 1 )
   {
-    is=true;
-    s = "3, NC_FORMAT_CLASSIC";
+    notCMIP6=true;
+    found = "3, NC_FORMAT_CLASSIC";
   }
   else if( fm == 2 )
   {
-    is=true;
-    s = "3, NC_FORMAT_64BIT";
+    notCMIP6=true;
+    found = "3, NC_FORMAT_64BIT";
   }
   else if( fm == 3 )
   {
-    is=true;
-    s = "4, ";
+    notCMIP6=true;
+    found = "4, ";
   }
   else if( fm == 4 )
-    s = "4, classic";
+    found = "4, classic";
 
   if( fm > 2 )
   {
-    if( ! nc.inqDeflate())
-    {
-      s += " not";
-      is=true;
-    }
+    if( nc.inqDeflate())
+      isDeflated=true;
+    else
+      found += " not";
 
-    s+= " deflated";
+    found += " deflated";
   }
 
-  if(is)
+  if(notCMIP6)
   {
-    std::string key("12");
+    std::string key("12a");
     if( notes->inq( key, pQA->fileStr ) )
     {
-      std::string capt("Recommendation: use netCDF-4 deflated");
+      std::string capt("Data must conform fo NetCDF4 classic format.");
+
+      std::string text("Found " + found) ;
+
+      (void) notes->operate( capt, text) ;
+      notes->setCheckStatus("CV", pQA->n_fail);
+    }
+  }
+
+  if(! isDeflated)
+  {
+    std::string key("12b");
+    if( notes->inq( key, pQA->fileStr ) )
+    {
+      std::string capt("Recommendation: use netCDF4 deflated");
 
       std::string text("Found " + s) ;
-      text += "; post-processing by e.g. nccopy -k 4 -d1 -s infile outfile";
+      text += "; Info: post-processing by e.g. nccopy -k 4 -d 1 -s infile outfile";
 
       (void) notes->operate( capt, text) ;
       notes->setCheckStatus("CV", pQA->n_fail);
@@ -1853,8 +1867,7 @@ DRS_CV::run(void)
      checkFilename(pQA->pIn->file.basename, drs_cv_table);
   }
 
-  // is it NetCDF-3 classic?
-  //checkNetCDF();
+  checkNetCDF();
 
   return;
 }
