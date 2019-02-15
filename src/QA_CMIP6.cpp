@@ -1467,7 +1467,7 @@ DRS_CV::checkNetCDF(NcAPI* p_nc)
     {
       std::string capt("Recommendation: use netCDF4 deflated");
 
-      std::string text("Found " + s) ;
+      std::string text("Found " + found) ;
       text += "; Info: post-processing by e.g. nccopy -k 4 -d 1 -s infile outfile";
 
       (void) notes->operate( capt, text) ;
