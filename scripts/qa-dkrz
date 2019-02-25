@@ -2150,8 +2150,8 @@ getNextVariable()
 
   # a fixed variable?
   if [ $status -eq 4 ] ; then
-    # already processed?
     if [ "${qa_fl}" ] ; then
+       # already processed?
 #      if [ ${PROGRESS_BAR} ] ; then
         # get number of data files for progress estimation
         # note: all files no matter whether processed or locked
@@ -2160,6 +2160,23 @@ getNextVariable()
 
       nextFile=
       return 0
+    else
+       local arr
+       declare -a arr
+       arr=( ${nxtFl//_/ } )
+       if [ ${arr[1]} != 'fx' ] ; then
+         y_caption='Suspicion of invalid filename'
+         y_tag=M6
+
+         y_meta_data=FAIL
+         y_time_values=FAIL
+         y_status=${status}
+
+         initLog $1
+
+         nextFile=
+         return 0
+       fi
     fi
   fi
 
@@ -2225,7 +2242,7 @@ getNextVariable()
     # issue annotation
     y_impact=L2
     y_caption='Ambiguities across sub-temporal files.'
-    y_tag=M6
+    y_tag=M5
     y_meta_data=OMIT
     y_time_values=FAIL
     y_status=${status}
