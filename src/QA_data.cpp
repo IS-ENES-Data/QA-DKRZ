@@ -1941,9 +1941,9 @@ QA_Data::store(hdhC::FieldData &fA)
 }
 
 void
-QA_Data::test(int i, hdhC::FieldData &fA)
+QA_Data::test(Variable *var, hdhC::FieldData &fA)
 {
-  // all tests return true for finding something no
+  // all tests return true for a find
   if( testValidity(fA) )
   {
     currMin=fA.min;
@@ -1953,9 +1953,11 @@ QA_Data::test(int i, hdhC::FieldData &fA)
 
     testConst(fA) ;
 
-    testNegativeVal(fA) ;
+    if( var->units == "K" )
+       testNegativeVal(fA) ;
 
-    testAnyFillValue(fA) ;
+    if( var->name == "asdfrewq" )
+       testAnyFillValue(fA) ;
 
     if( enableOutlierTest )
     {

@@ -193,7 +193,7 @@ class QA_Data
   void   setVar(Variable* p){var=p;}
   void   store(hdhC::FieldData &);
 
-  void   test( int, hdhC::FieldData &);
+  void   test( Variable*, hdhC::FieldData &);
   void   testAnyFillValue(hdhC::FieldData &);
   void   testConst(hdhC::FieldData &);
   void   testInfNaN(hdhC::FieldData &);

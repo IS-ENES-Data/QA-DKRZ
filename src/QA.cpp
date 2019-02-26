@@ -282,7 +282,7 @@ QA::closeEntry(void)
 
        // test overflow of ranges specified in a table, or
        // plausibility of the extrema.
-       qaExp.varMeDa[i].qaData.test(i, fA);
+       qaExp.varMeDa[i].qaData.test(qaExp.varMeDa[i].var, fA);
 
        storeData(qaExp.varMeDa[i], fA);
      }
