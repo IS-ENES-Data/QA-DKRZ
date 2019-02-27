@@ -1547,22 +1547,26 @@ getDateRange()
     if [ ${2} ] ; then
        local arr
        declare -a arr
+       local fx fxs is
+       declare -a fxs
+       fxs=( fx Ofx Efx IfxAnt IfxGre )
        arr=( ${f//_/ } )
-       if [ ${arr[1]} != 'fx' ] ; then
-          voidX
 
-          y_caption="invalid filename, found ${f}"
-          y_tag=M6
+       for f in ${#fxs[*]} ; do
+          if [ ${arr[1]} != $f ] ; then
+            y_caption="invalid filename, found ${f}"
+            y_tag=M6
 
-          y_meta_data=FAIL
-          y_time_values=FAIL
-          y_status=1
+            y_meta_data=FAIL
+            y_time_values=FAIL
+            y_status=1
 
-          local nextPath=${PROJECT_DATA}/$subPath
-          initLog ${fileNames[i]} no-lock
+            local nextPath=${PROJECT_DATA}/$subPath
+            initLog ${fileNames[i]} no-lock
 
-          voidX
-       fi
+            break
+         fi
+       done
     fi
 
     return 1
