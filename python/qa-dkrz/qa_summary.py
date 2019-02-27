@@ -372,9 +372,9 @@ class LogSummary(object):
     def check_for_skipping(self, blk, skip_fBase):
         for line in blk:
             x_line = line.split()
-            if x_line[0] == 'file:':
+            if x_line[0] == 'file:' or x_line[0] == 'data-set:':
                 for f in skip_fBase:
-                    if f+'.nc' == x_line[1] or f == x_line[1]:
+                    if f+'.nc' == x_line[1] or f+'.nc4' == x_line[1] or f == x_line[1]:
                         blk = []
                         return
 
@@ -387,6 +387,8 @@ class LogSummary(object):
         # Decompose a filename or a path.
         if name[-3:] == '.nc':
             name=name[0:-3]
+        elif name[-4:] == '.nc4':
+            name=name[0:-4]
 
         itm_id=[]
 
@@ -882,7 +884,7 @@ class LogSummary(object):
                         # a string of just '-' would results in this
                         words=['-----------']
 
-                    if words[0] == 'file:':
+                    if words[0] == 'file:' or words[0] == 'data-set:':
                         # fse contains ( var, StartTime, EndTime ); the
                         # times could be empty strings or EndTime could be empty
                         fse = qa_util.f_time_range(words[1])
