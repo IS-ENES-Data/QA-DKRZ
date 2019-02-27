@@ -1562,7 +1562,7 @@ getDateRange()
        if [ ${is:-t} = t ] ; then
           y_caption="invalid filename, found ${f}"
           y_impact=L1
-          y_tag=M6
+          y_tag=M6b
 
           y_meta_data=FAIL
           y_time_values=FAIL
@@ -1570,12 +1570,10 @@ getDateRange()
 
           local nextPath=${PROJECT_DATA}/$subPath
           initLog ${fileNames[i]} no-lock
-
-          break
+       else
+          return 1
        fi
     fi
-
-    return 1
   fi
 
   return 0
@@ -1990,7 +1988,7 @@ getNextVariable()
        if [ ${QUERY_NON_NC_FILE:-f} = t ] ; then
           y_caption="invalid filename, found ${nV_fls[l]}"
           y_impact=L1
-          y_tag=M6
+          y_tag=M6a
           initLog ${nV_fls[l]}
           unset nV_fls[${l}]
           is=t
