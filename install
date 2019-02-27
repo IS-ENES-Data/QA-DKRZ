@@ -513,7 +513,7 @@ update_external()
     isUp=t
   elif ! . ${QA_SRC}/scripts/parseConfigFile NEXT_${prj}_UPDATE --inquire ; then
     isUp=t
-  if
+  fi
 
   if [ $isUp ] ; then
      . ${QA_SRC}/scripts/get_externalSources \
