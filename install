@@ -508,7 +508,14 @@ update_external()
   # check it here in order to prevent an update of the config-file in case
   # that the installation failed or was terminated.
 
-  if ! . ${QA_SRC}/scripts/parseConfigFile NEXT_${prj}_UPDATE --inquire ; then
+  local isUp
+  if [ $isForce ] ; then
+    isUp=t
+  elif ! . ${QA_SRC}/scripts/parseConfigFile NEXT_${prj}_UPDATE --inquire ; then
+    isUp=t
+  elif
+
+  if [ $isUp ] ; then
      . ${QA_SRC}/scripts/get_externalSources \
          -P $prj --qa-src=${QA_SRC} \
          --qa-tables=${QA_TABLES} --config_file=${CONFIG_FILE} \
