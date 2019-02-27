@@ -49,7 +49,7 @@ ges_cf_html()
       return $?
     fi
 
-    if ! ges_parse_html 'Standardized Region List' html ; then
+    if ! ges_parse_html 'Data/standardized-region-list/standardized-region-list.xml' xml ; then
       return $?
     fi
 
@@ -115,7 +115,47 @@ ges_convert_xml2txt()
 {
   if [ "${2}" = "Area Type Table" ] ; then
     ges_convert_xml2txt_area "$1"
+  elif [ "${1##*/}" = "standardized-region-list.xml" ] ; then
+    if ! ges_convert_xml2txt_region "${1##*/}" ; then
+       return $?
+    fi
   fi
+
+  return 0
+}
+
+ges_convert_xml2txt_region()
+{
+  local xmlFile=${1}
+  local txtFile=${1%xml}txt
+
+  if [ -f ${txtFile} ] ; then
+    local h_date=$(ls -l --time-style='+%Y%m%d' ${xmlFile} | awk '{print $6}')
+    local t_date=$(ls -l --time-style='+%Y%m%d' ${txtFile} | awk '{print $6}')
+
+    test ${h_date} -lt ${t_date} && return 0
+  fi
+
+  # convert plain xml to text
+
+  rm -f ${txtFile}
+  local txt
+  while read line ; do
+    for(( i=0 ; i < ${#line} ; ++i )) ; do
+      # rm leading blanks
+      test "${line:i:1}" = ' ' && continue
+
+      if [ "${line/entry id/}" != "${line}" ] ; then
+        line=${line#*=}
+        line=${line:1:$((${#line}-3))}
+        echo "${line}" >> ${txtFile}
+
+        continue 2
+      fi
+
+      break  #get next line
+    done
+  done < ${xmlFile}
 
   return 0
 }
@@ -161,26 +201,30 @@ ges_parse_html()
   local table="$1"
   local type=$2
 
-  # extract the relative path to the latest version
-  local line="$(grep -A 3 "$table" $html | grep $type)"
-  local i cf_table_name
-  local isSearchBeg=t
+  if [ "${table##*.}" != xml ] ; then
+    # extract the relative path to the latest version
+    local line="$(grep -A 3 "$table" $html | grep $type)"
+    local i cf_table_name
+    local isSearchBeg=t
 
-  for(( i=0 ; i < ${#line} ; ++i )) ; do
-    if [ ${isSearchBeg} = t ] ; then
-      test "${line:i:1}" = '"' && isSearchBeg=f
+    for(( i=0 ; i < ${#line} ; ++i )) ; do
+      if [ ${isSearchBeg} = t ] ; then
+        test "${line:i:1}" = '"' && isSearchBeg=f
 
-      continue
+        continue
+      fi
+
+      test "${line:i:1}" = '"' && break
+
+      cf_table_name=${cf_table_name}"${line:i:1}"
+    done
+
+    if [ ${#cf_table_name} -eq 0 ] ; then
+      err[${#err[*]}]="grep failed to find string ${table} in file $html"
+      return 41
     fi
-
-    test "${line:i:1}" = '"' && break
-
-    cf_table_name=${cf_table_name}"${line:i:1}"
-  done
-
-  if [ ${#cf_table_name} -eq 0 ] ; then
-    err[${#err[*]}]="grep failed to find string ${table} in file $html"
-    return 41
+  else
+    cf_table_name=$table
   fi
 
   if [ ${#cf_table_name} -gt 0 ] ; then
@@ -193,7 +237,7 @@ ges_parse_html()
   if [ ${cf_table_name##*.} = html ] ; then
     ges_convert_html2txt ${cf_table_name##*/} "${table}"
   elif [ ${cf_table_name##*.} = xml ] ; then
-    ges_convert_xml2txt ${cf_table_name##*/} "${table}"
+    ges_convert_xml2txt ${cf_table_name}
   fi
 
   return $?
