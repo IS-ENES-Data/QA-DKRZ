@@ -1552,7 +1552,7 @@ getDateRange()
        fxs=( fx Ofx Efx IfxAnt IfxGre )
        arr=( ${f//_/ } )
 
-       for f in ${#fxs[*]} ; do
+       for f in ${fxs[*]} ; do
           if [ ${arr[1]} = $f ] ; then
             is=f
             break
