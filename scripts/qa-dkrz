@@ -1553,21 +1553,26 @@ getDateRange()
        arr=( ${f//_/ } )
 
        for f in ${#fxs[*]} ; do
-          if [ ${arr[1]} != $f ] ; then
-            y_caption="invalid filename, found ${f}"
-            y_impact=L1
-            y_tag=M6
-
-            y_meta_data=FAIL
-            y_time_values=FAIL
-            y_status=1
-
-            local nextPath=${PROJECT_DATA}/$subPath
-            initLog ${fileNames[i]} no-lock
-
+          if [ ${arr[1]} = $f ] ; then
+            is=f
             break
-         fi
+          fi
        done
+
+       if [ ${is:-t} = f ] ; then
+          y_caption="invalid filename, found ${f}"
+          y_impact=L1
+          y_tag=M6
+
+          y_meta_data=FAIL
+          y_time_values=FAIL
+          y_status=1
+
+          local nextPath=${PROJECT_DATA}/$subPath
+          initLog ${fileNames[i]} no-lock
+
+          break
+       fi
     fi
 
     return 1
