@@ -1,5 +1,6 @@
 
 import sys
+import qa_util
 
 def convert_CMOR_output(lines):
     blk_marks = [ '!', '=' ]
@@ -98,7 +99,9 @@ def convert_CMOR_output(lines):
     for ix in range(len(annot)):
         # the first annot of each annotation group acts a caption
         # the tag equals the length of the caption
-        flag = ' FLAG-BEGL1-tag:CAPT-BEG'
+        md5 = qa_util.get_md5sum(annot[ix][0])
+
+        flag = ' FLAG-BEGL1-' + md5[0:4] + ':CAPT-BEG'
         flag += 'CMOR ' + annot[ix][0] + 'CAPT-END'
 
         annot[ix][0] = flag
