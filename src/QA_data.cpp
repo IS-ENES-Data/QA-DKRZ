@@ -1153,7 +1153,7 @@ ReplicatedRecord::report(std::vector<std::string> &range,
 
 QA_Data::QA_Data()
 {
-   validMax=1.e+17;
+   validMax=1.9e+19;
    validMin=-1.e+15;
 
    // only used in context of enabled replication test
