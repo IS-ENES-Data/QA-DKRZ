@@ -285,7 +285,7 @@ class QaConfig(object):
             if arg.upper() in self.prjs_avail:
                 _ldo['PROJECT'] = arg
 
-            if arg[-3:] != '.nc':
+            if arg[-3:] != '.nc' or arg[-4:] != '.nc4':
                 del args.NC_FILE[i]
 
         # special: SELECT | LOCK
@@ -438,7 +438,7 @@ class QaConfig(object):
             help='''Only used for --example.''')
 
         parser.add_argument('NC_FILE', nargs='*',
-            help= "NetCDF files [file1.nc[, file2.nc[, ...]]].")
+            help= "NetCDF files [file1.nc[4][, file2.nc[4][, ...]]].")
 
         return parser
 

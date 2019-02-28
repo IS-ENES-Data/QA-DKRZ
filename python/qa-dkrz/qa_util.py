@@ -221,7 +221,7 @@ class GetPaths(object):
                     break
             else:
                 if self.is_only_ncfiles:
-                    if f[-3:] != '.nc':
+                    if not ( f[-3:] == '.nc' or f[-4:] == '.nc4' ):
                         # todo: annotation --> log-file
                         continue
 
@@ -434,6 +434,8 @@ def f_time_range(f):
     # removal of '.nc' extension is necessary for fixed variables
     if f[-3:] == '.nc':
         f = f[0:-3]
+    elif f[-4:] == '.nc4':
+        f = f[0:-4]
 
     re_obj = re.match(r'(.*)_(\d+)[-_]*(\d*)', f)
 

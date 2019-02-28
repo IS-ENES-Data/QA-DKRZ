@@ -96,6 +96,8 @@ class Log(object):
                 ff = f
                 if ff[-3:] == '.nc':
                     ff = ff[:-3]
+                elif ff[-4:] == '.nc4':
+                    ff = ff[:-4]
 
                 out = os.path.join(qa_res, 'data', sub_path, \
                     'qa_lock_' + ff + '.txt')
@@ -127,7 +129,7 @@ class Log(object):
             x_line = line.split()
             if x_line[0] == 'file:':
                 for f in skip_fBase:
-                    if f+'.nc' == x_line[1] or f == x_line[1]:
+                    if f+'.nc' == x_line[1] or f+'.nc4' == x_line[1] or f == x_line[1]:
                         blk = []
                         return
 

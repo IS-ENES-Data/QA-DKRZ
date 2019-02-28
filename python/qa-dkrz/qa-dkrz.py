@@ -223,7 +223,8 @@ def final():
 
         return
 
-    summary()
+    if os.path.isfile(dest_log):
+        summary()
 
     qaConf.cfg.write_file()
 
@@ -299,6 +300,8 @@ def get_next_variable(data_path, fBase, fNames):
 
     if os.path.exists(qaNc):
         syncCall += ' -p ' + qaNc
+    else:
+        qaNc=''
 
     if qaConf.isOpt('TIME_LIMIT'):
         syncCall += ' -l ' + qaConf.getOpt('TIME_LIMIT')
