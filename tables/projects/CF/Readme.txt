@@ -1,4 +1,5 @@
-Filenames with a leading lower-case letter are from
+tbles forstandard name,aregions and area from 
 http:cfconventions.org.
 
-Those with a capital are converted.
+If missing, then please
+./install --up --force  CF

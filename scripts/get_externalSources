@@ -2,16 +2,41 @@ WGET_TOUT=60
 
 ges_cf()
 {
-   if ! mkdir -p $QA_TABLES/tables/projects/CF ; then
+  if ! mkdir -p $QA_TABLES/tables/projects/CF ; then
      mkdir -p $1
      return 41
-   fi
-   cd $QA_TABLES/tables/projects/CF
+  fi
+  cd $QA_TABLES/tables/projects/CF
 
-   ges_cf_html
-   local status=$?
+  # htmnl page containing access to cf related tables
+  local org=http://cfconventions.org
+  local html=standard-names.html
 
-   return $?
+  # purpose: contains links and version data to the latest xml tables
+  if ! ges_cf_html ; then
+     # already up2date
+     return 0
+  fi
+
+  local last now
+  local status=0
+  local retVal=0
+
+  if ! ges_get_xml $ges_cf_STANDARD_NAME_TABLE ; then
+     retVal=1
+  fi
+
+  if ! ges_get_xml $ges_cf_REGION_LIST_TABLE ; then
+     retVal=1
+  fi
+
+  if ! ges_get_xml $ges_cf_AREA_TYPE_TABLE ; then
+     retVal=1
+  fi
+
+  . $QA_SRC/scripts/parseConfigFile NEXT_CF_UPDATE
+
+  return $retVal
 }
 
 ges_cf_html()
@@ -19,121 +44,77 @@ ges_cf_html()
   local last now
   local status=0
 
-  # htmnl page containing access to cf related tables
-  local org=http://cfconventions.org
-  local html=standard-names.html
+  # html page contains access to cf related tables
 
-  ges_checkDate init ${html}
+  ges_checkDate init $html
 
-  wget --timeout=${WGET_TOUT} -q -N $org/$html
+  wget --timeout=$WGET_TOUT -q -N $org/$html
 
-  if [ ! -f ${html} ] ; then
+  if [ ! -f $html ] ; then
     err[${#err[*]}]="failed wget -N $org/$html"
     return 41
   fi
 
-#  if ges_checkDate ${html} ; then
-    # get version and date
-    local vd="$(grep 'Standard Name Table (.*)' $html)"
-    vd="${vd#*\(}"
-    vd="${vd%)*}"
-    vd="${vd// /}"
-
-    # . $QA_SRC/scripts/parseConfigFile CF_STD_NAME_VERSION=${vd}
-
-    if ! ges_parse_html 'Standard Name Table' xml ; then
-      return $?
-    fi
-
-    if ! ges_parse_html 'Area Type Table' xml ; then
-      return $?
-    fi
-
-    if ! ges_parse_html 'Data/standardized-region-list/standardized-region-list.xml' xml ; then
-      return $?
-    fi
-
-     . $QA_SRC/scripts/parseConfigFile NEXT_CF_UPDATE
-#  fi
-
-  return 0
-}
-
-ges_convert_html2txt()
-{
-  if [ "${2}" = "Standardized Region List" ] ; then
-    if ! ges_convert_html2txt_region "$1" ; then
-       return $?
-    fi
+  if ! ges_checkDate $html ; then
+     return 1
   fi
 
-  return 0
-}
+  # get version and date
 
-ges_convert_html2txt_region()
-{
-  local htmlFile=${1}
-  local txtFile=CF_${1%html}txt
+  # current links to latest xml versions
+  ges_cf_STANDARD_NAME_TABLE="$(grep -m 1 cf-standard-name-table.xml $html)"
+  ges_cf_STANDARD_NAME_TABLE="${ges_cf_STANDARD_NAME_TABLE%\"*}"
+  ges_cf_STANDARD_NAME_TABLE="${ges_cf_STANDARD_NAME_TABLE#*\"}"
 
-  if [ -f ${txtFile} ] ; then
-    local h_date=$(ls -l --time-style='+%Y%m%d' ${htmlFile} | awk '{print $6}')
-    local t_date=$(ls -l --time-style='+%Y%m%d' ${txtFile} | awk '{print $6}')
+  ges_cf_AREA_TYPE_TABLE="$(grep -m 1 area-type-table.xml $html)"
+  ges_cf_AREA_TYPE_TABLE="${ges_cf_AREA_TYPE_TABLE%\"*}"
+  ges_cf_AREA_TYPE_TABLE="${ges_cf_AREA_TYPE_TABLE#*\"}"
 
-    test ${h_date} -lt ${t_date} && return 0
-  fi
+  ges_cf_REGION_LIST_TABLE="$(grep -m 1 standardized-region-list.xml $html)"
+  ges_cf_REGION_LIST_TABLE="${ges_cf_REGION_LIST_TABLE%\"*}"
+  ges_cf_REGION_LIST_TABLE="${ges_cf_REGION_LIST_TABLE#*\"}"
 
-  # convert html to plain text
+  # get versions
+  local v=
 
-  rm -f ${txtFile}
-  isSearchBeg=t
-  local txt
-  while read line ; do
-    txt=
-    for(( i=0 ; i < ${#line} ; ++i )) ; do
-      if [ ${isSearchBeg} = t ] ; then
-        test "${line:i:4}" = '</p>' && isSearchBeg=f
-        continue
-      fi
+  local i v_str g_str t_str
+  declare -a v_str g_str t_str
 
-      # rm leading
-      test "${line:i:1}" = ' ' && continue
-      test "${line:i:6}" = '</div>' && return 0
-      if [ "${line:i:1}" = '<' ] ; then
-        echo "${txt}" >> ${txtFile}
-        txt=
-        continue 2
-      fi
+  g_str[0]='Standard Name Table'
+  g_str[1]='Standardized Region List'
+  g_str[2]='Area Type Table'
 
-      txt=${txt}"${line:i:1}"
-    done
-  done < ${htmlFile}
+  t_str[0]='std-name='
+  t_str[1]='region='
+  t_str[2]='area='
+
+  for(( i=0 ; i < ${#g_str[*]} ; ++i )) ; do
+    v_str=()
+    v_str="$(grep "${g_str[i]}"' (.*)' $html)"
+    v_str="${v_str#*\(}"
+    v_str=(${v_str%)*})
+    v_str[2]="${v_str[2]:0:3}."
+    v_str="${v_str[*]}"
+    v_str=${v_str// /}
+
+    v="${v}${v:+,}${t_str[i]}${v_str}"
+  done
+
+  . $QA_SRC/scripts/parseConfigFile CF_STD_NAME_VERSION=$v
 
   return 0
 }
 
 ges_convert_xml2txt()
 {
-  if [ "${2}" = "Area Type Table" ] ; then
-    ges_convert_xml2txt_area "$1"
-  elif [ "${1##*/}" = "standardized-region-list.xml" ] ; then
-    if ! ges_convert_xml2txt_region "${1##*/}" ; then
-       return $?
-    fi
-  fi
-
-  return 0
-}
-
-ges_convert_xml2txt_region()
-{
-  local xmlFile=${1}
+  local xmlFile=$1
   local txtFile=${1%xml}txt
 
   if [ -f ${txtFile} ] ; then
     local h_date=$(ls -l --time-style='+%Y%m%d' ${xmlFile} | awk '{print $6}')
     local t_date=$(ls -l --time-style='+%Y%m%d' ${txtFile} | awk '{print $6}')
 
-    test ${h_date} -lt ${t_date} && return 0
+    test $h_date -lt $t_date && return 0
   fi
 
   # convert plain xml to text
@@ -148,97 +129,34 @@ ges_convert_xml2txt_region()
       if [ "${line/entry id/}" != "${line}" ] ; then
         line=${line#*=}
         line=${line:1:$((${#line}-3))}
-        echo "${line}" >> ${txtFile}
+        echo "${line}" >> $txtFile
 
         continue 2
       fi
 
       break  #get next line
     done
-  done < ${xmlFile}
+  done < $xmlFile
 
   return 0
 }
 
-ges_convert_xml2txt_area()
-{
-  local xmlFile=${1}
-  local txtFile=CF_${1%xml}txt
 
-  if [ -f ${txtFile} ] ; then
-    local h_date=$(ls -l --time-style='+%Y%m%d' ${xmlFile} | awk '{print $6}')
-    local t_date=$(ls -l --time-style='+%Y%m%d' ${txtFile} | awk '{print $6}')
-
-    test ${h_date} -lt ${t_date} && return 0
-  fi
-
-  # convert html to plain text
-
-  rm -f ${txtFile}
-  local txt
-  while read line ; do
-    for(( i=0 ; i < ${#line} ; ++i )) ; do
-      # rm leading blanks
-      test "${line:i:1}" = ' ' && continue
-
-      if [ "${line:i:10}" = '<entry id=' ] ; then
-        line=${line#*=}
-        line=${line:1:$((${#line}-3))}
-        echo "${line}" >> ${txtFile}
-
-        continue 2
-      fi
-
-      break  #get next line
-    done
-  done < ${xmlFile}
-
-  return 0
-}
-
-ges_parse_html()
+ges_get_xml()
 {
   local table="$1"
-  local type=$2
 
-  if [ "${table##*.}" != xml ] ; then
-    # extract the relative path to the latest version
-    local line="$(grep -A 3 "$table" $html | grep $type)"
-    local i cf_table_name
-    local isSearchBeg=t
-
-    for(( i=0 ; i < ${#line} ; ++i )) ; do
-      if [ ${isSearchBeg} = t ] ; then
-        test "${line:i:1}" = '"' && isSearchBeg=f
-
-        continue
-      fi
-
-      test "${line:i:1}" = '"' && break
-
-      cf_table_name=${cf_table_name}"${line:i:1}"
-    done
-
-    if [ ${#cf_table_name} -eq 0 ] ; then
-      err[${#err[*]}]="grep failed to find string ${table} in file $html"
-      return 41
-    fi
-  else
-    cf_table_name=$table
-  fi
-
-  if [ ${#cf_table_name} -gt 0 ] ; then
-    if ! wget --timeout=${WGET_TOUT} -q -N $org/${cf_table_name} ; then
-      err[${#err[*]}]="failed wget -q -N $org/${cf_table_name}"
+  if [ ${#table} -gt 0 ] ; then
+    if ! wget --timeout=$WGET_TOUT -q -N $org/$table ; then
+      err[${#err[*]}]="failed wget -q -N $org/$table"
       return 41
     fi
   fi
 
-  if [ ${cf_table_name##*.} = html ] ; then
-    ges_convert_html2txt ${cf_table_name##*/} "${table}"
-  elif [ ${cf_table_name##*.} = xml ] ; then
-    ges_convert_xml2txt ${cf_table_name}
-  fi
+  # xml is parsed by the c++ executable
+  test "${1##*/}" = cf-standard-name-table.xml && return 0
+
+  ges_convert_xml2txt ${table##*/}
 
   return $?
 }
@@ -246,7 +164,6 @@ ges_parse_html()
 ges_checkDate()
 {
    if [ $1 = init ] ; then
-     ges_version=
      ges_currFile[${#ges_currFile[*]}]=$2
      ges_last[${#ges_last[*]}]=0
 
@@ -254,7 +171,7 @@ ges_checkDate()
        ges_last=$( ls -l --time-style='+%s' $2 | awk '{print $6}' )
      fi
 
-     return 0
+     return 1
    fi
 
    # find index of currFile for $1, i.e. the filename
