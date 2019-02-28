@@ -108,7 +108,7 @@ ges_cf_html()
 ges_convert_xml2txt()
 {
   local xmlFile=$1
-  local txtFile=${1%xml}txt
+  local txtFile=cf-${1%xml}txt
 
   if [ -f ${txtFile} ] ; then
     local h_date=$(ls -l --time-style='+%Y%m%d' ${xmlFile} | awk '{print $6}')
