@@ -3,7 +3,7 @@ package:
   version: '0.6.7'
 
 build:
-  number: 56
+  number: 58
 
 source:
 #   git_url: https://github.com/IS-ENES-Data/QA-DKRZ.git
@@ -39,5 +39,5 @@ requirements:
 
 about:
   home: http://qa-dkrz.readthedocs.org/en/latest/
-  summary: 'Quality Assurance checker of meta-data in climate data sets (NetCDF files) for CF conformance and CMIP5/6 and CORDEX projects conventions.'
+  summary: 'Quality Assurance checker of meta-data in climate data sets (NetCDF files) for CF compliance checks and CMIP5/6 as well as CORDEX projects conventions.'
   license: Copyright DKRZ
