@@ -92,8 +92,8 @@ iRE_checkTables()
     # check always CF
     reqItems=( ${reqItems[*]} \
       $p/CF/CF_check-list.conf \
-      $p/CF/CF_area-type-table.txt \
-      $p/CF/CF_standardized-region-names.txt \
+      $p/CF/cf-area-type-table.txt \
+      $p/CF/cf-standardized-region-list.txt \
       $p/CF/cf-standard-name-table.xml \
       )
 
