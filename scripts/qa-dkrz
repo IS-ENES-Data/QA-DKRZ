@@ -1545,7 +1545,7 @@ getDateRange()
 
   if [ ! ${gDR_remainder} ] ; then
     if [ ${2} ] ; then
-       local +items itm
+       local items itm
        declare -a items
        items=( ${f//_/ } )
 
@@ -4193,14 +4193,12 @@ rmBlock()
      nums=(${nums[*]#file:})
   else
      nums="$(grep -n "[[:space:]]*data-set:[[:space:]]*${pattern}" $1 )"
-     nums=(${nums[*]#data_set:})
-
+     nums=(${nums[*]#data-set:})
   fi
 
   test ! "${nums}" && return
 
   # extract the numbers
-  nums=(${nums[*]%${pattern}*})
   nums=(${nums[*]%%:*})
 
   # remove all blocks by default. $2==num keeps the num last occurrences
