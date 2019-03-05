@@ -4189,9 +4189,17 @@ rmBlock()
   local IFS=$'\n'
 
   nums="$(grep -n "[[:space:]]*file:[[:space:]]*${pattern}" $1 )"
+  if [ "${nums}" ] ; then
+     nums=(${nums[*]#file:})
+  else
+     nums="$(grep -n "[[:space:]]*data-set:[[:space:]]*${pattern}" $1 )"
+     nums=(${nums[*]#data_set:})
+
+  fi
+
+  test ! "${nums}" && return
 
   # extract the numbers
-  nums=(${nums[*]#file:})
   nums=(${nums[*]%${pattern}*})
   nums=(${nums[*]%%:*})
 
