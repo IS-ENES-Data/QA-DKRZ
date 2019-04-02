@@ -2272,6 +2272,13 @@ QA_Time::testPeriodDatesFormat(std::vector<std::string>& sd,
         str += " data";
      }
   }
+  else if( frequency == "dec" )
+  {
+     if( sd[0].size() != 4 || sd[1].size() != 4 )
+     {
+        str += "YYYY for decadal frequency";
+     }
+  }
 
   if( str.size() )
   {
@@ -2663,11 +2670,34 @@ QA_Time::testPeriod_regularBounds(std::vector<std::string> &sd, Date** pDatesOri
      // sd[0] and sd[1] are of equal size.
      if( sd[0].size() < 5 )
      {
-         //pDates[0]->shift("beg,y");
-         pDates[1]->shift("end,y");
+         std::string freq( pQA->qaExp.getFrequency() );
 
-         pDates[2]->shift("beg,y");
-         pDates[3]->shift("end,y");
+         if( freq == "dec" )
+         {
+           pDates[1]->shift("end,y");
+
+           // cmor just indicates the middle of a decade
+           std::string mid=( pDates[2]->str() );
+           std::string isoF=("0001-01-01T00:00:00");
+
+           isoF[0] = mid[0] ; isoF[1] = mid[1] ; isoF[2] = mid[2] ;
+           pDates[2]->setDate(isoF) ;
+
+           double yrF = hdhC::string2Double( isoF.substr(0,4) ) + 9. ;
+           mid=hdhC::double2String(yrF);
+
+           isoF[0] = mid[0]; isoF[1] = mid[1]; isoF[2] = mid[2]; isoF[3] = mid[3];
+           isoF[5] = '1' ; isoF[6] = '2' ; isoF[8] = '3' ; isoF[9] = '1' ;
+           pDates[3]->setDate(isoF) ;
+         }
+         else
+         {
+           //pDates[0]->shift("beg,y");
+           pDates[1]->shift("end,y");
+
+           pDates[2]->shift("beg,y");
+           pDates[3]->shift("end,y");
+         }
      }
      else if( sd[0].size() < 7 )
      {
