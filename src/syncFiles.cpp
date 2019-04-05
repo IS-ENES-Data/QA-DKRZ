@@ -554,8 +554,6 @@ Ensemble::getTimes_NC(Member &mmb)
     {
        mmb.state = "could not open file";
 
-       std::string fName( mmb.filename );
-
        if(withTarget)
            return 7;
        else
@@ -570,7 +568,7 @@ Ensemble::getTimes_NC(Member &mmb)
     if( ulName.size() == 0 )
     {
        if( sz == 1 )
-       	 return -1; // a single file
+       	  return -1; // a single file
 
        mmb.state += "missing time dimension";
        return 4;
@@ -581,10 +579,19 @@ Ensemble::getTimes_NC(Member &mmb)
        // this could be wrong
        // or just a fixed variable with time dimension defined.
        if( sz == 1 )
-      	  return -1;
+       {
+          // filename with any time spec?
+          Split x( mmb.filename, "_.", true );
+          if( ! hdhC::isDigit( x[ x.size()-2 ] ) )
+          {
+             Split x2( x[ x.size()-2 ], "-" );
+             if( ! hdhC::isDigit( x2[ x2.size()-1 ] ) )
+                return -1;
+          }
+       }
 
-       mmb.state = "no time values available";
-       return 4;
+       mmb.state = "invalid time data";
+       return 5;
     }
 
     std::string vName(mmb.nc.getUnlimitedDimRepName() );

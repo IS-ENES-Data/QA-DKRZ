@@ -290,7 +290,7 @@ class QaConfig(object):
             if arg.upper() in self.prjs_avail:
                 _ldo['PROJECT'] = arg
 
-            if arg[-3:] != '.nc' or arg[-4:] != '.nc4':
+            if not (arg[-3:] == '.nc' or arg[-4:] == '.nc4'):
                 del args.NC_FILE[i]
 
         # special: SELECT | LOCK

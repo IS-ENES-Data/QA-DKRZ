@@ -325,21 +325,29 @@ def get_next_variable(data_path, fBase, fNames):
         info = e.output.splitlines()
         isLog=False
 
-        if status == 3 or status == 5 or status == 6:
+        if status == 4:
+            # a fixed variable?
+            if len(qaNc):
+                # previously processed
+                return []
+
+        elif status == 3 or status == 5 or status == 6:
             g_vars.anyProgress = True
 
             if status == 3:
-                annot='Unspecific error in sub-temporal file sequence'
+                annot='Unspecific failure across sub-temporal file sequence'
                 tag='M5'
                 concl='DRS(F): FAIL'
             elif status == 5:
                 annot='File(s) with invalid time data'
                 tag='M9'
                 concl='TIME: FAIL'
+                info=[]
             elif status == 6:
                 annot='Invalid NetCDF file'
                 tag='M0'
                 concl='CF: FAIL, CV: FAIL, DATA: FAIL, DRS: PASS, TIME: FAIL'
+                info=[]
 
             entry_id = log.append(t_vars.log_fname, f=fBase, d_path=data_path,
                        r_path=g_vars.res_dir_path, sub_path=t_vars.sub_path,
@@ -348,19 +356,13 @@ def get_next_variable(data_path, fBase, fNames):
                        conclusion=concl, status=status)
             isLog = True
 
-        elif status == 4:
-            # a fixed variable?
-            if len(qaNc):
-                # previously processed
-                return []
-
         elif status > 8:
             g_vars.anyProgress = True
 
             entry_id = log.append( t_vars.log_fname, f=fBase, d_path=data_path,
                         r_path=g_vars.res_dir_path, sub_path=t_vars.sub_path,
                         annotation='ambiguous sub-temporal file sequence',
-                        impact='L2', tag='M6', info=info,
+                        impact='L2', tag='M5', info=info,
                         conclusion='DRS(F): FAIL', status=status)
             isLog = True
 

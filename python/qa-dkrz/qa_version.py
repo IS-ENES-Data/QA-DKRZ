@@ -106,7 +106,7 @@ class GetVersion(object):
 
             branch, curr_id = self.get_git_branch(f)
 
-            vStr  = sep0 + prj + "/IS-ENES-Data.github.io:" + sep1
+            vStr  = sep0 + "IS-ENES-Data.github.io:" + sep1
             vStr += branch + '-' + curr_id
         elif prj == "CF":
             if self.isOpt("CF_STD_NAME_VERSION"):
@@ -381,7 +381,7 @@ def create_parser():
         action="store_true", help="verbose")
 
     parser.add_argument('POSIT_PARAM', nargs='*',
-        help= "NetCDF files [file1.nc[, file2.nc[, ...]]].")
+        help= "[comma-separated-projects] PROJECT[s].")
 
     return parser
 

@@ -49,7 +49,12 @@ class Log(object):
             entry.append(self.indent[1] + '- date: ' + qa_util.date())
 
         if len(f):
-            entry.append(self.indent[3] + 'file: ' + f)
+            if f[-3:] == '.nc' or f[-4:] == '.nc5':
+                s0='file: '
+            else:
+                s0='data-set: '
+
+            entry.append(self.indent[3] + s0 + f)
 
         if len(d_path):
             entry.append(self.indent[3] + 'data_path: ' + d_path)
@@ -127,7 +132,7 @@ class Log(object):
     def check_for_skipping(self, blk, skip_fBase):
         for line in blk:
             x_line = line.split()
-            if x_line[0] == 'file:':
+            if x_line[0] == 'file:' or x_line[0] == 'data-set:':
                 for f in skip_fBase:
                     if f+'.nc' == x_line[1] or f+'.nc4' == x_line[1] or f == x_line[1]:
                         blk = []
