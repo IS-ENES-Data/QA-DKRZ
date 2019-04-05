@@ -485,8 +485,6 @@ callQaConfig()
 
   if [ ${DISPLAY_VERSION} ] ; then
     python ${QA_SRC}/python/qa-dkrz/qa_version.py
-#    ${QA_SRC}/scripts/getVersion --verbose \
-#        --config-file=${CONFIG_FILE} ${PROJECT} ${DEBUG_MANAGER:+--debug}
     exit 0
   fi
 
@@ -1554,8 +1552,8 @@ getDateRange()
        fxs=( fx Ofx Efx IfxAnt IfxGre )
 
        for itm in ${items[*]} ; do
-         for f in ${fxs[*]} ; do
-            if [ $itm = $f ] ; then
+         for fx in ${fxs[*]} ; do
+            if [ $itm = $fx ] ; then
               is=f
               break 2
             fi
@@ -3604,12 +3602,10 @@ log()
   sp[8]='        '
 
   if [ "$1" = '--start' ] ; then
-    #QA_VERSION="$(${QA_SRC}/scripts/getVersion ${DEBUG_MANAGER:+--debug} ${PROJECT})"
-    QA_VERSION=$(python ${QA_SRC}/python/qa-dkrz/qa_version.py ${PROJECT})
-    . $QA_SRC/scripts/parseConfigFile QA_VERSION=${QA_VERSION}
+    local qv=$(python ${QA_SRC}/python/qa-dkrz/qa_version.py --qa CF ${PROJECT})
 
     s_out="start:\n${sp[1]}date: $( date +'%FT%T' )"
-    s_out="${s_out}\n${sp[1]}qa-version: ${QA_VERSION}"
+    s_out="${s_out}\n${sp[1]}qa-version: ${qv}"
     echo -e "$s_out" >> ${SESSION_LOGDIR}/session.prmbl
 
     cp ${SESSION_LOGDIR}/session.prmbl ${SESSION_LOGDIR}/session.log
@@ -5177,7 +5173,11 @@ test ${QA_SRC##*/} = scripts && QA_SRC=${QA_SRC%/scripts}
 initial_params=( $* )
 
 # store the tty, if any
-if tty -s ; then TTY=$(tty) ; fi
+if tty -s ; then
+  TTY=$(tty)
+fi
+
+test ! -w $TTY && TTY=/dev/tty
 
 QA_CONFIG=qa-config
 QA_FILE_EXECUTER=qa-exec-check

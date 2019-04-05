@@ -300,7 +300,10 @@ class GetVersion(object):
 
     def run(self):
         # version of QA-DKRZ
-        revision = self.get_QA_version()
+        revision=''
+
+        if self.isOpt('GET_QA_VERSION'):
+           revision = self.get_QA_version()
 
         if not self.isOpt('PROJECT'):
             return revision
@@ -308,8 +311,8 @@ class GetVersion(object):
         # versions of external projects and tables
         lprj = []
 
-        if not "CF" in self.opts["PROJECT"]:
-            lprj.append("CF")
+        #if not "CF" in self.opts["PROJECT"]:
+        #    lprj.append("CF")
 
 
         if self.isOpt("PROJECT"):
@@ -322,6 +325,9 @@ class GetVersion(object):
         for prj in lprj:
             s = self.get_external_version(prj)
             if len(s):
+                if len(revision) == 0:
+                    s = s[1:]
+
                 revision += s
 
         return revision
@@ -339,12 +345,11 @@ def commandLineOpts(parser, com_line_opts=[]):
     # post-processing: namespace --> dict
     _ldo = {}
 
-    if args.is_conda:            _ldo['CONDA']      = True
-    if args.CONFIG_FILE:         _ldo['CONFIG_FILE']   = args.CONFIG_FILE
-    if args.is_get_branch:       _ldo['GET_BRANCH']    = True
+    if args.is_conda:            _ldo['CONDA']         = True
+    if args.is_qa_version:       _ldo['GET_QA_VERSION']    = True
     if args.PROJECT    != None:  _ldo['PROJECT']       = args.PROJECT.split(',')
     if args.SECTION    != None:  _ldo['SECTION']       = args.SECTION
-    if args.VERBOSE:             _ldo['VERBOSE']  = True
+    if args.VERBOSE:             _ldo['VERBOSE']       = True
 
     if len(args.POSIT_PARAM):
       _ldo["PROJECT"] = args.POSIT_PARAM
@@ -368,12 +373,9 @@ def create_parser():
         action="store_true",
         help="For the qa-dkrz instance installed by conda")
 
-    parser.add_argument( '--config-file', dest='CONFIG_FILE',
-        help="The config-file of QA-DKRZ")
-
-    parser.add_argument( '--get-branch', dest='is_get_branch',
+    parser.add_argument( '--qa', dest='is_qa_version',
         action="store_true",
-        help="The config-file of QA-DKRZ")
+        help="Version of QA-DKRZ")
 
     parser.add_argument( '--verbose' , '-v', dest='VERBOSE',
         action="store_true", help="verbose")

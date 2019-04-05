@@ -87,17 +87,12 @@ bind_checksum()
 {
   fs=( ${*##*/} ) # just the filename
 
-  local arr item cs force type
+  local arr item cs type
   declare -a arr
 
   arr=( ${CHECKSUM//,/ } )
 
   for item in ${arr[*]} ; do
-    if [ ${item} = force ] ; then
-      force=--force
-      continue
-    fi
-
     if [ ${item} = t ] ; then
       type='--type=md5'
     else
@@ -124,7 +119,7 @@ bind_checksum()
   fi
 
   # calulcate the checksum
-  ${QA_SRC}/scripts/checkSum $type  $force \
+  ${QA_SRC}/scripts/checkSum $type \
       ${CHECKSUM_FILE:+-w}  $email $cs_table \
       ${LOG_FNAME:+-x} ${LOG_FNAME} \
       -P ${PROJECT_DATA} -S ${SUB_PATH#/} ${fs[*]}

@@ -169,6 +169,8 @@ def clearInq(qa_var_path, fBase, logfile):
 
 def final():
 
+    dest_log=''
+
     # only the summary of previous runs
     if not ( qaConf.isOpt('NO_SUMMARY') or qaConf.isOpt('SHOW') ):
         # remove duplicates

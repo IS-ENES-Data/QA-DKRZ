@@ -407,10 +407,10 @@ if [ ${#pC_Args[*]} -eq 0 ] ; then
   return 0
 fi
 
-retVal=$?
+pC_retVal=$?
 updateConfFile ${pC_Args[*]}
-retVal=$?
+pC_retVal=$?
 
 test ${pC_debug} && set -x
 
-return $retVal
+return $pC_retVal

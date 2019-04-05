@@ -169,16 +169,6 @@ formatText()
   formattedText=${str}
 }
 
-getRevNum()
-{
-  # get current revision number; this determines whether it is
-  # before a change of defaults happened.
-
-  export REVISION=$QA_SRC/scripts/getVersion &> /dev/null
-
-  return
-}
-
 libInclSetting()
 {
    export CC CXX CFLAGS CXXFLAGS FC F90
@@ -788,11 +778,12 @@ if [ ${#projects[*]} -eq 0 ] ; then
    projects=( ${valid_projects[*]} )
 fi
 
+export REVISION=$( python ${QA_SRC}/python/qa-dkrz/qa_version.py --qa -P CF )
 for prj in ${projects[*]} ; do
   for(( i=0 ; i < ${#prj_cpp[*]} ; ++i )) ; do
     if [ QA_${prj}.cpp = ${prj_cpp[i]} ] ; then
       # the revision number is inserted in Makefile via -DREVISION
-      export REVISION="$( $QA_SRC/scripts/getVersion ${DEBUG} $prj)"
+      REVISION=$( python ${QA_SRC}/python/qa-dkrz/qa_version.py -P $prj)
 
       makeProject $prj
       continue 2

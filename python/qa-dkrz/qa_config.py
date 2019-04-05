@@ -270,7 +270,12 @@ class QaConfig(object):
             _ldo['STATUS_LINE'] = args.STATUS_LINE
             _ldo['STATUS_LINE_SZ'] = 0
 
-        if args.WORK:               _ldo['WORK']            = args.WORK
+        if args.WORK:
+            if args.QA_EXAMPLE:
+                _ldo['WORK']            = args.WORK
+            else:
+                os.chdir( args.WORK )
+
 
         # collect for passing to QA-DKRZ/install.
 

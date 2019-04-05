@@ -1155,6 +1155,7 @@ class LogSummary(object):
                 fd.write(keys + ' ],\n')
 
         capt = self.annot_capt[ix].strip("'")
+
         fd.write(3*tab + '"annotation": "' + capt + '"')
 
         if self.annot_example_isGroup[ix]:
@@ -1167,6 +1168,9 @@ class LogSummary(object):
 
         if len(self.annot_impact[ix]):
             impact = self.annot_impact[ix].strip("'")
+            if capt[0:4] == 'CMOR':
+                impact='L2'
+
             fd.write(',\n' + 3*tab + '"severity": "' + self.severity[impact] + '"')
 
         fd.write("\n")

@@ -136,10 +136,8 @@ Usage: qa-DKRZ options
              The user's HOME directory by default; abbreviation --lcf.
    --debug   Show bash execution commands of install, qa-config, qa-dkrz, qa-dkrz
    --example Run the example.
-   --force-update
-             Update tables; by default this is done during the first run of
-             the current day.
-   --ignore_failed_update
+   --force
+             force recompilation; by default this is done when updating.
    --install[=PROJECT-name]
              Use qa-dkrz call as a wrapper to the install script and then exit.
              Project-name is only used for compiling the C++ programs; may be omitted

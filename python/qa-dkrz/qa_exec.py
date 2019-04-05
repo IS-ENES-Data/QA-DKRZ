@@ -663,19 +663,24 @@ class QaExec(object):
 
         ps.wait()
 
-        # replace "..." by <....>
-        pp_out2=''
-        on=False
-        for i in range(len(pp_out)):
-            if pp_out[i] == '"':
-                if on:
-                    on=False
-                    pp_out2 += '>'
+        try:
+            pp_out
+        except:
+            pass
+        else:
+            # replace "..." by <....>
+            pp_out2=''
+            on=False
+            for i in range(len(pp_out)):
+                if pp_out[i] == '"':
+                    if on:
+                        on=False
+                        pp_out2 += '>'
+                    else:
+                        on=True
+                        pp_out2 += '<'
                 else:
-                    on=True
-                    pp_out2 += '<'
-            else:
-                pp_out2 += pp_out[i]
+                    pp_out2 += pp_out[i]
 
         return pp_out2
 

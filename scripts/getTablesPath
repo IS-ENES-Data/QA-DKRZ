@@ -68,7 +68,7 @@ getTablesPath()
         break
      fi
 
-     echo "Could not mkdir QA_TABLES=${QA_TABLES}."
+     echo "Could not mkdir QA_TABLES=${QA_TABLES} (missing permission?)."
      dpath=${HOME}/.qa-dkrz
      read -p "Do you want to try ${dpath} ? " QA_TABLES # 2> ${TTY}
   done
@@ -88,7 +88,6 @@ getTablesPath()
   if [ ${QA_TABLES} ] ; then
      . $QA_SRC/scripts/parseConfigFile QA_TABLES=${QA_TABLES}
   fi
-
 
   return 0
 }

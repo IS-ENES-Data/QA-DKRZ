@@ -41,6 +41,8 @@ iRE_checkForUpdate()
        if [ ${item} = XLSX2CSV ] ; then
           item=$( find ${QA_TABLES} -name xlsx2csv.py )
           if [ ${item} ] ; then
+             test ${item:0:2} = './' && item=${PWD}/${item:2}
+
              . ${QA_SRC}/scripts/parseConfigFile XLSX2CSV=$item
              XLSX2CSV=$item
              upCount=$(( upCount -1 ))
@@ -144,9 +146,14 @@ iRE_CMIP6()
                   ;;
            esac
 
-           local fs
-           declare -a fs
            fs=( $( find ${CONDA_CMOR_ENV} -type f -name "PrePARE" ) )
+
+           local i fs
+           declare -a fs
+           for(( i=0 ; i < ${#fs[*]} ; ++i )) ; do
+              test ${fs[i]:0:2} = './' && fs[i]=${PWD}/${fs[i]:2}
+           done
+
            iRE_findLatestFile PrePARE ${fs[*]}
 
            if [ -f ${PrePARE} ] ; then
@@ -292,9 +299,9 @@ iRE_inqState()
       isCMIP6=t
 
       rname[${#rname[*]}]=+PrePARE
-#     rname[${#rname[*]}]=+UDUNITS2_XML_PATH
-      #rname[${#rname[*]}]=+CONDA_CMOR_ENV
-    rname[${#rname[*]}]=+XLSX2CSV
+      rname[${#rname[*]}]=+UDUNITS2_XML_PATH
+      rname[${#rname[*]}]=+CONDA_CMOR_ENV
+      rname[${#rname[*]}]=+XLSX2CSV
     fi
   done
 
@@ -319,7 +326,7 @@ iRE_inqState()
 
   iRE_scanCondaEnv qa-dkrz
   iRE_scanCondaEnv PrePARE
-#   iRE_scanCondaEnv udunits2.xml
+  iRE_scanCondaEnv UDUNITS2_XML_PATH
 
   return
 }
@@ -348,9 +355,9 @@ iRE_scanCondaEnv()
   local conda_path # could be different for cmor
   declare -a envs paths
 
-  if [ $1 = qa-dkrz ] ; then
-    test ! ${CONDA_PATH} && return  # not installed by conda
+  test ! ${CONDA_PATH} && return  # not installed by conda
 
+  if [ $1 = qa-dkrz ] ; then
     if [ ${CONDA_QA_ENV} ] ; then
        return
     else
@@ -361,11 +368,31 @@ iRE_scanCondaEnv()
   fi
 
   if [ $1 = PrePARE ] ; then
-    # test ! ${isCMIP6} && return
+    test ! ${isCMIP6} && return
 
     # try to restore some lost config-file items
     if [ ! ${PrePARE} ] ; then
       iRE_findLatestPrePARE
+    fi
+
+  elif [ $1 = UDUNITS2_XML_PATH ] ; then
+    test ! ${isCMIP6} && return
+
+    # try to restore some lost config-file items
+    if [ ! ${UDUNITS2_XML_PATH} ] ; then
+      local uxp
+      declare -a uxp
+
+      if [ ${CONDA_CMOR_ENV} ] ; then
+         uxp=( $( find $CONDA_CMOR_ENV -name "udunits2.xml" ) )
+#      else
+#         uxp=( $( find $CONDA_CMOR_PATH -name "udunits2.xml" ) )
+      fi
+
+      test ${uxp[0]:0:2} = './' && uxp[0]=${PWD}/${uxp[0]:2}
+
+      UDUNITS2_XML_PATH=${uxp[0]}
+      . ${QA_SRC}/scripts/parseConfigFile UDUNITS2_XML_PATH=$UDUNITS2_XML_PATH
     fi
   fi
 

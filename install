@@ -81,28 +81,6 @@ exit_fnct()
    exit $exitVal
 }
 
-freeze()
-{
-    if [ ${isFreeze} ] ; then
-       test "${CFG_UPDATE}" != frozen && . $QA_SRC/scripts/parseConfigFile UPDATE=frozen
-
-       # before freezing, updating would be possible
-       return
-
-    elif [ ${isForce} ] ; then
-       return
-    fi
-
-    test ${isUpdate} && return
-    test ${isShip} && return
-    test "${CFG_UPDATE}" != frozen && return
-
-    echo "currently frozen; use --unfreeze to re-enable updates unconditionally"
-    echo "                  or with --force for a single update, but keeping frozen enabled."
-
-    exit_fnct 0
-}
-
 getSrcPath()
 {
    local i items p
@@ -267,7 +245,7 @@ ship()
 
 syncTables()
 {
-  if [ ${isSyncTables} ] ; then
+#  if [ ${isSyncTables} ] ; then
     if ! mkdir -p ${QA_TABLES}/tables  ; then
       echo "failure: mkdir -p ${QA_TABLES}/tables"
       exit_fnct 1
@@ -275,7 +253,7 @@ syncTables()
 
     # note that QA_TABLES points to .qa-dkrz wherever it is located
     rsync -auz --exclude '*~' $QA_SRC/tables ${QA_TABLES} &> /dev/null
-  fi
+#  fi
 
   return
 }
@@ -425,14 +403,13 @@ update()
      for prj in $* ; do
         eval isPRJ=isUp_${prj}
         if [ ${isPRJ} ] ; then
-          if ! update_external $prj ; then
-             isSyncTables=t
-          fi
+           update_external $prj
+#          if ! update_external $prj ; then
+#             isSyncTables=t
+#          fi
         fi
       done
   fi
-
-  syncTables
 
   return 0
 }
@@ -559,9 +536,9 @@ update_QA_SRC()
              | awk '{print $6}' 2> /dev/null )
 
         # always from master
-        local branch=$( ${QA_SRC}/scripts/getVersion ${DEBUG} \
-                           --get-branch \
-                           --config-file=$CONFIG_FILE )
+        local branch=$( python ${QA_SRC}/python/qa-dkrz/qa_version.py --qa )
+        branch=${branch#*,}
+        branch=${branch%-*}
         # test "${branch}" != master &&  git checkout master &> /dev/null
 
         git fetch && git reset --hard origin/${branch} &> /dev/null
@@ -587,7 +564,7 @@ update_QA_SRC()
 
         . ${QA_SRC}/scripts/parseConfigFile NEXT_QA_UPDATE ${isForce:+--force}
 
-        $QA_SRC/scripts/getVersion --force ${DEBUG} &> /dev/null
+#        $QA_SRC/scripts/getVersion --force ${DEBUG} &> /dev/null
 
         . ${QA_SRC}/scripts/parseConfigFile --read
       fi
@@ -607,13 +584,6 @@ getSrcPath
 # is it in a conda built?
 . ${QA_SRC}/scripts/getCondaPath
 
-# freeze after first install; except --auto was set
-if ! . $QA_SRC/scripts/getConfigFile ; then
-  if ! . ${QA_SRC}/scripts/parseConfigFile AUTO_UPDATE ; then
-     isFreeze=t
-  fi
-fi
-
 if [ $# -gt 0 ] ; then
   # safe arguments
   sArgs=($*)
@@ -631,8 +601,6 @@ if [ $# -gt 0 ] ; then
       sArgs[${i}]=--${sArgs[${i}]}
     elif [ "${A}" = FORCE ] ; then
       sArgs[${i}]=--${sArgs[${i}]}
-    elif [ "${A:0:6}" = FREEZE ] ; then
-      sArgs[${i}]=--${sArgs[${i}]}
     elif [ "${A:0:4}" = HELP ] ; then
       sArgs[${i}]=--${sArgs[${i}]}
     elif [ "${A:0:4}" = LINK ] ; then
@@ -644,8 +612,6 @@ if [ $# -gt 0 ] ; then
     elif [ "${A:0:3}" = SRC  ] ; then
       sArgs[${i}]=--${sArgs[${i}]}
     elif [ "${A:0:2}" = UP ] ; then
-      sArgs[${i}]=--${sArgs[${i}]}
-    elif [ "${A}" = UNFREEZE ] ; then
       sArgs[${i}]=--${sArgs[${i}]}
     fi
   done
@@ -661,16 +627,7 @@ do
         OPTNAME=${UOPTARG%%=*}
         test ${OPTVAL} = ${OPTARG%%=*} && OPTVAL=
 
-        if [ "${OPTNAME:0:4}" = AUTO ] ; then
-          if [ "${OPTVAL:0:1}" = D -o "${OPTVAL:0:1}" = d ] ; then
-            . ${QA_SRC}/scripts/parseConfigFile AUTO_UPDATE=delete
-            . ${QA_SRC}/scripts/parseConfigFile UPDATE=frozen
-          else
-            AUTO_UPDATE=enabled
-            . ${QA_SRC}/scripts/parseConfigFile AUTO_UPDATE=${AUTO_UPDATE}
-            isFreeze=t
-          fi
-        elif [ "${OPTNAME}" = CONFIG_FILE ] ; then
+        if [ "${OPTNAME}" = CONFIG_FILE ] ; then
           CONFIG_FILE=${OPTVAL}
         elif [ "${OPTNAME}" = CF ] ; then
             CONFIG_FILE=${OPTVAL}
@@ -681,13 +638,6 @@ do
           export QA_TABLES=${OPTVAL}
         elif [ "${OPTNAME}" = QA_TABLES ] ; then
           export QA_TABLES=${OPTVAL}
-        elif [ "${OPTNAME}" = UNFREEZE ] ; then
-           if . ${QA_SRC}/scripts/parseConfigFile UPDATE ; then
-              if [ ${UPDATE} = frozen ] ; then
-                UPDATE=daily
-                . ${QA_SRC}/scripts/parseConfigFile UPDATE=${UPDATE}
-              fi
-           fi
         elif [ "${OPTNAME}" = WORK ] ; then
           export QA_RESULTS=${OPTVAL}
         fi
@@ -695,6 +645,26 @@ do
    \?)  ;;
   esac
 done
+
+# freeze
+if [ ! ${CONFIG_FILE} ] ; then
+   mkdir -p ~/.qa-dkrz
+   CONFIG_FILE=~/.qa-dkrz/config.txt
+   touch ~/.qa-dkrz/config.txt
+fi
+
+if [ ! -w $QA_SRC ] ; then
+   if [ ! ~/.qa-dkrz/config.txt ] ; then
+      if [ $QA_SRC/.qa-dkrz/config.txt ] ; then
+        mkdir -p ~/.qa-dkrz
+        cp $QA_SRC/.qa-dkrz/config.txt
+      else
+        echo "Please, ask your QA-DKRZ admin to provide .qa-dkrz/config.txt"
+      fi
+   fi
+
+   isFrozen=t
+fi
 
 . ${QA_SRC}/scripts/parseConfigFile UPDATE
 CFG_UPDATE=$UPDATE
@@ -729,12 +699,16 @@ do
         test ${OPTARG/=/} = ${OPTARG} && OPTVAL=''
 
         if [ "${OPTNAME:0:4}" = AUTO ] ; then
-          continue # done before
+          if [ "${OPTVAL:0:1}" = D -o "${OPTVAL:0:1}" = d ] ; then
+            . ${QA_SRC}/scripts/parseConfigFile AUTO_UPDATE=delete
+          else
+            AUTO_UPDATE=enabled
+            . ${QA_SRC}/scripts/parseConfigFile AUTO_UPDATE=${AUTO_UPDATE}
+          fi
         elif [ "${OPTNAME}" = BUILD ] ; then
           isBuild=t
         elif [ "${OPTNAME}" = COMPILE ] ; then
           FORCE_COMPILE=-B
-          isForce=t
         elif [ "${OPTNAME}" = CONDA_BUILD ] ; then
           isCondaBuild=t
 
@@ -748,12 +722,6 @@ do
 
         elif [ "${OPTNAME}" = FORCE ] ; then
           isForce=t
-        elif [ "${OPTNAME}" = FREEZE ] ; then
-          isFreeze=t
-
-          if . ${QA_SRC}/scripts/parseConfigFile AUTO_UPDATE ; then
-             . ${QA_SRC}/scripts/parseConfigFile AUTO_UPDATE=delete
-          fi
         elif [ "${OPTNAME}" = HELP ] ; then
           descript
           exit_fnct 41
@@ -791,24 +759,15 @@ do
           isShip=t
         elif [ "${OPTNAME}" = SRC ] ; then
           :  # for backward compatibilty
-        elif [ "${OPTNAME}" = UNFREEZE ] ; then
-          continue
         elif [ "${OPTNAME}" = UNSHIP ] ; then
           unship  # function
-          . ${QA_SRC}/scripts/parseConfigFile UPDATE=frozen
           exit_fnct 0
         elif [ "${OPTNAME:0:2}" = UP ] ; then
-          if [ "${OPTVAL}" = FREEZE ] ; then
-            isFreeze=t
-          else
-            isUpdate=t
+          isUpdate=t
 
-            if [ "${OPTVAL}" = force ] ; then
-               isForce=t
-            elif [ "${OPTVAL:0:4}" = auto ] ; then
-               . ${QA_SRC}/scripts/parseConfigFile AUTO_UPDATE=${AUTO_UPDATE}
-               . ${QA_SRC}/scripts/parseConfigFile UPDATE=daily
-            fi
+          if [ "${OPTVAL:0:4}" = auto ] ; then
+             . ${QA_SRC}/scripts/parseConfigFile AUTO_UPDATE=${AUTO_UPDATE}
+             . ${QA_SRC}/scripts/parseConfigFile UPDATE=daily
           fi
           continue
         elif [ "${OPTNAME:0:1}" = U ] ; then
@@ -842,31 +801,9 @@ done
 
 shift $(( $OPTIND - 1 ))
 
-if [ ! -w ${QA_SRC} ] ; then
-  if [ ! -f ~/.qa-dkrz/config.txt ] ; then
-    # alien user
-    if [ ! -f ${QA_SRC}/.qa-dkrz/config.txt ] ; then
-       echo " no such file ${QA_SRC}/.qa-dkrz/config.txt"
-       echo " please, inform the installer of QA-DKRZ"
-       exit 1
-    fi
-
-    if [ ! -f ~/.qa-dkrz/config.txt ] ; then
-       if [ ! -d ~/.qa-dkrz ] ; then
-          test -w ~ && cp ${QA_SRC}/.qa-dkrz/config.txt ~/.qa-dkrz/config.txt
-       fi
-    fi
-  fi
-
-  exit
-fi
-
-# check for freezing or being frozen
-freeze
-
 if [ ! ${isUpdate} ] ; then
   if . ${QA_SRC}/scripts/parseConfigFile AUTO_UPDATE ; then
-     isUpdate=t
+     test ! ${isFrozen} && isUpdate=t
   fi
 fi
 
@@ -911,8 +848,13 @@ if [ ${#projects[*]} -eq 0 ] ; then
    coll[${#coll[*]}]="${projects[*]}"
 fi
 
-if ! . ${QA_SRC}/scripts/getTablesPath ; then
-  test -w ${QA_SRC} && exit 1
+if . ${QA_SRC}/scripts/getTablesPath ; then
+  syncTables
+else
+  if [ ${isFrozen} ] ; then
+     echo "no write permission for $QA_SRC"
+     exit 1
+  fi
 fi
 
 if [ ${isUpdate} ] ; then
@@ -968,6 +910,24 @@ if [ ${isShip} ] ; then
    ship ${shipOpt}
    exit_fnct 41
 fi
+
+# add versions
+QA_VERSION=$( python ${QA_SRC}/python/qa-dkrz/qa_version.py --qa )
+. ${QA_SRC}/scripts/parseConfigFile QA_VERSION=$QA_VERSION
+
+for p in ${projects[*]} CF ; do
+   v=$( python ${QA_SRC}/python/qa-dkrz/qa_version.py -P $p )
+   . ${QA_SRC}/scripts/parseConfigFile ${p}_VERSION=$v
+done
+
+# for those working with a frozen installation
+if [ ! -d $QA_SRC/.qa-dkrz/config.txt ] ; then
+   mkdir -p $QA_SRC/.qa-dkrz
+   cp ~/.qa-dkrz/config.txt $QA_SRC
+fi
+
+test ${isFrozen} && exit 0
+test ${CONDA_PATH} && exit 0
 
 if [ ${isBuild:-f} = t -a ${isLink:-f} = t ] ; then
   echo "scripts/install.sh: options --build and --link exclude each other"
