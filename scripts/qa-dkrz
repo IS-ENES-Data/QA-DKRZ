@@ -954,11 +954,11 @@ clear()
 
   # arbitrary order of arguments
   for f in ${CLEAR//,/ } ; do
-    test ${CLEAR} = t && break  # unconditional
-
     isClear=f
 
-    if [ "$f" = follow_links ] ; then
+    if [ "$f" = all ] ; then
+       isClear=t
+    elif [ "$f" = follow_links ] ; then
        test ${DEREFERENCE_SYM_LINKS:-f} = f && isFL=t
        isClear=t
     elif [ "${f:0:3}" = res ] ; then
@@ -997,9 +997,17 @@ clear()
             fi
          fi
        done
-    elif [ ${f} != ${f/=/} -a ${f%=*} = var ] ; then
-       # CLEAR=var=name
-       if expr match ${fBase[ix]} "${f}" &> /dev/null ; then
+    elif [ ${f%=*} = regex ] ; then
+       # ensure that pattern is unique
+       if expr match ${fBase[ix]} ".*${f#*/}" &> /dev/null ; then
+         if ls ${QA_RESULTS}/data/${subPath}/*_${fBase[ix]}* &> /dev/null
+         then
+           isClear=t
+         fi
+       fi
+    elif [ ${f%=*} = var ] ; then
+       # CLEAR=var=name; note that's for all matching the beginning of the filename
+       if expr match ${fBase[ix]} "${f#*=}" &> /dev/null ; then
          if ls ${QA_RESULTS}/data/${subPath}/*_${fBase[ix]}* &> /dev/null
          then
            isClear=t
