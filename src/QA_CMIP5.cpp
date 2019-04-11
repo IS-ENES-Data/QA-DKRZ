@@ -596,11 +596,10 @@ DRS_CV::checkNetCDF(NcAPI* p_nc)
     std::string key("12");
     if( notes->inq( key, pQA->fileStr ) )
     {
-      std::string capt("format does not conform to netCDF classic");
-      std::string text("Found ") ;
-      text += s;
+      std::string capt("format of netCDF is not classic, found ");
+      capt += s;
 
-      (void) notes->operate( capt, text) ;
+      (void) notes->operate( capt) ;
       notes->setCheckStatus("CV", pQA->n_fail);
     }
   }
