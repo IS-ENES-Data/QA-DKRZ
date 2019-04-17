@@ -265,7 +265,7 @@ updateConfFile()
 
    # find a match between config.txt lines and current param_name
    for(( i=0 ; i < ${#uCF_lines[*]} ; ++i )) ; do
-       if [ ${uCF_lines[i]%=*} = ${param_name} ] ; then
+       if [ ${uCF_lines[i]%%=*} = ${param_name} ] ; then
           if [ "${param_value}" = 'delete' ] ; then
             lineNum=$((uCF_blkBeg+i+1))
             sed -i "${lineNum} d" $CONFIG_FILE &> /dev/null
@@ -350,10 +350,6 @@ updateConfFile()
 }
 
 # main
-if [ ${DEBUG} ] ; then
-   set +x
-   pC_debug=t
-fi
 
 declare -a pC_Args
 pC_Args=()
@@ -361,7 +357,9 @@ pC_freq=
 pC_read_only=f
 
 for arg in $* ; do
-  if [ "${arg:0:9}" = '--inquire' ] ; then
+  if [ "${arg}" = '--debug' ] ; then
+    pC_debug=t
+  elif [ "${arg}" = '--inquire' ] ; then
     pC_read_only=t
   elif [ "${arg}" = '--no-path' ] ; then
     pC_no_path=t
@@ -377,6 +375,7 @@ for arg in $* ; do
   fi
 done
 
+test ! ${pC_debug} && set +x
 test ${CONFIG_READ_ONLY} && pC_read_only=t
 
 if [ "${CONFIG_FILE}" ] ; then
@@ -385,7 +384,7 @@ if [ "${CONFIG_FILE}" ] ; then
     touch ${CONFIG_FILE}
   fi
 else
-  test ${pC_debug} && set -x
+  test ${DEBUG} && set -x
   return 1 # no config file
 fi
 
@@ -411,6 +410,6 @@ pC_retVal=$?
 updateConfFile ${pC_Args[*]}
 pC_retVal=$?
 
-test ${pC_debug} && set -x
+test ${DEBUG} && set -x
 
 return $pC_retVal

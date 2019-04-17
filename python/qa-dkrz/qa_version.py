@@ -99,6 +99,9 @@ class GetVersion(object):
                 branch, curr_id = self.get_git_branch(f)
                 vStr += sep0 + "cmip6-cmor-tables:" + sep1 + branch + '-' + curr_id
 
+        elif prj == "CMIP5":
+            vStr  = sep0 + "CMIP5_standard_output_20130815"
+
         elif prj == "CORDEX":
             f=os.path.join(self.p_projects, prj, "IS-ENES-Data.github.io")
             if not os.path.isdir(f):
@@ -126,11 +129,21 @@ class GetVersion(object):
                                 if p0 > 1 and p1 > -1:
                                     s = line[p0:p1].split()
 
-                                    vStr  = sep0 + "CF_STD_NAME_VERSION:" + sep1
+                                    vStr  = sep0 + "std-name:" + sep1
                                     for item in s:
                                         vStr += item
 
-                                    break
+                            elif 'Area Type Table' in line:
+                                p0 = line.find('(') + 1
+                                p1 = line.find(')')
+                                if p0 > 1 and p1 > -1:
+                                    s = line[p0:p1].split()
+
+                                    vStr  += sep0 + "area-type:" + sep1
+                                    for item in s:
+                                        vStr += item
+
+                                break
 
         return vStr
 

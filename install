@@ -848,9 +848,11 @@ if [ ${#projects[*]} -eq 0 ] ; then
    coll[${#coll[*]}]="${projects[*]}"
 fi
 
-if . ${QA_SRC}/scripts/getTablesPath ; then
-  # else: exit 41
-  syncTables
+if [ ! ${isCondaBuild} ] ; then
+  if . ${QA_SRC}/scripts/getTablesPath ; then
+    # else: exit 41
+    syncTables
+  fi
 fi
 
 if [ ${isUpdate} ] ; then
