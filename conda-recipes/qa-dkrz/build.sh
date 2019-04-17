@@ -37,7 +37,7 @@ export QA_LIBS="-ludunits2 -lnetcdf -lhdf5_hl -lhdf5 -lz -luuid -lmfhdf"
 if [ "${HOSTNAME:0:7}" = 'mistral' ] ; then
   QA_TABLES=/work/kd0956/sw/QA_Tables
 else
-  QA_TABLES=/hdh/hdh/QA_Tables
+  QA_TABLES=/hdh/local/QA_Tables
 fi
 
 ./install --debug --force --conda-build --net=no --cf --qa-src=$QA_SRC --qa-tables="$QA_TABLES" CF CMIP5 CMIP6 CORDEX # 2> /hdh/hdh/QA-DKRZ/test/asdf
