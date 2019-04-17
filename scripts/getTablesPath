@@ -76,7 +76,6 @@ getTablesPath()
   if [ -d $QA_TABLES ] ; then
      if [ ! -w $QA_TABLES ] ; then
        echo "directory $QA_TABLES without write permissions,"
-       echo "please, restart with added option --qa-tables=path"
        exit 41
      fi
   else

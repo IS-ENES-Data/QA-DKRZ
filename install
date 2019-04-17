@@ -251,7 +251,6 @@ syncTables()
       exit_fnct 1
     fi
 
-    # note that QA_TABLES points to .qa-dkrz wherever it is located
     rsync -auz --exclude '*~' $QA_SRC/tables ${QA_TABLES} &> /dev/null
 #  fi
 
@@ -372,7 +371,7 @@ update()
   done
   test ${DEBUG} && end_of_inq=t  # just a mark
 
-  if [ ${isUpQA} ] ; then
+  if [ ${isUpQA:-f} = t -a ${w_perm:-f} = t ] ; then
     # search updates after a specified number of days; default: once a day
     if [ ${isCondaInstance} ] ; then
        :
@@ -425,7 +424,7 @@ update_CONDA_env()
   test ${conda_env:-none} = none && conda_env=cmor
   test ! ${action} && action=update
 
-  test ${INTERNET:-t} = f && return
+  test ${NET:-t} = f && return
   test "${conda_env}" = '-n ' && conda_env=
 
   if [ ! -w "${QA_SRC}" ] ; then
@@ -477,7 +476,7 @@ EOF
 
 update_external()
 {
-  test ${INTERNET:-t} = f && return 0
+  test ${NET:-t} = f && return 0
 
   local prj=$1
   test ${PROJECT_VIRT} && prj=${PROJECT_VIRT}
@@ -496,7 +495,8 @@ update_external()
      . ${QA_SRC}/scripts/get_externalSources \
          -P $prj --qa-src=${QA_SRC} \
          --qa-tables=${QA_TABLES} --config_file=${CONFIG_FILE} \
-         ${isUpdate:+--update} ${isForce:+--force-update}
+         ${isUpdate:+--update} ${isForce:+--force-update} \
+         ${w_perm:---no-w-perm}
 
      if [ $? -gt 0 ] ; then
         echo "could not make install.update_external for $prj"
@@ -515,7 +515,7 @@ update_external()
 
 update_QA_SRC()
 {
-  if [ ${INTERNET:-t} = t ] ; then
+  if [ ${NET:-t} = t ] ; then
     if [ ${isForce:-f} = t ] || \
            ! . ${QA_SRC}/scripts/parseConfigFile NEXT_QA_UPDATE --inquire
     then
@@ -647,24 +647,25 @@ do
 done
 
 # freeze
-if [ ! ${CONFIG_FILE} ] ; then
-   mkdir -p ~/.qa-dkrz
-   CONFIG_FILE=~/.qa-dkrz/config.txt
-   touch ~/.qa-dkrz/config.txt
-fi
+test -w $QA_SRC && w_perm=t
 
-if [ ! -w $QA_SRC ] ; then
+if [ ! -w $QA_SRC -o ${NET:-t} = f ] ; then
    if [ ! ~/.qa-dkrz/config.txt ] ; then
       if [ $QA_SRC/.qa-dkrz/config.txt ] ; then
         mkdir -p ~/.qa-dkrz
-        cp $QA_SRC/.qa-dkrz/config.txt
+        cp $QA_SRC/.qa-dkrz/config.txt ~/.qa-dkrz
       else
         echo "Please, ask your QA-DKRZ admin to provide .qa-dkrz/config.txt"
+        exit
       fi
    fi
-
-   isFrozen=t
 fi
+
+if [ ! -f ~/.qa-dkrz/config.txt ] ; then
+   mkdir -p ~/.qa-dkrz
+   touch ~/.qa-dkrz/config.txt
+fi
+CONFIG_FILE=~/.qa-dkrz/config.txt
 
 . ${QA_SRC}/scripts/parseConfigFile UPDATE
 CFG_UPDATE=$UPDATE
@@ -734,13 +735,12 @@ do
 
           OPTVAL=$( echo "${OPTVAL}" | tr "[:lower:]" "[:upper:]" )
           if [ ${OPTVAL:0:1} = Y -o ${OPTVAL:0:1} = E -o ${OPTVAL:0:1} = T ] ; then
-             OPTVAL=t
+             . ${QA_SRC}/scripts/parseConfigFile NET=delete
           elif [ ${OPTVAL:0:1} = N -o ${OPTVAL:0:1} = D -o ${OPTVAL:0:1} = F \
                    -o ${OPTVAL:0:1} = S ] ; then
-             OPTVAL=f
+             NET=f
+             . ${QA_SRC}/scripts/parseConfigFile NET=f
           fi
-          INTERNET=f
-#          . ${QA_SRC}/scripts/parseConfigFile INTERNET=${OPTVAL}
         elif [ "${OPTNAME}" = NO_PROGRESS_WHEEL ] ; then
            isNoPW=t
         elif [ "${OPTNAME:0:6}" = ONLY_Q ] ; then
@@ -803,7 +803,7 @@ shift $(( $OPTIND - 1 ))
 
 if [ ! ${isUpdate} ] ; then
   if . ${QA_SRC}/scripts/parseConfigFile AUTO_UPDATE ; then
-     test ! ${isFrozen} && isUpdate=t
+     test ${NET:-t} = t && isUpdate=t
   fi
 fi
 
@@ -849,12 +849,8 @@ if [ ${#projects[*]} -eq 0 ] ; then
 fi
 
 if . ${QA_SRC}/scripts/getTablesPath ; then
+  # else: exit 41
   syncTables
-else
-  if [ ${isFrozen} ] ; then
-     echo "no write permission for $QA_SRC"
-     exit 1
-  fi
 fi
 
 if [ ${isUpdate} ] ; then
@@ -926,6 +922,7 @@ if [ ! -d $QA_SRC/.qa-dkrz/config.txt ] ; then
    cp ~/.qa-dkrz/config.txt $QA_SRC
 fi
 
+test ! ${w_perm} && exit 0
 test ${isFrozen} && exit 0
 test ${CONDA_PATH} && exit 0
 

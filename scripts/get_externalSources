@@ -214,12 +214,14 @@ ges_cmip6()
       status=$?
    fi
 
-   if ! ges_cmip6_conda ; then
-      status=$?
-   fi
+   if [ ${w_perm:-t} = t ] ; then
+     if ! ges_cmip6_conda ; then
+       status=$?
+     fi
 
-   if ! ges_cmip6_cmor ; then
-      status=$?
+     if ! ges_cmip6_cmor ; then
+       status=$?
+     fi
    fi
 
    return $status
@@ -586,6 +588,8 @@ do
          set -x
        elif [ ${OPTARG} = 'force-update' ] ; then
          forceUpdate=t
+       elif [ ${OPTARG} = 'no-w-perm' ] ; then
+         w_perm=f
        elif [ ${OPTARG:0:2} == 'update' ] ; then
          isUpdate=t
        elif [ ${OPTARG%=*} = "qa-tables" -o ${OPTARG%=*} = "qa-home" ] ; then
