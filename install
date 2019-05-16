@@ -926,7 +926,9 @@ fi
 
 test ! ${w_perm} && exit 0
 test ${isFrozen} && exit 0
-test ${CONDA_PATH} && exit 0
+
+# conda ?
+test ${PWD/\/bin\/conda\//} != ${PWD} && exit 0
 
 if [ ${isBuild:-f} = t -a ${isLink:-f} = t ] ; then
   echo "scripts/install.sh: options --build and --link exclude each other"
