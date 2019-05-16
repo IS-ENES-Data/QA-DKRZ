@@ -1533,7 +1533,7 @@ NcAPI::exceptionHandling(std::string key,
 {
    if( status )
    {
-     text += "NetCDF status=";
+     text += ", NetCDF status=";
      text += hdhC::itoa(status);
      text += "; ";
    }
