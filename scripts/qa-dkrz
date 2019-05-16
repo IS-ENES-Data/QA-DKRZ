@@ -4187,31 +4187,34 @@ rmBlock()
   local pattern=$2
 
   # get all lines with line numbers having ' file: pattern'
-  local nums num sz i
-  declare -a nums
+  local nums nums_f nums_d num sz i
+  declare -a nums nums_f nums_d
 
   local IFS=$'\n'
 
-  nums="$(grep -n "[[:space:]]*file:[[:space:]]*${pattern}" $1 )"
-  if [ "${nums}" ] ; then
-     nums=(${nums[*]#file:})
-  else
-     nums="$(grep -n "[[:space:]]*data-set:[[:space:]]*${pattern}" $1 )"
-     nums=(${nums[*]#data-set:})
-  fi
-
-  test ! "${nums}" && return
+  nums_f=($(grep -n "[[:space:]]*file:[[:space:]]*${pattern}" $1 ))
+  nums_d=($(grep -n "[[:space:]]*data-set:[[:space:]]*${pattern}" $1 ))
 
   # extract the numbers
-  nums=(${nums[*]%%:*})
+  nums_f=(${nums_f[*]%%:*})
+  nums_d=(${nums_d[*]%%:*})
 
-  # remove all blocks by default. $2==num keeps the num last occurrences
-  sz=$(( ${#nums[*]} -1))
-  test $3 && sz=$((sz-$3))
-  test ${sz} -lt 0 && return
+  nums=( ${nums_f[*]} ${nums_d[*]} )
+  test ${#nums_f[*]} -eq 0 -a ${#nums_d[*]} -eq 0 && return
 
-  for(( i=sz ; i > -1  ; --i )) ; do
-    num=$(( ${nums[i]} -1 ))
+  local i j m
+  for(( i=0 ; i < ${#nums[*]} ; ++i )) ; do
+    for(( j=i+1 ; j < ${#nums[*]} ; ++j )) ; do
+       if [ ${nums[j]} -lt ${nums[i]} ] ; then
+          m=${nums[j]}
+          nums[j]=${nums[i]}
+          nums[i]=$m
+       fi
+    done
+  done
+
+  for num in ${nums[*]} ; do
+    num=$(( num -1 ))
 
     sed  -i "$num,/status:/ d" $file
   done
