@@ -174,7 +174,7 @@ DRS_CV::checkFilename(std::string& fName, struct DRS_CV_Table& drs_cv_table)
          std::string key("1_1b");
          if( notes->inq( key, pQA->qaTime.name) )
          {
-           std::string capt("filename must no have a dot, found");
+           std::string capt("filename must not have a dot, found");
            capt += hdhC::tf_val(x_filename[i]);
 
            (void) notes->operate(capt) ;
