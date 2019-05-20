@@ -1593,9 +1593,26 @@ QA_Time::testPeriod(Split& x_f)
   if( lastTimeValue != MAXDOUBLE )
     pDates[3]->addTime(lastTimeValue);
 
+  std::string pointText;
+
+  if( pQA->pIn->variable[time_ix].isInstant )
+     pointText="cell_methods time: point";
+  else
+  {
+     // alternative for CMIP6, when cell_methods is not defined
+     std::string frequency(pQA->qaExp.getFrequency());
+     size_t sz=frequency.size() ;
+     if( frequency[sz-2] == 'P' && frequency[sz-1] == 't' )
+     {
+        pointText="frequency " + frequency;
+
+        pQA->pIn->variable[time_ix].isInstant = true;
+     }
+  }
+
   if( isTimeBounds)
   {
-    if( pQA->pIn->variable[time_ix].isInstant )
+    if( pointText.size() )
     {
         std::string tb_name(getBoundsName());
 
@@ -1606,8 +1623,9 @@ QA_Time::testPeriod(Split& x_f)
             if( notes->inq( key, tb_name ) )
             {
               std::string capt(hdhC::tf_var(tb_name));
-              capt += " declaration is inconsistent with cell_methods time: point" ;
-              std::string text("Time bounds are no longer checked.") ;
+              capt += " declaration is inconsistent with " ;
+              capt += pointText ;
+              std::string text("Time bounds are not checked.") ;
 
               (void) notes->operate(capt, text) ;
               notes->setCheckStatus(pQA->drsF, pQA->n_fail);
