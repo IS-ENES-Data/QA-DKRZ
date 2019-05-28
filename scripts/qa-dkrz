@@ -4192,8 +4192,8 @@ rmBlock()
 
   local IFS=$'\n'
 
-  nums_f=($(grep -n "[[:space:]]*file:[[:space:]]*${pattern}" $1 ))
-  nums_d=($(grep -n "[[:space:]]*data-set:[[:space:]]*${pattern}" $1 ))
+  nums_f=($(grep -n "[[:space:]]*file:[[:space:]]*${pattern}" $1 | awk '{print $1}'))
+  nums_d=($(grep -n "[[:space:]]*data-set:[[:space:]]*${pattern}" $1 | awk '{print $1}'))
 
   # extract the numbers
   nums_f=(${nums_f[*]%%:*})
@@ -4203,7 +4203,8 @@ rmBlock()
   test ${#nums_f[*]} -eq 0 -a ${#nums_d[*]} -eq 0 && return
 
   local i j m
-  for(( i=0 ; i < ${#nums[*]} ; ++i )) ; do
+  local sz=$(( ${#nums[*]} -1 ))
+  for(( i=0 ; i < sz ; ++i )) ; do
     for(( j=i+1 ; j < ${#nums[*]} ; ++j )) ; do
        if [ ${nums[j]} -lt ${nums[i]} ] ; then
           m=${nums[j]}

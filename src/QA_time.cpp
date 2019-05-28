@@ -653,7 +653,9 @@ QA_Time::initRelativeTime(std::string &units)
        std::string freq( pQA->qaExp.getFrequency() );
        if( freq.size() && refDate.getUnits() == "day" )
        {
-         if( freq == "3hr" )
+         if( freq == "1hr" )
+           refTimeStep = 1./24. ;
+         else if( freq == "3hr" )
            refTimeStep = 1./8. ;
          else if( freq == "6hr" )
            refTimeStep = 1./4. ;
@@ -1919,7 +1921,7 @@ QA_Time::testPeriodPrecision_CORDEX(std::vector<std::string>& sd,
   std::string my_key("T_10e");
 
   // period length per file as recommended?
-  if( frequency == "3hr" || frequency == "6hr" )
+  if( frequency.substr(1,2) == "hr" )
   {
     // same year.
     bool isA = sd[1].substr(4,4) == "1231";
@@ -1981,7 +1983,7 @@ QA_Time::testPeriodPrecision_CORDEX(std::vector<std::string>& sd,
         std::string fTV;
         std::string fTBV(hdhC::double2String( (t - static_cast<int>(t))*24.) );
 
-        if( frequency == "3hr" || frequency == "6hr" )
+        if( frequency.substr(1,2) == "hr"  )
         {
           isAlt=true;
           double t = firstTimeValue;
@@ -2037,7 +2039,7 @@ QA_Time::testPeriodPrecision_CORDEX(std::vector<std::string>& sd,
         std::string lTV;
         std::string lTBV(hdhC::double2String( (t - static_cast<int>(t))*24.) );
 
-        if( frequency == "3hr" || frequency == "6hr" )
+        if( frequency.substr(1,2) == "hr" )
         {
           isAlt=true;
           double t = pQA->qaTime.lastTimeValue;
@@ -2262,7 +2264,13 @@ QA_Time::testPeriodDatesFormat(std::vector<std::string>& sd,
   std::string frequency(pQA->qaExp.getFrequency());
   std::string str;
 
-  if( frequency == "3hr" )
+  if( frequency == "1hr" )
+  {
+      if( ! ( (sd[0].size() == 10 && sd[1].size() == 10)
+            || (sd[0].size() == 12 && sd[1].size() == 12) ) )
+        str += "YYYYMMDDhh[mm] for 1-hourly time step";
+  }
+  else if( frequency == "3hr" )
   {
       if( ! ( (sd[0].size() == 10 && sd[1].size() == 10)
             || (sd[0].size() == 12 && sd[1].size() == 12) ) )

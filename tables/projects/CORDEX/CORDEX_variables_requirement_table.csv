@@ -1,3 +1,28 @@
+,Table:,1hr
+# created by Tim Keber, kber@iau.uni-frankfurt.de
+output variable name,cell_methods
+tas,point
+pr,mean
+huss,point
+sfcWind,point
+clt,mean
+rsds,mean
+rlds,mean
+hfls,mean
+hfss,mean
+rsus,mean
+rlus,mean
+evspsbl,mean
+evspsblpot,mean
+mrros,point
+mrro,mean
+prc,mean
+uas,mean
+vas,mean
+ts,point
+prw,mean
+clwvi,mean
+clivi,point
 ,Table:,3hr
 ,3-hourly output (3hr),21 Feb 2014 Version 3.1
 output variable name,cell_methods
