@@ -462,7 +462,7 @@ class Log(object):
 
                 # a logfile is available
 
-                log_file = os.path.join(log_dir, 'tmp_' + log_fname + '.log')
+                log_file = os.path.join(log_dir, log_fname + '.log')
 
                 # decider whether a preamble has to be written
                 isOldFile = os.path.isfile(log_file)

@@ -433,7 +433,11 @@ class QaExec(object):
             back=''  # residuum of the back-side
 
             log_entry['conclusion']=''
-            log_entry['period']=[]
+
+            try:
+               log_entry['period']
+            except:
+               log_entry['period']=[]
 
             #p0 = check_output.find(key+self.beg)
             p0 = p_min

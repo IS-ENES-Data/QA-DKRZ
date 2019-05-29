@@ -69,28 +69,42 @@ def clear(qa_var_path, fBase, logfile):
         except OSError:
             pass
 
-    '''
-    # delete table entries
-    try:
-        entry_beg = subprocess.check_output('grep',
-                        '-n',
-                        '[[:space:]]*file:[[:space:]]*' + fBase,
-                        logfile)
-
-    except:
-        pass
-    else:
-        for i in range(len(entry_beg)):
-            line_num = entry_beg[i] - 1
-
-            try:
-                subprocess.call( 'sed', '-i', str(line_num) + ',/status:/ d',
-                                 logfile)
-            except:
-                pass
-    '''
+    clearLog(qa_var_path, fBase, logfile)
 
     return
+
+
+def clearLog(qa_var_path, fBase, logfile):
+   call='grep -n "[[:space:]]*file:[[:space:]]*' + fBase + '" ' + logfile
+   try:
+      check_output = subprocess.check_output(call, shell=True)
+   except:
+      return
+   else:
+      words=check_output.split()
+
+   nums=[]
+   for i in range( len(words[::2])):
+      nums.append( words[i][:-1] )
+
+   call='grep -n "[[:space:]]*data-set:[[:space:]]*'+fBase+'" '+ logfile
+   try:
+      check_output = subprocess.check_output(call, shell=True)
+   except:
+      return
+   else:
+      words=check_output.split()
+
+   for i in range( len(words[::2])):
+      nums.append( words[i][:-1] )
+
+   nums = sorted(nums, reverse=True)
+
+   for i in range( len(nums)):
+      num = nums[i] - 1
+      call='sed -i "/' + str(num) + '/,/status:/ d" ' + logfile
+
+   return
 
 
 def clearInq(qa_var_path, fBase, logfile):
@@ -116,21 +130,37 @@ def clearInq(qa_var_path, fBase, logfile):
 
         if f == 'only':
             isClear = True
-        elif f[0:4] == 'lock':
+        elif f == 'lock':
             # locked  files
             if len( glob.glob(os.path.join(qa_var_path, 'qa_lock_' + fBase +'*') ) ):
                 isClear = True
-        elif f[0:4] == 'note':
+        elif f == 'note':
             if len( glob.glob(os.path.join(qa_var_path, 'qa_note_' + fBase +'*') ) ):
-                isClear = True
-        elif f[0:4] == 'mark':
-            # only pass those that are locked; redo erroneous cases
-            if len( glob.glob(os.path.join(qa_var_path, fBase + '.clear') )):
                 isClear = True
         elif qa_util.rstrip(f, sep='=') == 'level':
             # clear specified level
             f=qa_util.lstrip(f, sep='=') + '-'
-        elif f.find('=') > -1 and qa_util.rstrip(f, '=') == 'tag':
+        elif qa_util.rstrip(f, '=') == 'tag':
+            call='sed -n "/' + fBase + '/,/status:/ p" ' + logfile
+            try:
+                check_output = subprocess.check_output(call, shell=True)
+            except:
+                pass
+            else:
+                requ_tag = qa_util.lstrip(f, '=')
+
+                words=check_output.split()
+                sz=len(words)
+                for i in range(sz-1):
+                    w1 = qa_util.lstrip(words[i], '=')
+                    l_w1=len(w1)
+                    l_tg=len(requ_tag)
+                    if words[i] == 'tag:' and w1 == requ_tag:
+                        isClear=True
+                        break
+
+
+            '''
             # e.g. 'L1-${tag}: where tag=CF_12 would match CF_12, CF_12x etc.
             f='[\w]*-*' + qa_util.lstrip(f, sep='=') + '.*: '
 
@@ -145,6 +175,7 @@ def clearInq(qa_var_path, fBase, logfile):
                 else:
                     isClear = True
                     break
+            '''
         else:
             # CLEAR=var=name
             pos = f.find('var=')
@@ -168,69 +199,23 @@ def clearInq(qa_var_path, fBase, logfile):
 
 
 def final():
+   # special for no project, but a single file: display log-file
+   if qaConf.getOpt("QA_RESULTS") == qaConf.getOpt("QA_RESULTS_DEFAULT"):
+      for logName in g_vars.log_fnames:
+         logName = os.path.join(qaConf.dOpts["QA_RESULTS"], 'check_logs', logName+'.log')
 
-    dest_log=''
-
-    # only the summary of previous runs
-    if not ( qaConf.isOpt('NO_SUMMARY') or qaConf.isOpt('SHOW') ):
-        # remove duplicates
-        for log_fname in g_vars.log_fnames:
-            tmp_log = os.path.join(g_vars.check_logs_path,
-                                'tmp_' + log_fname + '.log')
-            dest_log = os.path.join(g_vars.check_logs_path,
-                                    log_fname + '.log')
-
-            if not os.path.isfile(tmp_log):
-                continue  # nothing new
-
-            if os.path.isfile(dest_log):
-                if qaConf.isOpt('CLEAR_LOGFILE'):
-                    ix = g_vars.log_fnames.index(log_fname)
-                    fBase = g_vars.clear_fBase[ix]  # list
-
-                    clrdName='cleared_' + log_fname + '.log'
-                    clrdFile=os.path.join(g_vars.check_logs_path, clrdName)
-
-                    with open(clrdFile, 'w') as clrd_fd:
-                        while True:
-                            # read from dest_log
-                            blk = log.get_next_blk(dest_log,
-                                                skip_fBase=fBase,
-                                                skip_prmbl=False)
-
-                            for b in blk:
-                                clrd_fd.write(b)
-                            else:
-                                break  # eof
-
-                    if clrd_fd.errors == None:
-                        os.rename(clrdFile, dest_log)
-
-                # append recent results to a logfile
-                qa_util.cat(tmp_log, dest_log, append=True)
-                os.remove(tmp_log)
-
-            else:
-                # first time that a check was done for this log-file
-                os.rename(tmp_log, dest_log)
-
-    # special: if no project but a single file, then display log-file
-    if not qaConf.isOpt("PROJECT_DATA"):
-        fname = os.path.join(qaConf.dOpts["QA_RESULTS"], 'check_logs', t_vars.log_fname+'.log')
-
-        with open(fname, 'r') as f:
+         with open(logName, 'r') as f:
             print f.read()
 
-        shutil.rmtree(qaConf.dOpts["QA_RESULTS"])
+      shutil.rmtree(qaConf.dOpts["QA_RESULTS"])
 
-        return
+      return
 
-    if os.path.isfile(dest_log):
-        summary()
+   summary()
 
-    qaConf.cfg.write_file()
+   qaConf.cfg.write_file()
 
-    return
+   return
 
 
 def get_all_logfiles():
@@ -328,8 +313,10 @@ def get_next_variable(data_path, fBase, fNames):
         if status == 4:
             # a fixed variable?
             if len(qaNc):
-                # previously processed
-                return []
+               # previously processed
+               return []
+            elif len(fNames) == 1:
+               next_file_str = fNames[0]
 
         elif status == 3 or status == 5 or status == 6:
             g_vars.anyProgress = True
@@ -518,8 +505,6 @@ def run():
             t.daemon = True
             t.start()
 
-    isNoPath=True
-
     is_next_var=False
     if qaConf.isOpt('NEXT_VAR'):
         is_next_var=True
@@ -541,9 +526,6 @@ def run():
             data_path, fBase, fNames = getPaths.next()
 
         except StopIteration:
-            if isNoPath:
-                print "PROJECT_DATA: " + qaConf.getOpt("PROJECT_DATA") + " not found."
-
             queue.put( ('---EOQ---', '', t_vars), block=True)
             break
         else:
@@ -613,8 +595,7 @@ def summary():
 def testLock(t_vars, fBase):
     if qaConf.isOpt('CLEAR'):
         # note that the logfile is temporary, finished in final()
-        logfile = os.path.join(g_vars.check_logs_path,
-                                    'tmp_' + t_vars.log_fname + '.log')
+        logfile = os.path.join(g_vars.check_logs_path, t_vars.log_fname + '.log')
 
         if clearInq(t_vars.var_path, fBase, logfile):
             return True
@@ -677,4 +658,3 @@ if __name__ == '__main__':
 
     final()
 
-    # asdf

@@ -225,6 +225,7 @@ class QaConfig(object):
             args.SHOW_CALL = True
 
         if args.AUTO_UP     != None: _ldo['AUTO_UP']      = args.AUTO_UP
+        if args.CLEAR       != None: _ldo['CLEAR']        = args.CLEAR
         if args.CMD_UPDATE  != None: _ldo['CMD_UPDATE']   = args.CMD_UPDATE
         if args.CONFIG_FILE != None: _ldo['CONFIG_FILE']  = args.CONFIG_FILE
         if args.QA_TABLES   != None: _ldo['QA_TABLES']    = args.QA_TABLES
@@ -348,6 +349,9 @@ class QaConfig(object):
             nargs='?', const='enable', dest='AUTO_UP',
             help="Passed to install")
 
+        parser.add_argument('--clear', dest='CLEAR',
+            help="Clear previous results related to other options.")
+
         parser.add_argument('--config-file', dest='CONFIG_FILE',
             help="Contains paths and update frequencies.")
 
@@ -368,9 +372,6 @@ class QaConfig(object):
 
         parser.add_argument('--force', action="store_true", dest='FORCE',
             help="Force QA install update.")
-
-        parser.add_argument('--freeze', action="store_true", dest='FREEZE',
-            help="Freeze QA, externals and tables.")
 
         parser.add_argument('--install', nargs='*', dest='INSTALL',
             help="Comma-sep-list passed to the install script.")
@@ -422,9 +423,6 @@ class QaConfig(object):
             type=int, nargs='?', default=0, const=1, dest='SHOW_NEXT',
             help="Show the N next path/file for executaion [N=1].")
 
-        parser.add_argument('--unfreeze', action="store_true", dest='UNFREEZE',
-            help="Unfreeze QA.")
-
         parser.add_argument('--unship', dest='UNSHIP',
             action="store_true",
             help='''Initialisation after shipping at path.''')
@@ -473,10 +471,6 @@ class QaConfig(object):
                     print 'missing NetCDF file or directory'
                     sys.exit(1)
 
-                #if h:
-                #    h1,h2 = os.path.split(h)
-                #    self.dOpts["PROJECT_DATA"] = h1
-
                 x_t = t.split('_')
                 str0=''
                 if h:
@@ -507,6 +501,7 @@ class QaConfig(object):
                 self.dOpts['LOCK_VAR_LIST'].append(v[ix])
 
         return
+
 
     def getCFG_opts(self, qa_src):
         # read the config file; may also convert an old plain text file;
@@ -946,10 +941,9 @@ class QaConfig(object):
         _ldo['HARD_SLEEP_PERIOD']=10
         _ldo['MAIL']='mailx'
         _ldo['NUM_EXEC_THREADS']=1
-        #_ldo['PROJECT_DATA']=''
-        # _ldo['QA_TABLES']=os.path.join(self.home, 'tables')
         _ldo['QA_HOST']=socket.gethostname()
         _ldo['QA_RESULTS']=os.path.join("/tmp", "QA_Results")
+        _ldo['QA_RESULTS_DEFAULT']=_ldo['QA_RESULTS']
         _ldo['REATTEMPT_LIMIT']=5
         _ldo['SLEEP_PERIOD']=300
         _ldo['QA_EXEC_HOSTS']=_ldo['QA_HOST']

@@ -332,8 +332,8 @@ def run(log, g_vars, qaConf):
     if len( qaConf.getOpt('PROJECT') ) == 0:
         isAbort=True
         abortStr='PROJECT'
-    elif len( qaConf.getOpt('PROJECT_DATA') ) == 0:
-        if len( qaConf.dOpts['SELECT_PATH_LIST'] ) == 0:
+    elif not qaConf.isOpt('PROJECT_DATA'):
+        if not qaConf.isOpt('SELECT_PATH_LIST'):
             isAbort=True
             abortStr='PROJECT_DATA or explicit filename'
 

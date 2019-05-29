@@ -623,7 +623,7 @@ class LogSummary(object):
 
     def period_final(self):
         # find indices for the different frequencies,
-        # note that these are dependent on the project
+        # note that these depend on the project
 
         frqs=[]
         frqs_id=[] # this will be expanded to a 2D array

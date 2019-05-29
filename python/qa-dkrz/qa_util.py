@@ -873,6 +873,35 @@ def mk_list(items):
    return [items]
 
 
+def replace_clasped(s,ssep, s_repl):
+    # Split at a string (str_sep=True) or at the chars of
+    # of a separation string (by default). Replace embraced items
+    # by string s_repl
+
+    sep=[]
+    for x in ssep:
+        sep.extend(x)
+
+    if len(sep) != 2:
+        print 'qa_util.replace_clasped(): must be two-item separator'
+        sys.exit(1)
+
+    p0=0
+    t=''
+    while True:
+        p1=s.find(sep[0], p0)
+        if p1 > -1:
+            p2=s.find(sep[1],p1+1)
+            if p2 > -1:
+                t = t + s[p0:p1+1] + s_repl + s[p2]
+                p0 = p2+1
+        else:
+            t = t + s[p0:]
+            break
+
+    return t
+
+
 def resolve_relative_path(path):
     if path[0] == '/':
         return path
@@ -930,7 +959,7 @@ def rm_r(*args):
 
 def split(s,ssep, str_sep=False, remove_empty=True):
     # Split at a string (str_sep=True) or at the chars of
-    # of a separation string (be default).
+    # of a separation string (by default).
     # Empty items in the returned [] are removed by default.
 
     sep=[]
@@ -955,6 +984,36 @@ def split(s,ssep, str_sep=False, remove_empty=True):
                 del splt1[i]
 
     return splt1
+
+def split_clasped(s,ssep, remove_empty=True):
+    # Split at a string (str_sep=True) or at the chars of
+    # of a separation string (by default). Return the items
+    # embraced by two consecutive separatore, e.g. between <> ..
+    # Empty items in the returned [] are removed by default.
+
+    sep=[]
+    for x in ssep:
+        sep.extend(x)
+
+    if len(sep) != 2:
+        print 'qa_util.split_clasped(): must be two-item separator'
+        sys.exit(1)
+
+    splt=()
+
+    pos0=0
+    while True:
+        pos0=s.find(sep[0], pos0)
+        if pos0 > -1:
+            pos1=s.find(sep[1],pos0+1)
+            if pos1 > -1:
+                splt.append(s[pos0+1:pos1-1])
+            else:
+                break
+        else:
+            break
+
+    return splt
 
 
 def strip(s, sep=' '):
