@@ -4187,35 +4187,21 @@ rmBlock()
   local pattern=$2
 
   # get all lines with line numbers having ' file: pattern'
-  local nums nums_f nums_d num sz i
-  declare -a nums nums_f nums_d
+  local nums num sz i
+  declare -a nums
 
   local IFS=$'\n'
-
-  nums_f=($(grep -n "[[:space:]]*file:[[:space:]]*${pattern}" $1 | awk '{print $1}'))
-  nums_d=($(grep -n "[[:space:]]*data-set:[[:space:]]*${pattern}" $1 | awk '{print $1}'))
+  local pat1="[[:space:]]*file:[[:space:]]*${pattern}" 
+  local pat2="[[:space:]]*data-set:[[:space:]]*${pattern}"
+  nums=($(grep -n "${pat1}\|${pat2}" $1 | awk '{print $1}'))
 
   # extract the numbers
-  nums_f=(${nums_f[*]%%:*})
-  nums_d=(${nums_d[*]%%:*})
+  nums=(${nums[*]%%:*})
 
-  nums=( ${nums_f[*]} ${nums_d[*]} )
-  test ${#nums_f[*]} -eq 0 -a ${#nums_d[*]} -eq 0 && return
+  test ${#nums[*]} -eq 0 && return
 
-  local i j m
-  local sz=$(( ${#nums[*]} -1 ))
-  for(( i=0 ; i < sz ; ++i )) ; do
-    for(( j=i+1 ; j < ${#nums[*]} ; ++j )) ; do
-       if [ ${nums[j]} -lt ${nums[i]} ] ; then
-          m=${nums[j]}
-          nums[j]=${nums[i]}
-          nums[i]=$m
-       fi
-    done
-  done
-
-  for num in ${nums[*]} ; do
-    num=$(( num -1 ))
+  for(( i= ${#nums[*]}-1 ; i > -1 ; --i )) ; do
+    num=$(( ${nums[i]} -1 ))
 
     sed  -i "$num,/status:/ d" $file
   done
