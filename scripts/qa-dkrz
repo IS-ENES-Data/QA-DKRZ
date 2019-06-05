@@ -4187,11 +4187,11 @@ rmBlock()
   local pattern=$2
 
   # get all lines with line numbers having ' file: pattern'
-  local nums num sz i
+  local nums num sz
   declare -a nums
 
   local IFS=$'\n'
-  local pat1="[[:space:]]*file:[[:space:]]*${pattern}" 
+  local pat1="[[:space:]]*file:[[:space:]]*${pattern}"
   local pat2="[[:space:]]*data-set:[[:space:]]*${pattern}"
   nums=($(grep -n "${pat1}\|${pat2}" $1 | awk '{print $1}'))
 
@@ -4200,7 +4200,8 @@ rmBlock()
 
   test ${#nums[*]} -eq 0 && return
 
-  for(( i= ${#nums[*]}-1 ; i > -1 ; --i )) ; do
+  local i
+  for(( i=${#nums[*]}-1 ; i > -1 ; --i )) ; do
     num=$(( ${nums[i]} -1 ))
 
     sed  -i "$num,/status:/ d" $file
