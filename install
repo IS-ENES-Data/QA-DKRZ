@@ -723,6 +723,7 @@ do
 
         elif [ "${OPTNAME}" = FORCE ] ; then
           isForce=t
+          isUpdate=t
         elif [ "${OPTNAME}" = HELP ] ; then
           descript
           exit_fnct 41
