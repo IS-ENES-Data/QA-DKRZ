@@ -36,7 +36,7 @@ class LogSummary(object):
                        'L3':'Error',
                        'L4':'Error'}
 
-    def annotation_add(self, var_id, path_id, blk, i):
+    def annotation_add(self, var_id, path_id, blk, i, blk_pos):
         # annotation and associated indices of properties
         # fse contains ( var, StartTime, EndTime )
         # index i points to blk[i] == 'annotation:'
@@ -156,25 +156,18 @@ class LogSummary(object):
             # look for a group of
             # associated properties
             try:
-                jx = self.annot_path_id[ix].index(path_id)
-            except:
-                # new path for the current annotation
-                # jx = len( self.annot_path_id[ix] )
-                self.annot_path_id[ix].append(path_id)
-
-            try:
                 jx = self.annot_fName_id[ix].index(var_id)
             except:
                 # new variable for the current annotation
                 jx = len( self.annot_fName_id[ix] )
                 self.annot_fName_id[ix].append(var_id)
-                self.annot_fName_dt_id[ix].append([])
-
-            try:
-                self.annot_fName_dt_id[ix][jx].index(self.dt_id)
-            except:
-                # kx = len(self.annot_fName_dt_id[ix][jx])
-                self.annot_fName_dt_id[ix][jx].append(self.dt_id)
+                self.annot_path_id[ix].append(path_id)
+                self.annot_fName_dt_id[ix].append([self.dt_id])
+            else:
+               try:
+                  self.annot_fName_dt_id[ix][jx].index(self.dt_id)
+               except:
+                  self.annot_fName_dt_id[ix][jx].append(self.dt_id)
 
         j=i
 
@@ -610,6 +603,7 @@ class LogSummary(object):
             i=i+1
             if end[1] > self.atomicEnd[fp_ix] :
                 self.atomicEnd[fp_ix] = end[1]
+            '''
             else:
 
                 # suspecting a reset of an atomic variable
@@ -617,6 +611,7 @@ class LogSummary(object):
 
                 self.atomicBeg[fp_ix] = beg[1]
                 self.atomicEnd[fp_ix] = end[1]
+            '''
 
         return i
 
@@ -866,13 +861,23 @@ class LogSummary(object):
         if not os.path.isfile(f_log):
             return
 
+        blk_pos=71
+
         with open(f_log, 'r') as fd:
             while True:
                 # read the lines of the next check
+                try:
+                   blk_pos += len(blk)
+                except:
+                   pass
+
+                print 'blk_pos: ' + str(blk_pos)
+
                 blk = self.get_next_blk(fd=fd)
                 sz = len(blk) - 1
                 if sz == -1:
                     break
+
 
                 isMissPeriod=True  # fx or segmentation fault
 
@@ -930,7 +935,7 @@ class LogSummary(object):
                             isMissPeriod=False
 
                         # annotation and associated indices of properties
-                        line_num = self.annotation_add(file_id, path_id, blk, line_num)
+                        line_num = self.annotation_add(file_id, path_id, blk, line_num, blk_pos)
 
                     elif words[0] == 'status:':
                         if isMissPeriod and len(fse[2]):
