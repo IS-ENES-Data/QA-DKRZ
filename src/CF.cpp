@@ -8256,7 +8256,7 @@ CF::chap72(void)
       if( ! (cm_key[0] == "area:"
                || cm_key[0] == "volume:"
                    || cm_key[0] == "--MODEL"
-                      || cm_key[0] == "--OPT" )
+                      || cm_key[0] == "--OPT" ) )
       {
         // wrong key-word; '--xyz' for CMIP6
         if( notes->inq(bKey + "72b", var.name) )
