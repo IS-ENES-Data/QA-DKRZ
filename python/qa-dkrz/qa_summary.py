@@ -871,7 +871,7 @@ class LogSummary(object):
                 except:
                    pass
 
-                print 'blk_pos: ' + str(blk_pos)
+                #print 'blk_pos: ' + str(blk_pos)
 
                 blk = self.get_next_blk(fd=fd)
                 sz = len(blk) - 1
