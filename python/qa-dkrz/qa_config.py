@@ -303,7 +303,25 @@ class QaConfig(object):
                 s= 'SELECT ' + args.CL_S
                 self.lSelect.append(self.setSelLock(s.replace(' ','') ) )
         else:
-            self.lSelect.append(args.NC_FILE[0])
+            _ldo['EXPLICIT_FILES']=[]
+            for f in args.NC_FILE:
+               if f[0] != '/':
+                  f = os.path.join(os.getcwd(), args.NC_FILE[0])
+
+               _ldo['EXPLICIT_FILES'].append(f)
+
+
+               '''
+            if args.NC_FILE[0][0] != '/':
+               self.lSelect.append(os.path.join(os.getcwd(), args.NC_FILE[0]))
+               _ldo['QUERY_NC_FILE'] = 't'
+               _ldo['QUERY_NON_NC_FILE'] = 't'
+               _ldo['QUERY_EMPTY_DIR'] = 't'
+               _ldo['QUERY_EMPTY_FILE'] = 't'
+
+            else:
+               self.lSelect.append(args.NC_FILE[0])
+               '''
 
         return _ldo
 
@@ -471,6 +489,26 @@ class QaConfig(object):
                     print 'missing NetCDF file or directory'
                     sys.exit(1)
 
+                if h:
+                    self.dOpts['PROJECT_DATA'] = h
+                else:
+                    self.dOpts['PROJECT_DATA'] = os.getcwd()
+
+                x_t = t.split('_')
+                str0=''
+                if t:
+                    str0 += x_t[0] + '_'
+
+                self.lSelect[0]=str0
+                self.dOpts["NEXT"] = 1
+
+            '''
+            if len(self.lSelect):
+                h,t = os.path.split(self.lSelect[0])
+                if not (h or t):
+                    print 'missing NetCDF file or directory'
+                    sys.exit(1)
+
                 x_t = t.split('_')
                 str0=''
                 if h:
@@ -480,6 +518,7 @@ class QaConfig(object):
 
                 self.lSelect[0]=str0
                 self.dOpts["NEXT"] = 1
+            '''
 
         for sel in self.lSelect:
             (p,v)=self.getSelLock('S', sel)
@@ -500,7 +539,7 @@ class QaConfig(object):
                 self.dOpts['LOCK_PATH_LIST'].append(p[ix])
                 self.dOpts['LOCK_VAR_LIST'].append(v[ix])
 
-        return
+        return True
 
 
     def getCFG_opts(self, qa_src):
@@ -827,6 +866,13 @@ class QaConfig(object):
         self.mergeOptions()
 
         self.finalSelLoc()
+        '''
+        if not self.finalSelLoc():
+           # no selection possible because of lacking PROJECT_DATA
+           for i in range(len(self.lSelected)):
+              if self.lSelected[i][0] != '/':
+                 self.lSelected[i] = os.path.join(os.getcwd, self.lSelected[i])
+        '''
 
         # backward compatibility
         if "AUTO_UP" in self.dOpts or "AUTO_UPDATE" in self.dOpts:
@@ -865,28 +911,6 @@ class QaConfig(object):
 
         if self.isOpt("QA_EXAMPLE"):
             self.dOpt["INSTALL"] =  "up force CORDEX"
-
-        # the location of tables must be known before config files are analysed.
-        #self.copyDefaultTables()
-
-        # find valid projects
-        '''
-        self.definedProjects=[]
-        lst=[]
-        if not len(self.definedProjects):
-            p_prj = os.path.join(self.qa_src, 'tables', 'projects')
-            lst = os.listdir(p_prj)
-
-            for itm in lst:
-                if os.path.isdir(os.path.join(p_prj, itm)):
-                    self.definedProjects.append(itm)
-
-        # if any opt is a SHOW_...
-        for key in self.dOpts.keys():
-            if key[:4] == 'SHOW':
-                self.dOpts['SHOW'] = True
-                break
-        '''
 
         return
 
@@ -942,8 +966,7 @@ class QaConfig(object):
         _ldo['MAIL']='mailx'
         _ldo['NUM_EXEC_THREADS']=1
         _ldo['QA_HOST']=socket.gethostname()
-        _ldo['QA_RESULTS']=os.path.join("/tmp", "QA_Results")
-        _ldo['QA_RESULTS_DEFAULT']=_ldo['QA_RESULTS']
+        _ldo['QA_RESULTS']=os.path.join(os.getcwd(), "QA_RESULTS")
         _ldo['REATTEMPT_LIMIT']=5
         _ldo['SLEEP_PERIOD']=300
         _ldo['QA_EXEC_HOSTS']=_ldo['QA_HOST']

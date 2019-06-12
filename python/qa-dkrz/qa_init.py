@@ -360,11 +360,15 @@ def run(log, g_vars, qaConf):
 
     g_vars.ignore_temp_files = qaConf.isOpt('IGNORE_TEMP_FILES')
     g_vars.syncFilePrg = os.path.join(g_vars.qa_src, 'bin', 'syncFiles.x')
+    g_vars.validNcPrg = os.path.join(g_vars.qa_src, 'bin', 'testValidNC.x')
     g_vars.checkPrg = os.path.join(g_vars.qa_src, 'bin',
                                      'qA-' + qaConf.getOpt('PROJECT') + '.x')
 
     if not os.access(g_vars.syncFilePrg, os.X_OK):
         print g_vars.syncFilePrg + ' is not executable'
+        sys.exit(1)
+    if not os.access(g_vars.validNcPrg, os.X_OK):
+        print g_vars.validNcPrg + ' is not executable'
         sys.exit(1)
     if not os.access(g_vars.checkPrg, os.X_OK):
         print g_vars.checkPrg + ' is not executable'

@@ -200,7 +200,7 @@ def clearInq(qa_var_path, fBase, logfile):
 
 def final():
    # special for no project, but a single file: display log-file
-   if qaConf.getOpt("QA_RESULTS") == qaConf.getOpt("QA_RESULTS_DEFAULT"):
+   if not qaConf.isOpt("PROJECT_DATA"):
       for logName in g_vars.log_fnames:
          logName = os.path.join(qaConf.dOpts["QA_RESULTS"], 'check_logs', logName+'.log')
 
@@ -259,6 +259,10 @@ def get_all_logfiles():
 
 
 def get_next_variable(data_path, fBase, fNames):
+
+    # test for parameters QUERY_..., if set at all
+    if query_files(qaConf, g_vars.validNcPrg, data_path, fNames):
+       return []
 
     t_vars.sub_path = data_path[g_vars.prj_dp_len+1:]
     t_vars.var_path = os.path.join(g_vars.res_dir_path, 'data',
@@ -479,6 +483,47 @@ def prepareExample(qaConf):
     return qaConf
 
 
+def query_files(qaConf, validNcPrg, p, fs):
+    retVal=False
+
+    # QUERY_NON_NC_FILE
+    # QUERY_EMPTY_DIR
+    # QUERY_EMPTY_FILE
+    # QUERY_ONLY_NC
+    is_non_nc=False
+    is_empty_dir=False
+    is_empty_file=False
+
+    if len(fs) == 0:
+       retVal=True
+       if qaConf.isOpt('QUERY_EMPTY_DIR'):
+          pass
+    else:
+       for f in fs:
+         f = os.path.join(p, f)
+
+         if os.path.getsize(f) == 0:
+            if qaConf.isOpt('QUERY_EMPTY_FILE'):
+               retVal=True
+               is_empty_file=True
+         elif f[-3:] == '.nc' or f[-4:] == '.nc4':
+            pass
+         else:
+            validNcPrg += ' ' +  f
+
+            try:
+               subprocess.check_call(validNcPrg, shell=True)
+            except subprocess.CalledProcessError as e:
+               if qaConf.isOpt('QUERY_NON_NC_FILE'):
+                  is_non_nc=True
+
+               retVal = True
+
+
+
+    return retVal
+
+
 def run():
     if qaConf.isOpt("SHOW_EXP"):
         f_log = get_all_logfiles()
@@ -513,37 +558,47 @@ def run():
 
     while True:
 
-        if is_next_var:
-            if count_next_var == next_var:
-                break
-
-            count_next_var += 1
-
-        try:
-            # fBase: list of filename bases corresponding to variables;
-            #          usually a single one. F
-            # fNames: corresponding sub-temporal files
-            data_path, fBase, fNames = getPaths.next()
-
-        except StopIteration:
-            queue.put( ('---EOQ---', '', t_vars), block=True)
-            break
+        if qaConf.isOpt('EXPLICIT_FILES'):
+           if len(qaConf.dOpts['EXPLICIT_FILES']):
+               data_path, f = os.path.split(qaConf.dOpts['EXPLICIT_FILES'][0])
+               t_r = qa_util.f_time_range(f)
+               fBase = t_r[0]
+               fNames = [ f ]
+               del qaConf.dOpts['EXPLICIT_FILES'][0]
+           else:
+               queue.put( ('---EOQ---', '', t_vars), block=True)
+               break
         else:
-            isNoPath=False
+            if is_next_var:
+               if count_next_var == next_var:
+                  break
 
-            # return a list of files which have not processed, yet.
-            # Thus, the list could be empty
-            fL = get_next_variable(data_path, fBase, fNames)
-            #fL[0]=fL[0][:-2]
+               count_next_var += 1
 
-            if len(fL) == 0:
-                continue
+            try:
+               # fBase: list of filename bases corresponding to variables;
+               #        usually a single one. F
+               # fNames: corresponding sub-temporal files
+               data_path, fBase, fNames = getPaths.next()
 
-            t_vars.fBase = fBase
+            except StopIteration:
+               queue.put( ('---EOQ---', '', t_vars), block=True)
+               break
+            else:
+               isNoPath=False
 
-            #queue.put( (data_path, fL, t_vars), block=True)
-            queue.put( (data_path, fL, copy.deepcopy(t_vars)),
-                        block=True)
+        # return a list of files which have not been processed, yet.
+        # Thus, the list could be empty
+        fL = get_next_variable(data_path, fBase, fNames)
+
+        if len(fL) == 0:
+           continue
+
+        t_vars.fBase = fBase
+
+        #queue.put( (data_path, fL, t_vars), block=True)
+        queue.put( (data_path, fL, copy.deepcopy(t_vars)),
+                     block=True)
 
         if g_vars.thread_num < 2:
             # a single thread
@@ -594,7 +649,7 @@ def summary():
 
 def testLock(t_vars, fBase):
     if qaConf.isOpt('CLEAR'):
-        # note that the logfile is temporary, finished in final()
+        ## note that the logfile is temporary, finished in final()
         logfile = os.path.join(g_vars.check_logs_path, t_vars.log_fname + '.log')
 
         if clearInq(t_vars.var_path, fBase, logfile):
@@ -657,4 +712,3 @@ if __name__ == '__main__':
         run()
 
     final()
-

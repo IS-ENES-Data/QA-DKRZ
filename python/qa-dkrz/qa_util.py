@@ -24,8 +24,8 @@ class GetPaths(object):
     classdocs
     '''
     def __init__(self, qaConf):
-        dOpts = qaConf.dOpts
-        self.dOpts = dOpts
+        self.qaConf = qaConf
+        self.dOpts = qaConf.dOpts
 
         # list of lists containing sub-paths to selected data sets.
         # Paths are split into a leading base path component and a sub-path.
@@ -37,23 +37,20 @@ class GetPaths(object):
 
         prj_data_path = qaConf.getOpt('PROJECT_DATA')
 
-        self.is_only_ncfiles = False if 'QUERY_NON_NC_FILE' in dOpts else True
-        self.is_empty_dir    = False if 'QUERY_EMPTY_DIR'   in dOpts else True
-
         # SELECTed variables and paths as well as the LOCKed counterpart
         # may contain several RegExp expressions.
 
         # SELECT
-        self.selVar  = copy.deepcopy(dOpts['SELECT_VAR_LIST'])
-        self.selPath = copy.deepcopy(dOpts['SELECT_PATH_LIST'])
+        self.selVar  = copy.deepcopy(qaConf.dOpts['SELECT_VAR_LIST'])
+        self.selPath = copy.deepcopy(qaConf.dOpts['SELECT_PATH_LIST'])
 
         # maximum non-regExp path to data for each SELECTion;
         # starting point for walking
         self.getBasePaths(prj_data_path)
 
         # LOCK
-        self.lockVar  = dOpts['LOCK_VAR_LIST']
-        self.lockPath = dOpts['LOCK_PATH_LIST']
+        self.lockVar  = qaConf.dOpts['LOCK_VAR_LIST']
+        self.lockPath = qaConf.dOpts['LOCK_PATH_LIST']
 
         for i in range(len(self.lockPath)):
             self.lockPath[i] = os.path.join(prj_data_path, self.lockPath[i])
@@ -220,11 +217,6 @@ class GetPaths(object):
                     fNames[i].append(f)
                     break
             else:
-                if self.is_only_ncfiles:
-                    if not ( f[-3:] == '.nc' or f[-4:] == '.nc4' ):
-                        # todo: annotation --> log-file
-                        continue
-
                 # t_r contains ( fBase, StartTime, EndTime )
                 t_r = f_time_range(f)
 
@@ -286,6 +278,11 @@ class GetPaths(object):
         # walk recursively starting at the base path
         while True:
             root, ds, fs = self.my_walk.next()
+            if self.qaConf.isOpt('QA_RESULTS'):
+               h, t = os.path.split(self.qaConf.getOpt('QA_RESULTS'))
+               if t in ds:
+                  ds.remove(t) # don't visit s
+
             if len(fs) :
                 return root, ds, fs
 
