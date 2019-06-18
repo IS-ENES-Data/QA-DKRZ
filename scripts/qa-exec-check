@@ -14,7 +14,7 @@ analyseExec()
 {
   # no progress
   if [ ${status} -eq 63 ] ; then
-     finally
+     finally analyseExec
      exit 0
   fi
 
@@ -379,8 +379,8 @@ finally()
      # clear current results
      \rm -f *
      if [ ${isDeadLocked:-f} = t ] ; then
-       echo "killed after reaching the ZOMBIE_LIMIT=${ZOMBIE_LIMIT}s" \
-            > qa_lock_${name}.txt
+       echo "qa-dkrz.$1.finally(): deadlocked for ${ZOMBIE_LIMIT}s" \
+          > qa_lock_${name}.txt
      fi
   fi
 
@@ -569,7 +569,7 @@ init()
     sendEMail
 
     isSignalTerm=t  # emergency stop
-    finally
+    finally init_1
     return 0
   fi
 
@@ -591,7 +591,7 @@ init()
     log --keep
     sendEMail
 
-    finally
+    finally init_2
     return 0
   fi
 
@@ -631,7 +631,7 @@ init()
     sendEMail
 
     isSignalTerm=t  # emergency stop
-    finally
+    finally init_3
     return 0
   fi
 
@@ -643,7 +643,7 @@ init()
     sendEMail
 
     isSignalTerm=t  # emergency stop
-    finally
+    finally init_4
     return 0
   fi
 
@@ -1674,7 +1674,7 @@ signalParent()
 terminate()
 {
   isTERM=t
-  finally
+  finally $1.terminate
   exit
 }
 
@@ -1999,7 +1999,7 @@ tryCom()
 
     sendEMail
 
-    finally
+    finally tryCom
   done
 }
 
@@ -2066,7 +2066,7 @@ wait_fnct()
         sendEMail
 
         isDeadLocked=t
-        terminate # exit
+        terminate wait_fnct # exit
       fi
     else
       break
@@ -2115,7 +2115,7 @@ runQA
 
 # clear working space and exit
 #trace \
-finally
+finally main
 
 test ${FLOW_TRACE:-f} = t && tracePrint
 
