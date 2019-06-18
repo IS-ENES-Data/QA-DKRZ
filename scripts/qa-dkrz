@@ -984,18 +984,22 @@ clear()
          isClear=t
        fi
     elif [ ${f%=*} = tag ] ; then
-       local i words
+       local i words num nums
+       declare -a words nums
 
-       declare -a words
-       words=( $(sed -n "/${fBase[ix]}/,/status:/ p" $logF ) )
+       nums=( $(getBlockNums $logF ${fBase[ix]}) )
 
-       for(( i=0 ; i < ${#words[*]} ; ++i )) ; do
-         if [ ${words[i]} = 'tag:' ] ; then
-            if [ ${words[i+1]} = "${f#*=}" ] ; then
-              isClear=t
-              break
+       for num in ${nums[*]} ; do
+          words=( $(sed -n "${num},/status:/ p" $logF ) )
+
+          for(( i=0 ; i < ${#words[*]} ; ++i )) ; do
+            if [ ${words[i]} = 'tag:' ] ; then
+               if [ ${words[i+1]} = "${f#*=}" ] ; then
+                 isClear=t
+                 break 2
+               fi
             fi
-         fi
+          done
        done
     elif [ ${f%=*} = regex ] ; then
        # ensure that pattern is unique
@@ -1124,7 +1128,7 @@ QA result path: ${target}\nRemoved QA results by following links."
     fi
 
     # also delete log-table entries
-    rmBlock $logF ${fBase[ix]}
+    rmBlocks $logF ${fBase[ix]}
 
     # and also delete consistency table entries
 #    rmConsistTableEntry $LOG_FNAME_DIR/$CURR_LOG_FNAME.log ${fBase[ix]}
@@ -2019,7 +2023,7 @@ getNextVariable()
       y_impact=L2
       y_caption='no permission to read netCDF file'
       y_tag=M4
-      initLog ${nV_fls[l]}
+      initLog ${nV_fls[f]}
 
       nextFile=  # ignore, try next
       return 0
@@ -4177,7 +4181,7 @@ operatePipes()
   return $retVal
 }
 
-rmBlock()
+getBlockNums()
 {
   test $# -lt 2 && return
 
@@ -4197,6 +4201,24 @@ rmBlock()
 
   # extract the numbers
   nums=(${nums[*]%%:*})
+
+  echo ${nums[*]}
+  return
+}
+
+rmBlocks()
+{
+  test $# -lt 2 && return
+
+  test ! -f $1 && return  # no log-file at all, yet
+
+  local file=$1
+  local pattern=$2
+
+  local nums
+  declare -a nums
+
+  nums=( $(getBlockNums $file $pattern) )
 
   test ${#nums[*]} -eq 0 && return
 
