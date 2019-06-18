@@ -713,7 +713,7 @@ def get_project_table_name(g_vars, qaConf, fB='', sp='', isInit=False):
         if qaConf.isOpt('PROJECT_TABLE_PREFIX'):
             g_vars.pt_prefix = qaConf.getOpt('PROJECT_TABLE_PREFIX') + '_'
         else:
-            g_vars.pt_prefix = 'ct_'
+            g_vars.pt_prefix = 'pt_'
 
         g_vars.pt_names = []
 
