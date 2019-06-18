@@ -963,10 +963,10 @@ clear()
        isClear=t
     elif [ "${f:0:3}" = res ] ; then
        isResume=t
-       isClear=t
+       #isClear=t
     elif [ "$f" = only ] ; then
        isCLEAR_ONLY=t
-       isClear=t
+       #isClear=t
     elif [ "${f:0:4}" = lock ] ; then
        # locked  files
        if ls ${QA_RESULTS}/data/${subPath}/qa_lock_${fBase[ix]}* &> /dev/null ; then
@@ -990,7 +990,9 @@ clear()
        words=( $(sed -n "/${fBase[ix]}/,/status:/ p" $logF ) )
 
        for(( i=0 ; i < ${#words[*]} ; ++i )) ; do
-         if [ ${words[i]} = 'tag:' ] ; then
+         if [ ${words[i]} = 'file:' ] ; then
+            isResume=t
+         elif [ ${words[i]} = 'tag:' ] ; then
             if [ ${words[i+1]} = "${f#*=}" ] ; then
               isClear=t
               break

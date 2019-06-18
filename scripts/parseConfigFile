@@ -349,12 +349,38 @@ updateConfFile()
    return $status
 }
 
+pC_voidX()
+{
+  # toggle between set -x and set +x in a way that
+  # restores the original setting after calling twice
+
+  if [ ${isSetX:-t} = t ] ; then
+    test "$(set -o |grep xtrace | awk '{print $2}')" = off && return
+
+    # first call
+    isSetX=on
+  fi
+
+  # restore previous setting
+  if [ ${isSetX} = off ] ; then
+    set -x
+    isSetX=on
+  else
+    set +x
+    isSetX=off
+  fi
+
+  return
+}
+
 # main
 
 declare -a pC_Args
 pC_Args=()
 pC_freq=
 pC_read_only=f
+
+pC_voidX
 
 for arg in $* ; do
   if [ "${arg}" = '--debug' ] ; then
@@ -375,7 +401,6 @@ for arg in $* ; do
   fi
 done
 
-test ! ${pC_debug} && set +x
 test ${CONFIG_READ_ONLY} && pC_read_only=t
 
 if [ "${CONFIG_FILE}" ] ; then
@@ -384,7 +409,7 @@ if [ "${CONFIG_FILE}" ] ; then
     touch ${CONFIG_FILE}
   fi
 else
-  test ${DEBUG} && set -x
+  pC_voidX
   return 1 # no config file
 fi
 
@@ -396,13 +421,13 @@ fi
 
 if [ ${pC_isShip:-f} = t ] ; then
   pC_ship
-  test ${pC_debug} && set -x
+  pC_voidX
   return 0
 fi
 
 
 if [ ${#pC_Args[*]} -eq 0 ] ; then
-  test ${pC_debug} && set -x
+  pC_voidX
   return 0
 fi
 
@@ -410,6 +435,6 @@ pC_retVal=$?
 updateConfFile ${pC_Args[*]}
 pC_retVal=$?
 
-test ${DEBUG} && set -x
+pC_voidX
 
 return $pC_retVal
