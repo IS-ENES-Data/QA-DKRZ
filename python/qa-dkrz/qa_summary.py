@@ -634,18 +634,30 @@ class LogSummary(object):
             if sz > sz_max:
                 sz_max = sz
 
-            word = name.rsplit('_', 2)
+            word = name.split('_')
+            target_name='table_id'
+
             if len(word) > 2:
-                for j in range(len(frqs)):
-                    if word[2] == frqs[j]:
-                        frqs_id[j].append(i)
-                        break
-                else:
-                    # append new lists
-                    frqs.append(word[2])
-                    frqs_id.append([i])
-                    frqs_beg.append(self.atomicBeg[i])
-                    frqs_end.append(self.atomicEnd[i])
+               if self.project == 'CORDEX' or self.project == 'cordex':
+                  target_val = word[-1]  # frequency
+                  target_name='frequency'
+               elif self.project == 'CMIP5' or self.project == 'cmip5':
+                  target_val = word[1]  # table_id
+               elif self.project == 'CMIP6' or self.project == 'cmip6':
+                  target_val = word[1]  # table_id
+               elif self.project == 'HAPPI' or self.project == 'happi':
+                  target_val = word[1]  # table_id
+
+               for j in range(len(frqs)):
+                  if target_val == frqs[j]:
+                     frqs_id[j].append(i)
+                     break
+               else:
+                  # append new lists
+                  frqs.append(target_val)
+                  frqs_id.append([i])
+                  frqs_beg.append(self.atomicBeg[i])
+                  frqs_end.append(self.atomicEnd[i])
 
         # find the most extended begin and end, respectively, for each frequency
         for j in range(len(frqs)):
@@ -664,7 +676,7 @@ class LogSummary(object):
             fd.write("--- # Time intervals of atomic variables.\n")
 
             for j in range(len(frqs)):
-                line =  '\n- frequency: ' + frqs[j] + '\n'
+                line =  '\n- ' + target_name + ': ' + frqs[j] + '\n'
                 line += '  number_of_variables: ' + repr(len(frqs_id[j]))
                 fd.write(line + '\n')
 
@@ -702,6 +714,7 @@ class LogSummary(object):
         mark_left  = '--> '
         mark_right = ' <--'
         sz_max += 1
+        prev_line=''
 
         self.f_range  = os.path.join(self.f_period, self.log_name + '.range')
 
@@ -709,9 +722,12 @@ class LogSummary(object):
             fd.write("# Time intervals of atomic variables.\n")
 
             for j in range(len(frqs)):
-                line =  '\nFrequency: ' + frqs[j] + ','
-                line += ' number of variables: ' + repr(len(frqs_id[j]))
-                fd.write(line + '\n')
+                line =  '\n' + target_name + ': ' + frqs[j]
+                line += ', number of variables: ' + repr(len(frqs_id[j]))
+
+                if line != prev_line:
+                  fd.write(line + '\n')
+                  prev_line=line
 
                 for k in range(len(frqs_id[j])):
                     ix = frqs_id[j][k]
@@ -861,17 +877,13 @@ class LogSummary(object):
         if not os.path.isfile(f_log):
             return
 
-        blk_pos=71
+        blk_pos=-1
 
         with open(f_log, 'r') as fd:
             while True:
                 # read the lines of the next check
-                try:
-                   blk_pos += len(blk)
-                except:
-                   pass
-
-                #print 'blk_pos: ' + str(blk_pos)
+                if blk_pos == -1:
+                   blk_pos=71
 
                 blk = self.get_next_blk(fd=fd)
                 sz = len(blk) - 1
