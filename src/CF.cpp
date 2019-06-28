@@ -9488,7 +9488,7 @@ CF::chap734a(std::string& name)
    // rule: name must not be the name of a dimension or a scalar variable
    // collection of correct names; these have been sorted out before.
 
-  if( std_name_table.is() )  // cf-standard-name-table.xml
+  if( ! std_name_table.is() )  // cf-standard-name-table.xml
      return false;
 
   Variable var;
