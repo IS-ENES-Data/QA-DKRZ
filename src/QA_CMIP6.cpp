@@ -1816,32 +1816,37 @@ DRS_CV::getPathBegIndex(
   for( size_t i=0 ; i < x_e.size() ; ++i)
       val.push_back(gM[ x_e[i] ]) ;
 
-  for( size_t i=0 ; i < drs.size() ; ++i)
+
+  // I) look for the right-most CMIP6 in the path
+  std::string low("cmip6");
+  std::string up("CMIP6");
+  for( ix=drs.size()-1 ; ix > -1 ; --ix)
   {
-    std::string s(drs[i]);
-    std::string sU = hdhC::Upper()(s);
+    std::string s(drs[ix]);
 
-    bool is=false;
+    if( s == low )
+       break;
+    else if( s == up )
+       break;
+  }
 
-    if( hdhC::isAmong(s, val) )
-       is=true ;
-    else if( hdhC::isAmong(sU, val) )
-       is=true ;
+  // II) CMIP6 wasn't found; look for the right-most trailing 'MIP' in the path
+  up  = "MIP";
 
-    if(is)
+  for( ix=drs.size()-1 ; ix > -1 ; --ix)
+  {
+    std::string s(drs[ix]);
+    int sz=s.size();
+
+    if( sz > 3 )
     {
-        ix = static_cast<int>(i);
-        // the match could be a leading false one, requested is the last one, so
-        // search another one.
-        for( size_t j=i+1 ; j < drs.size() ; ++j)
-        {
-            std::string tU = hdhC::Upper()(drs[j]);
+       s = s.substr(sz-3);
 
-            if( tU == sU )
-                ix = static_cast<int>(j);
-        }
-
-        break;
+       if( s == up )
+       {
+          --ix ;
+          break;
+       }
     }
   }
 
