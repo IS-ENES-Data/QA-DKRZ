@@ -4514,7 +4514,7 @@ QA_Exp::createVarMetaData(void)
   // Variable::VariableMeta(Base)::isDATA == true. The index
   // of identified targets is stored in the InFile::dataVarIndex vector.
 
-  //there should be only present a single data variable
+  // only a single data variable should be present
   checkDataVarNum();
 
   for( size_t i=0 ; i< pQA->pIn->dataVarIndex.size() ; ++i )
@@ -4771,6 +4771,9 @@ QA_Exp::init(std::vector<std::string>& optStr)
      fVarname = getVarnameFromFilename(pQA->pIn->file.filename);
      getFrequency();
    }
+
+   // !!! disable CV checks by *this
+   pQA->isCheckCV=false;
 
    if( pQA->isCheckCV || pQA->isCheckData )
    {

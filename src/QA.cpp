@@ -25,8 +25,7 @@ QA::activate_modules(std::string &vName)
 
    if(isRequiredVariable)
      pIn->pullMetaData('V', vName);
-
-   if(isRequiredTime && !isRequiredVariable)
+   else if(isRequiredTime)
      pIn->pullMetaData('T');
 
    if(isRequiredGlobal)
