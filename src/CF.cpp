@@ -8804,7 +8804,7 @@ CF::chap73_cellMethods_Comment(std::string &par, Variable& var)
         {
            std::string capt(hdhC::tf_att(var.name, n_cell_methods, hdhC::colon) );
            capt += "Key-word" + hdhC::tf_val("comment:", hdhC::blank) ;
-           capt += "should be omitted because of absent standardised information" ;
+           capt += "should be omitted when there is no standardised information" ;
 
            std::string text("Found " + par);
 
