@@ -7977,8 +7977,10 @@ CF::chap71(void)
   {
     // find coordinate variables with a bound or climatology declaration.
     if( isBounds(pIn->variable[i]) )
+    {
        ix.push_back( std::pair<int, int>
                      (i, pIn->getVarIndex(pIn->variable[i].boundsOf) ) );
+    }
   }
 
   // analyse matching pairs
@@ -8177,33 +8179,58 @@ CF::chap71(void)
     }
   }
 
-    const std::vector<std::string> &s = {n_FillValue, n_missing_value} ;
+  const std::vector<std::string> &s = {n_FillValue, n_missing_value} ;
 
-    for( size_t i=0 ; i < ix.size() ; ++i )
+  for( size_t i=0 ; i < ix.size() ; ++i )
+  {
+    Variable& var_is  = pIn->variable[ix[i].first];
+    Variable& var_has  = pIn->variable[ix[i].second];
+
+    size_t sz_is = var_is.dimName.size() ;
+    int last = var_is.dimSize[sz_is-1];
+
+    if( sz_is )
     {
-      Variable& var_is  = pIn->variable[ix[i].first];
-
-      for( size_t i=0 ; i < 2 ; ++i )
-      {
-        if( var_is.isValidAtt(s[i]) )
-        {
-          if( notes->inq(bKey + "251e", var_is.name) )
+       if( last < 2 )
+       {
+          if( notes->inq(bKey + "71j", var_is.name) )
           {
-            std::string capt("Coordinate variable");
-            capt += hdhC::tf_val(var_is.name, hdhC::blank) ;
-            capt += "should not have " ;
-            capt += hdhC::tf_att(s[i]) ;
+             std::string capt("Bounds");
+             capt += hdhC::tf_val(var_is.name, hdhC::blank) ;
+             capt += "must have more than a single vertice, found " ;
+             capt += hdhC::tf_att(hdhC::double2String(last)) ;
 
-            std::string text("Appendix A: Not allowed for coordinate data " );
-            text += "except in the case of auxiliary coordinate variables in ";
-            text += "discrete sampling geometries.";
-
-            (void) notes->operate(capt, text) ;
-            notes->setCheckStatus( n_CF, fail );
+             (void) notes->operate(capt) ;
+             notes->setCheckStatus( n_CF, fail );
           }
-        }
-      }
+       }
     }
+
+    // version dependent rule
+    bool is=true;
+    if( cFVal > 16 && ! var_has.isCoordinate() )
+       is=false;
+
+    if( is )
+    {
+       for( size_t i=0 ; i < 2 ; ++i )
+       {
+         if( var_is.isValidAtt(s[i]) && last == 2 )
+         {
+           if( notes->inq(bKey + "71k", var_is.name) )
+           {
+             std::string capt("2-D bounds");
+             capt += hdhC::tf_val(var_is.name, hdhC::blank) ;
+             capt += "should not have" ;
+             capt += hdhC::tf_att(s[i]) ;
+
+             (void) notes->operate(capt) ;
+             notes->setCheckStatus( n_CF, fail );
+           }
+         }
+       }
+    }
+  }
 
   return;
 }

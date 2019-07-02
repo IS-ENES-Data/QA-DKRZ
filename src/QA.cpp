@@ -609,13 +609,16 @@ QA::init(void)
 void
 QA::initCheckStatus(void)
 {
-   if(isCheckCF)
-     cF->setCheckStatus("PASS");
-   else
-     cF->setCheckStatus(n_disabled);
-
+   cF->setCheckStatus(n_disabled);
    notes->setCheckStatus("DRS(F)", n_disabled);
    notes->setCheckStatus("DRS(P)", n_disabled);
+   notes->setCheckStatus( "CV", n_disabled);
+   notes->setCheckStatus(n_time, n_disabled);
+   notes->setCheckStatus(n_data, n_disabled);
+   notes->setCheckStatus("CNSTY", n_disabled);
+
+   if(isCheckCF)
+     cF->setCheckStatus("PASS");
 
    if(isCheckDRS_F)
      notes->setCheckStatus("DRS(F)", "PASS");
@@ -625,18 +628,12 @@ QA::initCheckStatus(void)
 
    if(isCheckCV)
      notes->setCheckStatus("CV", "PASS");
-   else
-     notes->setCheckStatus( "CV", n_disabled);
 
    if(isCheckTimeValues)
      notes->setCheckStatus(n_time, "PASS");
-   else
-     notes->setCheckStatus(n_time, n_disabled);
 
    if(isCheckData)
      notes->setCheckStatus(n_data, "PASS");
-   else
-     notes->setCheckStatus(n_data, n_disabled);
 
    return;
 }
