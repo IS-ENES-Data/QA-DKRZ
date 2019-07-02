@@ -1953,14 +1953,6 @@ QA_Data::test(Variable *var, hdhC::FieldData &fA)
 
     testConst(fA) ;
 
-    if( var->units == "K" )
-    {
-       testNegativeVal(fA) ;
-
-       // if( var->name == "asdfrewq" )
-       testAnyFillValue(fA) ;
-    }
-
     if( enableOutlierTest )
     {
       if( ! fA.isValid )
