@@ -147,7 +147,7 @@ DRS_CV::checkFilenameEncoding(Split& x_filename, struct DRS_CV_Table& drs_cv_tab
           gM[x_e[x]] = n_ast ;
       }
       else if( x_e[x] == "MIP table" )
-        gM[x_e[x]] = pQA->qaExp.getMIP_tableName() ;
+        gM[x_e[x]] = pQA->qaExp.getTableID() ;
       else
         gM[x_e[x]] = globalVar.getAttValue(cvMap[x_e[x]]) ;
     }
@@ -517,7 +517,7 @@ DRS_CV::checkMIPT_tableName(Split& x_filename)
 
     // try the filename's MIP table name
     if( QA::tableID.size() == 0 )
-      QA::tableID = pQA->qaExp.getMIP_tableName(x_filename[1]) ;
+      QA::tableID = pQA->qaExp.getTableID(x_filename[1]) ;
   }
 
   return ;
@@ -682,7 +682,7 @@ DRS_CV::checkPath(std::string& path, struct DRS_CV_Table& drs_cv_table)
           gM[x_e[x]] = getEnsembleMember() ;
 
         else if( x_e[x] == "MIP table" )
-          gM[x_e[x]] = pQA->qaExp.getMIP_tableName() ;
+          gM[x_e[x]] = pQA->qaExp.getTableID() ;
 
         else if( x_e[x] == "gridspec" )
           gM[x_e[x]] = "gridspec" ;
@@ -4011,7 +4011,7 @@ QA_Exp::getFrequency(void)
 }
 
 std::string
-QA_Exp::getMIP_tableName(std::string tName)
+QA_Exp::getTableID(std::string tName)
 {
   if( notMIP_table_avail || QA::tableID.size() )
     return QA::tableID;
@@ -4411,7 +4411,7 @@ QA_Exp::run(void)
 {
   if( inqTables() )
   {
-    QA::tableID = getMIP_tableName() ;
+    QA::tableID = getTableID() ;
 
     if( pQA->drs_cv_table.table_DRS_CV.is() )
     {

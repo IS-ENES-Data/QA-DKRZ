@@ -286,7 +286,7 @@ class QA_Exp
   void   initResumeSession(std::vector<std::string>& prevTargets);
 
   //! Check existence of tables
-  bool   inqTables(void);
+  bool   getVarReqTables(void);
 
   //! Read the headlines for dimensions and variable.
   /*! Read from the standard table; used to identify columns.*/

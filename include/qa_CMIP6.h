@@ -557,13 +557,9 @@ public:
   std::string
          getFrequency(void);
 
-  //! Get the MIP table name from the global attributes
-  std::string
-         getTableSheet(void);
-
   //! get and check MIP table name; s would indicate a name to be tried
   std::string
-         getMIP_tableName(std::string s="");
+         getTableID(std::string s="");
 
   std::string
          getTableEntryID(std::string vN="");

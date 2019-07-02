@@ -3747,7 +3747,7 @@ QA_Exp::initResumeSession(std::vector<std::string>& prevTargets)
 }
 
 bool
-QA_Exp::inqTables(void)
+QA_Exp::getVarReqTables(void)
 {
   bool ret=false;
   std::vector<std::string*> pPath;
@@ -4412,7 +4412,7 @@ QA_Exp::reqAttCheckVariable(Variable &var)
 void
 QA_Exp::run(void)
 {
-   bool isNoTable = inqTables() ;
+   bool isNoTable = getVarReqTables() ;
 
    if( pQA->drs_cv_table.table_DRS_CV.is() )
    {

@@ -63,7 +63,16 @@ Consistency::check(void)
   {
      Variable& var = pIn->variable[pIn->dataVarIndex[i]];
 
-     std::string entryID( pQA->qaExp.getTableEntryID(var.name) );
+     std::string str(pQA->qaExp.getTableID() );
+     if( str.size() == 0 )
+     {
+        str = pQA->qaExp.getFrequency() ;
+        if( str.size() == 0 )
+           str = "N/A" ;
+     }
+
+     std::string entryID( var.name + ",");
+     entryID += str + "," ;
 
      if( check(var, entryID) )
      {
@@ -510,7 +519,7 @@ Consistency::testAttributes( std::string& varName,
       if(  notes->inq( key, varName ) )
       {
          (void) notes->operate(capt) ;
-         notes->setCheckStatus("Consistency","FAIL" );
+         notes->setCheckStatus("CNSTY","FAIL" );
       }
     }
 
@@ -547,7 +556,7 @@ Consistency::testAttributes( std::string& varName,
           capt += hdhC::tf_val(vs_t_aVal[t_ix]) ;
 
           (void) notes->operate(capt) ;
-          notes->setCheckStatus("Consistency","FAIL" );
+          notes->setCheckStatus("CNSTY","FAIL" );
         }
     }
   }
@@ -577,7 +586,7 @@ Consistency::testAttributes( std::string& varName,
       {
 
         (void) notes->operate(capt) ;
-        notes->setCheckStatus("Consistency","FAIL" );
+        notes->setCheckStatus("CNSTY","FAIL" );
       }
     }
   }
@@ -630,7 +639,7 @@ Consistency::testAux(std::string mode,
         if( notes->inq( key, varName ) )
         {
           (void) notes->operate(capt) ;
-          notes->setCheckStatus("Consistency","FAIL" );
+          notes->setCheckStatus("CNSTY","FAIL" );
         }
       }
       else if( mode == "new" )  // file introduces a new attribute
@@ -653,7 +662,7 @@ Consistency::testAux(std::string mode,
         if( notes->inq( key, varName) )
         {
           (void) notes->operate(capt) ;
-          notes->setCheckStatus("Consistency","FAIL" );
+          notes->setCheckStatus("CNSTY","FAIL" );
         }
       }
     }

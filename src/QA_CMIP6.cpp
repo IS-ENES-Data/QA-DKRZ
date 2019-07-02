@@ -1393,7 +1393,7 @@ DRS_CV::checkMIPT_tableName(Split& x_filename)
 
     // try the filename's MIP table name
     if( QA::tableID.size() == 0 )
-      QA::tableID = pQA->qaExp.getMIP_tableName(x_filename[1]) ;
+      QA::tableID = pQA->qaExp.getTableID(x_filename[1]) ;
   }
 
   return ;
@@ -4655,7 +4655,7 @@ QA_Exp::getFrequency(void)
 }
 
 std::string
-QA_Exp::getMIP_tableName(std::string tName)
+QA_Exp::getTableID(std::string tName)
 {
   if( notMIP_table_avail || QA::tableID.size() )
     return QA::tableID;
@@ -5034,7 +5034,7 @@ QA_Exp::pushBackVarMeDa(Variable *var)
 void
 QA_Exp::run(void)
 {
-  QA::tableID = getMIP_tableName() ;
+  QA::tableID = getTableID() ;
 
   if( pQA->drs_cv_table.table_DRS_CV.is() )
   {
