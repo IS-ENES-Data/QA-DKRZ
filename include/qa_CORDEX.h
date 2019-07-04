@@ -271,6 +271,10 @@ class QA_Exp
   //! Get the Standard table name from the global attributes
   void   getSubTable(void);
 
+  // dummy required for QA_cnsty.cpp
+  std::string
+         getTableID(std::string s=""){ return s; }
+
   std::string
          getTableEntryID(std::string vN="");
 
