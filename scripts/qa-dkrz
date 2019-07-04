@@ -954,6 +954,7 @@ clear()
 
   # arbitrary order of arguments
   for f in ${CLEAR//,/ } ; do
+    test ${isClear} = 't' && break
     isClear=f
 
     if [ "$f" = all ] ; then
