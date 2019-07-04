@@ -46,7 +46,6 @@ def clear(qa_var_path, fBase, logfile):
             g_vars.clear_fBase = []
 
         # mark for clearance of logfiles if enabled,
-        # processing eventually in final().
         # note that index() finds always a valid one.
         ix = g_vars.log_fnames.index(t_vars.log_fname)
         if ix == len( g_vars.clear_fBase):
@@ -111,7 +110,7 @@ def clearInq(qa_var_path, fBase, logfile):
 #    isFollowLink = False
     v_clear = qaConf.getOpt('CLEAR')
 
-    if type(v_clear) == BooleanType:
+    if v_clear == 't':
         return clear(qa_var_path, fBase, logfile)
 
     isClear=False

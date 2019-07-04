@@ -225,7 +225,11 @@ class QaConfig(object):
             args.SHOW_CALL = True
 
         if args.AUTO_UP     != None: _ldo['AUTO_UP']      = args.AUTO_UP
-        if args.CLEAR       != None: _ldo['CLEAR']        = args.CLEAR
+        if len(args.CLEAR) == 0:
+           _ldo['CLEAR'] = 't'
+        else:
+           _ldo['CLEAR'] = args.CLEAR
+
         if args.CMD_UPDATE  != None: _ldo['CMD_UPDATE']   = args.CMD_UPDATE
         if args.CONFIG_FILE != None: _ldo['CONFIG_FILE']  = args.CONFIG_FILE
         if args.QA_TABLES   != None: _ldo['QA_TABLES']    = args.QA_TABLES
@@ -367,7 +371,7 @@ class QaConfig(object):
             nargs='?', const='enable', dest='AUTO_UP',
             help="Passed to install")
 
-        parser.add_argument('--clear', dest='CLEAR',
+        parser.add_argument('--clear', , nargs='*', dest='CLEAR',
             help="Clear previous results related to other options.")
 
         parser.add_argument('--config-file', dest='CONFIG_FILE',
@@ -878,15 +882,6 @@ class QaConfig(object):
         if "AUTO_UP" in self.dOpts or "AUTO_UPDATE" in self.dOpts:
             self.dOpts["CMD_UPDATE"] = "auto"
 
-        '''
-        if not "DEFAULT_PROJECT" in self.dOpts :
-            self.dOpts['DEFAULT_PROJECT'] = 'CORDEX'
-            if not 'INSTALL' in self.dOpts:
-                self.dOpts['INSTALL'] = 'set-default-project=CORDEX'
-            else:
-                self.dOpts['INSTALL'] += ' set-default-project=CORDEX'
-        '''
-
         # modify definitions if P_AS is set: P_AS --> P and P --> P_DRVD
         if 'PROJECT_AS' in self.dOpts:
             if 'PROJECT' in self.dOpts:
@@ -907,10 +902,10 @@ class QaConfig(object):
 
         if not self.isOpt("QA_TABLES"):
             if not self.isOpt("INSTALL"):
-                self.addOpt("INSTALL", "up force")
+                self.addOpt("INSTALL", "--up --force")
 
         if self.isOpt("QA_EXAMPLE"):
-            self.dOpt["INSTALL"] =  "up force CORDEX"
+            self.dOpt["INSTALL"] =  "--up --force CORDEX"
 
         return
 
