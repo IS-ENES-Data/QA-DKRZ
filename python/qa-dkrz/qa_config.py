@@ -225,12 +225,7 @@ class QaConfig(object):
             args.SHOW_CALL = True
 
         if args.AUTO_UP     != None: _ldo['AUTO_UP']      = args.AUTO_UP
-
-        if len(args.CLEAR) == 0:
-           _ldo['CLEAR'] = 't'
-        else:
-           _ldo['CLEAR'] = args.CLEAR
-
+        if args.CLEAR       != None: _ldo['CLEAR']        = args.CLEAR
         if args.CMD_UPDATE  != None: _ldo['CMD_UPDATE']   = args.CMD_UPDATE
         if args.CONFIG_FILE != None: _ldo['CONFIG_FILE']  = args.CONFIG_FILE
         if args.QA_TABLES   != None: _ldo['QA_TABLES']    = args.QA_TABLES
@@ -315,19 +310,6 @@ class QaConfig(object):
 
                _ldo['EXPLICIT_FILES'].append(f)
 
-
-               '''
-            if args.NC_FILE[0][0] != '/':
-               self.lSelect.append(os.path.join(os.getcwd(), args.NC_FILE[0]))
-               _ldo['QUERY_NC_FILE'] = 't'
-               _ldo['QUERY_NON_NC_FILE'] = 't'
-               _ldo['QUERY_EMPTY_DIR'] = 't'
-               _ldo['QUERY_EMPTY_FILE'] = 't'
-
-            else:
-               self.lSelect.append(args.NC_FILE[0])
-               '''
-
         return _ldo
 
 
@@ -372,7 +354,7 @@ class QaConfig(object):
             nargs='?', const='enable', dest='AUTO_UP',
             help="Passed to install")
 
-        parser.add_argument('--clear', nargs='*', dest='CLEAR',
+        parser.add_argument('--clear', nargs='?', default='t', dest='CLEAR',
             help="Clear previous results related to other options.")
 
         parser.add_argument('--config-file', dest='CONFIG_FILE',
