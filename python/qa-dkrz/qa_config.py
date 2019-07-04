@@ -371,7 +371,7 @@ class QaConfig(object):
             nargs='?', const='enable', dest='AUTO_UP',
             help="Passed to install")
 
-        parser.add_argument('--clear', , nargs='*', dest='CLEAR',
+        parser.add_argument('--clear', nargs='*', dest='CLEAR',
             help="Clear previous results related to other options.")
 
         parser.add_argument('--config-file', dest='CONFIG_FILE',
