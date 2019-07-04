@@ -948,7 +948,7 @@ clear()
   local isResume=f
   local isMessage=f
 
-  isClear=f  # global scope
+  isClear=t  # global scope
 
   local logF=$LOG_FNAME_DIR/${CURR_LOG_FNAME}.log
 
