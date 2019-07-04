@@ -1451,24 +1451,12 @@ DRS_CV::checkNetCDF(NcAPI* p_nc)
     std::string key("12a");
     if( notes->inq( key, pQA->fileStr ) )
     {
-      std::string capt("Data must conform fo NetCDF4 classic format.");
+      std::string capt("Data must conform fo NetCDF4 deflated.");
 
       std::string text("Found " + found) ;
 
-      (void) notes->operate( capt, text) ;
-      notes->setCheckStatus("CV", pQA->n_fail);
-    }
-  }
-
-  if(! isDeflated)
-  {
-    std::string key("12b");
-    if( notes->inq( key, pQA->fileStr ) )
-    {
-      std::string capt("Recommendation: use netCDF4 deflated");
-
-      std::string text("Found " + found) ;
-      text += "; Info: post-processing by e.g. nccopy -k 4 -d 1 -s infile outfile";
+      if(! isDeflated)
+         text += "; Info: post-processing by e.g. nccopy -k 4 -d 1 -s infile outfile";
 
       (void) notes->operate( capt, text) ;
       notes->setCheckStatus("CV", pQA->n_fail);
