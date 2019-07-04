@@ -2506,7 +2506,10 @@ getPaths()
   # Only pass the loop when the file is already partially filled.
   # Then, it is garantueed that there will be an EOF mark.
   while : ; do
-    test ! -e ${pathListFile} && continue
+    if [ ! -e ${pathListFile} ] ; then
+       sleep 10
+       continue
+    fi
 
     while [ ! -s ${pathListFile} ] ; do
       sleep 1
