@@ -536,12 +536,12 @@ update_QA_SRC()
              | awk '{print $6}' 2> /dev/null )
 
         # always from master
-        local branch=$( python ${QA_SRC}/python/qa-dkrz/qa_version.py --qa )
+        local branch=$( python ${QA_SRC}/python/qa-dkrz/qa_version.py --qa 2> /dev/null )
         branch=${branch#*,}
         branch=${branch%-*}
         # test "${branch}" != master &&  git checkout master &> /dev/null
 
-        git fetch && git reset --hard origin/${branch} &> /dev/null
+        git fetch && git reset --hard origin/${branch:-master} &> /dev/null
 #       git pull --no-edit -q origin master &> /dev/null
 
         if [ $? -gt 0 ] ; then
