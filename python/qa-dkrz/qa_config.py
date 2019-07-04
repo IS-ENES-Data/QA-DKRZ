@@ -225,6 +225,7 @@ class QaConfig(object):
             args.SHOW_CALL = True
 
         if args.AUTO_UP     != None: _ldo['AUTO_UP']      = args.AUTO_UP
+
         if len(args.CLEAR) == 0:
            _ldo['CLEAR'] = 't'
         else:
@@ -505,24 +506,6 @@ class QaConfig(object):
 
                 self.lSelect[0]=str0
                 self.dOpts["NEXT"] = 1
-
-            '''
-            if len(self.lSelect):
-                h,t = os.path.split(self.lSelect[0])
-                if not (h or t):
-                    print 'missing NetCDF file or directory'
-                    sys.exit(1)
-
-                x_t = t.split('_')
-                str0=''
-                if h:
-                    str0 = h + '='
-                if t:
-                    str0 += x_t[0] + '_'
-
-                self.lSelect[0]=str0
-                self.dOpts["NEXT"] = 1
-            '''
 
         for sel in self.lSelect:
             (p,v)=self.getSelLock('S', sel)
