@@ -767,8 +767,8 @@ QA_Time::initResumeSession(void)
    }
 
    // get internal values
-   isTimeBounds =
-     static_cast<bool>(pQA->nc->getAttValue("isTimeBoundsTest", name));
+   //isTimeBounds =
+   //  static_cast<bool>(pQA->nc->getAttValue("isTimeBoundsTest", name));
 
     // if files are synchronised, i.e. a file hasn't changed since
     // the last qa, this will exit in member finally()

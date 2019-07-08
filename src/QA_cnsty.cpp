@@ -90,7 +90,7 @@ Consistency::check(Variable &dataVar, std::string entryID)
   // return value is true, when there is not a project table, yet.
 
   // Search the project table for an entry
-  // matching the varname and frequency (account also rotated).
+  // matching the varname and frequency|table_id (account also rotated).
 
   // Open project table. Mode:  read
   std::string str0(consistencyTableFile.getFile());
@@ -199,7 +199,7 @@ Consistency::check(Variable &dataVar, std::string entryID)
         if( y.size() == 1 )
         {
           if(i==1)
-            vvs_f_aName.back().push_back("frequency");
+            vvs_f_aName.back().push_back("frequency|table_id");
           else
             vvs_f_aName.back().push_back("");
 
@@ -230,7 +230,7 @@ Consistency::check(Variable &dataVar, std::string entryID)
         if( y.size() == 1 )
         {
           if(i==1)
-            vvs_t_aName.back().push_back("frequency");
+            vvs_t_aName.back().push_back("frequency|table_id");
           else
             vvs_t_aName.back().push_back("");
           // mostly aux=aName, but for the first entry item: only vName
@@ -601,10 +601,10 @@ Consistency::testAux(std::string mode,
     std::vector<std::vector<std::string> >& vvs_2nd_aName,
     std::vector<std::vector<std::string> >& vvs_2nd_aVal)
 {
+  std::string& varName = vvs_1st_aVal[0][0] ;
+
   for( size_t i=0 ; i < vvs_1st_aVal.size() ; ++i )
   {
-    std::string& varName = vvs_1st_aVal[0][0] ;
-
     // is across hdhC::isAmong(), thus do it manually
     bool is=true;
     for( size_t j=0 ; j < vvs_2nd_aVal.size() ; ++j )
@@ -613,6 +613,21 @@ Consistency::testAux(std::string mode,
       {
         is = false;
         break;
+      }
+    }
+
+    // test directly existence; e.g.
+    // find time_bnds where time:bound=time_bnds is missing
+
+    if(is)
+    {
+      for( size_t j=0 ; j < pIn->varSz ; ++j )
+      {
+        if( pIn->variable[j].name == vvs_1st_aVal[i][0] )
+        {
+           is=false;
+           break;
+        }
       }
     }
 
