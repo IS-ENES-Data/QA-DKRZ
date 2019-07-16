@@ -36,7 +36,7 @@ class LogSummary(object):
                        'L3':'Error',
                        'L4':'Error'}
 
-    def annotation_add(self, var_id, path_id, blk, i, blk_pos):
+    def annotation_add(self, var_id, path_id, blk, i):
         # annotation and associated indices of properties
         # fse contains ( var, StartTime, EndTime )
         # index i points to blk[i] == 'annotation:'
@@ -455,6 +455,7 @@ class LogSummary(object):
     def get_next_blk(self, fd, f_log='', get_prmbl=False, skip_fBase=[]):
         # read the next entry from a log-file or alternatively from provided fd
 
+        count=0
         blk = []
         if len(skip_fBase):
             is_skip_fBase=True
@@ -467,6 +468,7 @@ class LogSummary(object):
 
             # items from the preamble
             for line in fd:
+               count += 1
                line = line.rstrip(' \n')
                blk.append(line)
 
@@ -491,7 +493,7 @@ class LogSummary(object):
                     del self.logPathIndex
 
             if get_prmbl:
-                return blk
+                return blk, count
             else:
                 blk = []
 
@@ -499,6 +501,7 @@ class LogSummary(object):
             blk.append(self.blk_last_line)
 
         for line in fd:
+            count += 1
             line = line.rstrip(' \n')
             if len(line) == 0:
                 continue
@@ -512,7 +515,7 @@ class LogSummary(object):
 
                     # Preserve the current line for next blk.
                     self.blk_last_line = line
-                    return blk
+                    return blk, count
 
             blk.append(line)
         else:
@@ -527,7 +530,7 @@ class LogSummary(object):
         if is_skip_fBase:
             self.check_for_skipping(blk, skip_fBase)
 
-        return blk
+        return blk, count
 
 
     def get_path_prefix(self, path): #, astItems):
@@ -877,26 +880,31 @@ class LogSummary(object):
         if not os.path.isfile(f_log):
             return
 
-        blk_pos=-1
+        line_num=0
+        isMissedStatus=False
 
         with open(f_log, 'r') as fd:
             while True:
-                # read the lines of the next check
-                if blk_pos == -1:
-                   blk_pos=71
+                if isMissedStatus:
+                     print 'incomplete log-file at line ' + str(line_num)
+                     sys.exit(1)
 
-                blk = self.get_next_blk(fd=fd)
+                # read the lines of the next check
+                blk, ln = self.get_next_blk(fd=fd)
+                line_num += ln
+                print line_num
+
                 sz = len(blk) - 1
                 if sz == -1:
                     break
 
+                isMissedPeriod=True  # fx or segmentation fault
+                isMissedStatus=True
 
-                isMissPeriod=True  # fx or segmentation fault
-
-                line_num=-1
-                while line_num < sz :
-                    line_num = line_num+1
-                    words = blk[line_num].lstrip(' -').split(None,1)
+                i=0
+                while i < sz :
+                    i += 1
+                    words = blk[i].lstrip(' -').split(None,1)
                     if len(words) == 0:
                         # a string of just '-' would results in this
                         words=['-----------']
@@ -938,19 +946,20 @@ class LogSummary(object):
                     elif words[0] == 'period:':
                         # time ranges of atomic variables
                         # indexed by self.curr_dt within the function
-                        line_num = self.period_add(fp_ix, fse, blk, line_num)
-                        isMissPeriod=False
+                        i = self.period_add(fp_ix, fse, blk, i)
+                        isMissedPeriod=False
 
                     elif words[0] == 'event:':
-                        if isMissPeriod and len(fse[2]):
+                        if isMissedPeriod and len(fse[2]):
                             self.subst_period(fp_ix, fse)
-                            isMissPeriod=False
+                            isMissedPeriod=False
 
                         # annotation and associated indices of properties
-                        line_num = self.annotation_add(file_id, path_id, blk, line_num, blk_pos)
+                        i = self.annotation_add(file_id, path_id, blk, i)
 
                     elif words[0] == 'status:':
-                        if isMissPeriod and len(fse[2]):
+                        isMissedStatus=False
+                        if isMissedPeriod and len(fse[2]):
                             self.subst_period(fp_ix, fse)
 
         if self.file_count == 0:
