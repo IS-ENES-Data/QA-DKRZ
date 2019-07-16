@@ -1651,7 +1651,7 @@ CMOR::checkMIPT_dim_axis(
       text += ", expected";
     }
     else
-     capt += "missing, CMOR table requests";
+     capt += "missing CMOR table request";
 
     capt += hdhC::tf_val(t_DMD.attMap[n_axis]);
 
