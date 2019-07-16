@@ -892,7 +892,7 @@ class LogSummary(object):
                 # read the lines of the next check
                 blk, ln = self.get_next_blk(fd=fd)
                 line_num += ln
-                print line_num
+                #print line_num
 
                 sz = len(blk) - 1
                 if sz == -1:
