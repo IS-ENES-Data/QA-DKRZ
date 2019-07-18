@@ -948,14 +948,13 @@ clear()
   local isResume=f
   local isMessage=f
 
-  isClear=t  # global scope
+  isClear=f
 
   local logF=$LOG_FNAME_DIR/${CURR_LOG_FNAME}.log
 
   # arbitrary order of arguments
   for f in ${CLEAR//,/ } ; do
-    test ${isClear} = 't' && break
-    isClear=f
+    test ${f} = 't' && break
 
     if [ "$f" = all ] ; then
        isClear=t
