@@ -8366,8 +8366,9 @@ CF::chap72(void)
 
         if(mvar.name == var.name && notes->inq(bKey + "72f", mvar.name) )
         {
-          std::string capt(hdhC::tf_att(var.name,mvar.name)) ;
-          capt += "must not declare the data variable itself" ;
+          std::string capt(hdhC::tf_att(var.name,n_cell_measures)) ;
+          capt += "must not declare the data variable " ;
+          capt += hdhC::tf_val(var.name) ;
 
           (void) notes->operate(capt) ;
           notes->setCheckStatus( n_CF, fail );
