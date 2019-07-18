@@ -556,11 +556,12 @@ ValueException<T>::testValueModesPoint(T* arr, size_t arr_sz,
    // valid data points are those which are not INf, NaN, _FillValue
 
   // portions of arr are mapped
-   size_t chunk=1024;
+   size_t chunk=1023;
    if( chunk > arr_sz )
       chunk = arr_sz;
 
-   bool *isInfNaN = new bool [chunk];
+   bool *isInfNaN = new bool [chunk+1];
+   isInfNaN[chunk] = false;
 
    size_t nextStop=0;
    size_t i=0 ;  //arr index
