@@ -417,11 +417,12 @@ ValueException<T>::testValueModesFull(T* arr, size_t arr_sz,
    bool isValid=true;
 
    // portions of arr are mapped
-   size_t chunk=1024;
+   size_t chunk=1023;
    if( chunk > arr_sz )
       chunk = arr_sz;
 
-   bool *isInfNaN = new bool [chunk];
+   bool *isInfNaN = new bool [chunk+1];
+   isInfNaN[chunk]=false;
 
    size_t nextStop=0;
    size_t i=0 ;  //arr index
@@ -563,9 +564,13 @@ ValueException<T>::testValueModesPoint(T* arr, size_t arr_sz,
    bool *isInfNaN = new bool [chunk+1];
    isInfNaN[chunk] = false;
 
-   size_t nextStop=0;
+   //size_t nextStop=0;
+   //size_t i=0 ;  //arr index
+   //size_t j=0 ;  //chunk index
+   //size_t nextStop=0;
    size_t i=0 ;  //arr index
-   size_t j=0 ;  //chunk index
+   size_t j   ;  //chunk index
+   size_t nextStop=0;
    bool isLeg=false;  // legs of valid data
 
    while ( nextStop < arr_sz )
@@ -574,13 +579,11 @@ ValueException<T>::testValueModesPoint(T* arr, size_t arr_sz,
 
       bool isAnyInvalid = testInfNaN(isInfNaN, chunk, i, arr, arr_sz) ;
 
-      for( ; i < arr_sz ; ++i, ++j)
+      // really j=0, not i=0
+      for( j=0 ; i < arr_sz ; ++i, ++j)
       {
         if( i == nextStop )
-        {
-           j=0;
            break;
-        }
 
         // test Inf and NaN block-wise; return true for any
         if( isAnyInvalid )
@@ -600,7 +603,7 @@ ValueException<T>::testValueModesPoint(T* arr, size_t arr_sz,
           }
 
           if( i == nextStop )
-            break;  // no data point found in the entire block, try next
+            break;
 
           if(!isLeg)
           {
@@ -653,11 +656,12 @@ ValueException<T>::testValueModesPoints(T* arr, size_t arr_sz,
    bool isValid=true;
 
    // portions of arr are mapped
-   size_t chunk=1024;
+   size_t chunk=1023;
    if( chunk > arr_sz )
       chunk = arr_sz;
 
-   bool *isInfNaN = new bool [chunk];
+   bool *isInfNaN = new bool [chunk+1];
+   isInfNaN[chunk]=false;
 
    size_t nextStop=0;
    size_t i=0 ;  //arr index
