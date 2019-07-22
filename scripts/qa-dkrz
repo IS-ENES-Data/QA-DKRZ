@@ -954,9 +954,9 @@ clear()
 
   # arbitrary order of arguments
   for f in ${CLEAR//,/ } ; do
-    test ${f} = 't' && break
-
-    if [ "$f" = all ] ; then
+    if [ ${f} = 't' ] ; then
+       isClear=t
+    elif [ "$f" = all ] ; then
        isClear=t
     elif [ "$f" = follow_links ] ; then
        test ${DEREFERENCE_SYM_LINKS:-f} = f && isFL=t
