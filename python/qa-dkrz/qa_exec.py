@@ -47,7 +47,7 @@ class QaExec(object):
             self.isStatusLine=True
 
     def getParamStr(self, t_vars, show=''):
-        par =  ' -p ' + t_vars.data_path
+        par =  '-p ' + t_vars.data_path
         par += show + '-f ' + t_vars.fName
         par += show + '-t ' + self.g_vars.table_path
 
@@ -161,7 +161,7 @@ class QaExec(object):
             par += ':fq=' + qaConf.getOpt('FREQUENCY')
 
         if qaConf.isOpt('IGNORE_REF_DATE_ACROSS_EXP'):
-            par += ':iRDAE=' + qaConf.getOpt('IGNORE_REF_DATE_ACROSS_EXP')
+            par += ':iRDAE'
 
         if qaConf.isOpt('IGNORE_REFERENCE_DATE'):
             par += ':iRD'
@@ -195,7 +195,7 @@ class QaExec(object):
             par += ':pGM'
 
         # PROJECT_TABLE
-        par += ':tPr=' + t_vars.pt_name
+        par += ':tPr=' + t_vars.consistency_tname
 
         if qaConf.isOpt('QA_NCFILE_FLAGS'):
             par += ':qNF=' + qaConf.getOpt('QA_NCFILE_FLAGS')
