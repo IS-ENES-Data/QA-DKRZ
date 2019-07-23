@@ -740,8 +740,9 @@ Consistency::write(Variable &dataVar, std::string& entryID)
     if( notes->inq( key, "PT") )
     {
       std::string capt("could not create a consistency-check table") ;
+      std::string text("tried: " + pFile);
 
-      if( notes->operate(capt) )
+      if( notes->operate(capt, text) )
       {
         notes->setCheckStatus("QA_PT_table", pQA->n_fail );
         pQA->setExitState( notes->getExitState() ) ;
