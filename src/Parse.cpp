@@ -98,7 +98,7 @@ Parse::parseObj( std::string &s, std::string &name, int &id, std::string &param)
   for( ; pos < s.size() ; ++pos)
   {
     if( ! ( hdhC::isAlphaNum(s[pos]) ||  s[pos] == '/' ||  s[pos] == '\\'
-                ||  s[pos] == '{' ||  s[pos] == '}' ) )
+              ||  s[pos] == '{' ||  s[pos] == '}'  || s[pos] == '_' ) )
     {
       if( pos < s.size() && s[pos+1] == s[pos] )
       {
