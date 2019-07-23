@@ -107,11 +107,15 @@ def clearLog(qa_var_path, fBase, logfile):
 
 
 def clearInq(qa_var_path, fBase, logfile):
+    if not qaConf.isOpt('CLEAR'):
+       return
+
 #    isFollowLink = False
     v_clear = qaConf.getOpt('CLEAR')
 
     if v_clear == 't':
-        return clear(qa_var_path, fBase, logfile)
+        clear(qa_var_path, fBase, logfile)
+        return
 
     isClear=False
 
@@ -192,9 +196,10 @@ def clearInq(qa_var_path, fBase, logfile):
 
         if isClear:
             # now do the clearance
-            return clear(qa_var_path, fBase, logfile)
+            clear(qa_var_path, fBase, logfile)
+            return
 
-    return False
+    return
 
 
 def final():
@@ -275,7 +280,7 @@ def get_next_variable(data_path, fBase, fNames):
     t_vars.log_fname = \
         qa_util.get_experiment_name(g_vars, qaConf, fB=fBase,
                                     sp=t_vars.sub_path)
-    t_vars.pt_name = \
+    t_vars.consistency_tname = \
         qa_util.get_project_table_name(g_vars, qaConf, fB=fBase,
                                        sp=t_vars.sub_path)
 
@@ -648,11 +653,9 @@ def summary():
 
 def testLock(t_vars, fBase):
     if qaConf.isOpt('CLEAR'):
-        ## note that the logfile is temporary, finished in final()
         logfile = os.path.join(g_vars.check_logs_path, t_vars.log_fname + '.log')
 
-        if clearInq(t_vars.var_path, fBase, logfile):
-            return True
+        clearInq(t_vars.var_path, fBase, logfile)
 
     # any qa_lock file?
     f_lock = os.path.join(t_vars.var_path, 'qa_lock_' + fBase + '.txt')
