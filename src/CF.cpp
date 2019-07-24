@@ -1026,8 +1026,6 @@ CF::entry(void)
       chap_reco();
   }
 
-  // a few post-check considerations about combinations of annotations
-  postAnnotations();
 
   for( size_t i=0 ; i < pIn->varSz ; ++i )
   {
@@ -1045,6 +1043,9 @@ CF::entry(void)
       var.countData = 0;
     }
   }
+
+  // a few post-check considerations about combinations of annotations
+  postAnnotations();
 
   return true;
 }
@@ -2587,7 +2588,7 @@ CF::postAnnotations(void)
 
   // definition of tasks; there are different modes:
   // a) replace all tags by a new one;
-  //    a newtag is defined by newTag.size() > 0
+  //    a new tag is defined by newTag.size() > 0
   // b) erase all tags, but the first one when newTag is empty.
 
   tag.push_back(std::vector<std::string>()) ;
@@ -2606,7 +2607,12 @@ CF::postAnnotations(void)
   tag.back().push_back(bKey + "26a");
   tag.back().push_back(bKey + "81e");
   newTag.push_back("NC_3_12");
-  capt.push_back("NC_3_12");
+  capt.push_back("Could not open file");
+
+  tag.push_back(std::vector<std::string>()) ;
+  tag.back().push_back(bKey + "43c");
+  newTag.push_back(hdhC::empty);
+  capt.push_back(hdhC::empty);
 
   tag.push_back(std::vector<std::string>()) ;
   tag.back().push_back(bKey + "432b");
@@ -2641,63 +2647,60 @@ CF::postAnnotations(void)
   for( size_t t=0 ; t < tag.size() ; ++t )
   {
     // include | exclude the first tag
-    int ntIx=newTag[t].size() ? 1 : 0 ;
+    int keepFirst=newTag[t].size() ? 1 : 0 ;
 
     // collect items
     std::vector<std::string> vs_annot;
     std::vector<std::string> vs_item;
 
     for( size_t i=0 ; i < tag[t].size() ; ++i )
+    {
       // same tag for various variables possible
       vs_item = notes->getAnnotation(tag[t][i]);
 
-    if( !vs_item.size() )
-      continue;
+      if( ! vs_item.size() )
+        break ;
 
-    if( !ntIx && !hdhC::isAmong(tag[t][0], vs_item, "beg") )
-      continue;
+      if( ! hdhC::isAmong(tag[t][i], vs_item, std::string("beg")) )
+        continue;
 
-    // extract variable names; multiples are possible
-    size_t pos;
-    std::string spec0;
-    std::string spec;
+      // discard post-fixes (mostly variable names); multiples are possible
+      size_t pos;
+      std::string tail;
 
-    for( size_t i=0 ; i < vs_annot.size() ; ++i )
-    {
-      if( (pos=vs_item[i].rfind('_')) < std::string::npos )
+      for( size_t j=0 ; j < vs_item.size() ; ++j )
       {
-        if( vs_annot[i].size() > pos+1 )
-          spec = vs_annot[i].substr(pos+1) ;
-
-        if(i)
+        if( (pos=vs_item[j].find(tag[t][i])) < std::string::npos )
         {
-          if( spec0 == spec )
-            vs_annot.push_back(vs_annot[i].substr(0,pos));
+          if( pos == 0 )
+            vs_annot.push_back(vs_item[j]);
+          else if( vs_item[j].size() > pos+1 )
+            vs_annot.push_back(vs_item[j].substr(0,pos));
         }
-        else
-          spec0 = spec;
       }
     }
 
-    for( size_t i=0 ; i < vs_annot.size() ; ++i )
+    for( size_t k=0 ; k < vs_annot.size() ; ++k )
     {
-      for( size_t j=ntIx ; j < tag[t].size() ; ++j )
+      for( size_t l=keepFirst ; l < tag[t].size() ; ++l )
       {
-        if( tag[t][j] == vs_annot[i] )
-        {
-          notes->eraseAnnotation(vs_annot[i], spec);
-          vs_annot[i].clear();
-          break;
-        }
+         notes->eraseAnnotation(vs_annot[k]);
+         vs_annot[k].clear();
       }
 
-      if( !i && newTag[t].size() && notes->inq(newTag[t], spec)  )
+      if( newTag[t].size() && notes->inq(newTag[t])  )
       {
         (void) notes->operate(capt[t]) ;
         notes->setCheckStatus( n_CF, fail );
       }
     }
   }
+
+  std::vector<std::string> vs_item;
+  vs_item = notes->getAnnotation();
+
+  if( ! notes->isAnnotation() )
+      notes->setCheckStatus( n_CF );  // defaults to PASS
 
   return;
 }
