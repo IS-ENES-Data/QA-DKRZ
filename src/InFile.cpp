@@ -90,8 +90,10 @@ InFile::getAttValue(std::string attName, std::string varName)
 
    if( varName.size() )
      ix = getVarIndex( varName );
-   else
+   else if( nc.is_global() )
      ix = varSz ;  // NC_GLOBAL is always this
+   else
+     return hdhC::empty ;
 
    return variable[ix].getAttValue(attName);
 }

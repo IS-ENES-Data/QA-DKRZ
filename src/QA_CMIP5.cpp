@@ -4602,25 +4602,40 @@ QA_Exp::pushBackVarMeDa(Variable *var)
 void
 QA_Exp::run(void)
 {
-  if( inqTables() )
-  {
-    QA::tableID = getTableID() ;
-
-    if( pQA->drs_cv_table.table_DRS_CV.is() )
-    {
-      if(pQA->isCheckDRS_F || pQA->isCheckDRS_P)
+   if( pQA->pIn->nc.is_global() )
+   {
+      if( inqTables() )
       {
-        DRS_CV drsFN(pQA);
-        drsFN.run();
-      }
-    }
+         QA::tableID = getTableID() ;
 
-    if(pQA->isCheckCV)
-    {
+         if( pQA->drs_cv_table.table_DRS_CV.is() )
+         {
+            if(pQA->isCheckDRS_F || pQA->isCheckDRS_P)
+            {
+               DRS_CV drsFN(pQA);
+               drsFN.run();
+            }
+         }
+      }
+   }
+   else
+   {
+      std::string key("2_13");
+      if( notes->inq( key, pQA->s_global ) )
+      {
+         std::string capt("Section with global attributes is missing.") ;
+
+         (void) notes->operate(capt) ;
+         notes->setCheckStatus("CV", pQA->n_fail );
+      }
+   }
+
+
+   if(pQA->isCheckCV)
+   {
       // get meta data from file and compare with tables
       checkMetaData(*(pQA->pIn));
-    }
-  }
+   }
 
   return ;
 }

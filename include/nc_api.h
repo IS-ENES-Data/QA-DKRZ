@@ -629,6 +629,8 @@ void
 
     bool isEmptyData(int vid);
 
+    bool is_global(void){ return is_NC_GLOBAL;}
+
 //! Return true if the type is index compatible
     bool
       isIndexType(std::string vName);
@@ -913,6 +915,7 @@ private:
     int status ;
     int ncFormat;
     bool isDefineMode;
+    bool is_NC_GLOBAL ;
     bool with_annotation;
 
     bool isChunking;

@@ -3731,7 +3731,10 @@ NcAPI::getLayout(void)
   }
 
   if( attNum == 0 )
+  {
+     is_NC_GLOBAL=false;
      return ;  // no global attributes
+  }
 
   for( int j=0 ; j < attNum ; ++j )
   {
@@ -4225,7 +4228,7 @@ NcAPI::init(void)
 {
   isThisOpen  = false;
   with_annotation=true;
-
+  is_NC_GLOBAL=true;
   numOfRecords=-1;
   max_read_sz=100000;
 

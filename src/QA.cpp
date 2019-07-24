@@ -400,8 +400,9 @@ QA::finally(int xCode)
     // post-processing
     xCode = finally_data(xCode) ;
 
-    if(isRequiredGlobal)
+    if(pIn->nc.is_global() && isRequiredGlobal)
     {
+        // a missing global section was caught and notified elsewhere
         Variable& glob = pIn->variable[pIn->varSz] ;
 
         if( glob.isValidAtt("creation_date") )

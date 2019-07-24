@@ -2707,7 +2707,7 @@ QA_Exp::checkMetaData(InFile &in)
   // check attributes required in the meta data section of the file
   reqAttCheck() ;
 
-   getSubTable() ;
+  getSubTable() ;
 
 
   // check existance (and data) of the pressure coordinate for those
@@ -2866,6 +2866,9 @@ QA_Exp::checkVarTableEntry_cell_methods(
 
   if( frequency == "fx" )
     return;
+
+  if( notes->findAnnotation("2_7") )
+      return ;  // a test is pointless
 
   // disjoint into words; this method ingnores spaces
   Split x_t_cm(t_DMD_entry.attMap[n_cell_methods]);
@@ -3728,6 +3731,9 @@ QA_Exp::initResumeSession(std::vector<std::string>& prevTargets)
 
     if( i == prevTargets.size() )
     {
+      if( notes->findAnnotation("2_7") )
+          continue;  // a test is pointless
+
        std::string key("3_10");
        if( notes->inq( key, varMeDa[j].var->name) )
        {
@@ -4414,16 +4420,30 @@ QA_Exp::run(void)
 {
    bool isNoTable = getVarReqTables() ;
 
-   if( pQA->drs_cv_table.table_DRS_CV.is() )
+   if( pQA->pIn->nc.is_global() )
    {
-     if(pQA->isCheckDRS_F || pQA->isCheckDRS_P)
-     {
-       DRS_CV drsFN(pQA);
-       drsFN.run();
-     }
+      if( pQA->drs_cv_table.table_DRS_CV.is() )
+      {
+         if(pQA->isCheckDRS_F || pQA->isCheckDRS_P)
+         {
+            DRS_CV drsFN(pQA);
+            drsFN.run();
+         }
+      }
+   }
+   else
+   {
+      std::string key("2_13");
+      if( notes->inq( key, pQA->s_global ) )
+      {
+         std::string capt("section with global attributes is missing.") ;
+
+         (void) notes->operate(capt) ;
+         notes->setCheckStatus("CV", pQA->n_fail );
+      }
    }
 
-     if(pQA->isCheckCV)
+   if(pQA->isCheckCV)
    {
      // check variable type; uses DRS_CV_Table
      checkVariableType();

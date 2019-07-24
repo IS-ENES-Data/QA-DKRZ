@@ -5022,16 +5022,31 @@ QA_Exp::pushBackVarMeDa(Variable *var)
 void
 QA_Exp::run(void)
 {
-  QA::tableID = getTableID() ;
+   if( pQA->pIn->nc.is_global() )
+   {
+      QA::tableID = getTableID() ;
 
-  if( pQA->drs_cv_table.table_DRS_CV.is() )
-  {
-    if(pQA->isCheckDRS_F || pQA->isCheckDRS_P)
-    {
-      DRS_CV drsFN(pQA);
-      drsFN.run();
-    }
-  }
+      if( pQA->drs_cv_table.table_DRS_CV.is() )
+      {
+         if(pQA->isCheckDRS_F || pQA->isCheckDRS_P)
+         {
+            DRS_CV drsFN(pQA);
+            drsFN.run();
+         }
+      }
+   }
+   else
+   {
+      std::string key("2_0");
+      if( notes->inq( key, pQA->s_global ) )
+      {
+         std::string capt("section with global attributes is missing.") ;
+
+         (void) notes->operate(capt) ;
+         notes->setCheckStatus("CV", pQA->n_fail );
+      }
+   }
+
 
   if( inqTables(QA::tableID) )
   {
