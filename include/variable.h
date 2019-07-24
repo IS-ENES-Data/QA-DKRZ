@@ -158,7 +158,7 @@ class Variable : public VariableMeta
   int  getVarIndex(){ return id ;}
   bool isAuxiliary(void) { return (countAux > countData ) ? true : false ;}
   bool isCoordinate(void);
-  bool isDataVar(void){ return (countData >= countAux ) ? true : false ; }
+  bool isDataVar(void);
   bool isNoData(void) ;
   bool isUnlimited(void) ;
   bool isValidAtt(std::string s, bool tryLowerCase=true);

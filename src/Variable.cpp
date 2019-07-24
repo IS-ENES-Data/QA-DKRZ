@@ -296,6 +296,19 @@ Variable::isCoordinate(void)
 }
 
 bool
+Variable::isDataVar(void)
+{
+   bool is;
+   is = (countData >= countAux ) ? true : false ;
+
+   // a final plausibility check
+   if( ! (isUnlimited() && pNc->getRecordSize(name) > 1) )
+     is=false;
+
+   return is ;
+}
+
+bool
 Variable::isNoData(void)
 {
    if( ! isNoData_ )

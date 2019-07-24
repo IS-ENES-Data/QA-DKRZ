@@ -176,7 +176,7 @@ Annotation::copyInit(Annotation *n)
 void
 Annotation::eraseAnnotation(std::string str, std::string name)
 {
-  if( !findAnnotation(str, name) )
+  if( ! findAnnotation(str, name) )
     return;
 
   // Note: composition: level-flag.
@@ -329,7 +329,7 @@ Annotation::getAnnotation(std::string tag, std::vector<std::string>& txt)
 
     str = it->first.substr(0,sz) ;
 
-    if( str.find(tag) < std::string::npos )
+    if( str.size() == 0 || str.find(tag) < std::string::npos )
     {
        vs.push_back(str);
        txt.push_back(it->second);
@@ -546,6 +546,18 @@ Annotation::inq( std::string key, std::string name, std::string mode)
   }
 
   return true;   // default exception handling
+}
+
+bool
+Annotation::isAnnotation(void)
+{
+  std::map<std::string, std::string>::iterator it;
+
+  for( it=mp.begin() ; it != mp.end() ; ++it )
+    if( mp_count[it->first] )
+       return true;
+
+  return false;
 }
 
 /*

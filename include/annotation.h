@@ -67,7 +67,7 @@ class Annotation : public IObj
   bool findAnnotation(std::string tag, std::string name="");
   bool findIndex(std::string &key, bool only=false);
   std::vector<std::string>
-       getAnnotation(std::string tag);
+       getAnnotation(std::string tag="");
   std::vector<std::string>
        getAnnotation(std::string tag, std::vector<std::string>& txt);
   std::string
@@ -87,6 +87,8 @@ class Annotation : public IObj
       NO_TXT   disable the default text from the check-list table.
       */
   bool inq( std::string flag, std::string var_name="", std::string mode="");
+
+  bool isAnnotation(void);
 
   //! Conduction of an annotation.
   /*! Strings caption, text, and where supply a brief description,
