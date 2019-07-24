@@ -1980,7 +1980,7 @@ getNextVariable()
        local ext=${nV_fls[l]##*.}
        if [ ! \( "${ext}" = nc -o "${ext}" = nc4 \) ] ; then
           y_impact=L2
-          y_caption='NetCDF file with wrong extension ${ext}'
+          y_caption="NetCDF file with wrong extension ${ext}"
           y_tag=M6c
           initLog ${nV_fls[l]}
           unset nV_fls[${l}]
