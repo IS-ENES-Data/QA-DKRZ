@@ -1,7 +1,13 @@
 export CONFIG_FILE
 
-if [ ! ${CONFIG_FILE} ] ; then
-   export CONFIG_FILE=${HOME}/.qa-dkrz/config.txt
+if [ ${w_perm:-t} = t ] ; then
+  if [ ! ${CONFIG_FILE} ] ; then
+     export CONFIG_FILE=${HOME}/.qa-dkrz/config.txt
+  fi
+else
+   CONFIG_FILE=${QA_SRC}/.qa-dkrz/config.txt
+   CONFIG_READ_ONLY=t
+   return 0
 fi
 
 gCF_retVal=0

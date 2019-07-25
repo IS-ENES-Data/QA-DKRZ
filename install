@@ -647,7 +647,11 @@ do
 done
 
 # freeze
-test -w $QA_SRC && w_perm=t
+if [ -w $QA_SRC ] ; then
+   w_perm=t
+else
+   exit
+fi
 
 if [ ! -w $QA_SRC -o ${NET:-t} = f ] ; then
    if [ ! ~/.qa-dkrz/config.txt ] ; then

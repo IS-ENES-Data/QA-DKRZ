@@ -483,7 +483,7 @@ callQaConfig()
     fi
   fi
 
-  if [ ${DISPLAY_VERSION} ] ; then
+  if [ ${w_perm:-t} = t -a ${DISPLAY_VERSION:-f} != f ] ; then
     python ${QA_SRC}/python/qa-dkrz/qa_version.py
     exit 0
   fi
@@ -3608,7 +3608,9 @@ log()
   sp[8]='        '
 
   if [ "$1" = '--start' ] ; then
-    local qv=$(python ${QA_SRC}/python/qa-dkrz/qa_version.py --qa CF ${PROJECT})
+    if [ ${w_perm:-t} = t ] ; then
+      local qv=$(python ${QA_SRC}/python/qa-dkrz/qa_version.py --qa CF ${PROJECT})
+    fi
 
     s_out="start:\n${sp[1]}date: $( date +'%FT%T' )"
     s_out="${s_out}\n${sp[1]}qa-version: ${qv}"
@@ -5190,6 +5192,10 @@ umask 002
 getSrcPath
 test ${QA_SRC##*/} = scripts && QA_SRC=${QA_SRC%/scripts}
 
+if [ ! -w $QA_SRC ] ; then
+   w_perm=f
+fi
+
 initial_params=( $* )
 
 # store the tty, if any
@@ -5281,6 +5287,7 @@ test ${#args[*]} -eq 0 && args[0]='--help'
 
 # is it in a conda built?
 . ${QA_SRC}/scripts/getCondaPath
+
 
 init ${args[*]}
 
