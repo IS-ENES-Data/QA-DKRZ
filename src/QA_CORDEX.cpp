@@ -1638,8 +1638,9 @@ QA_Exp::checkPressureCoord(InFile &in)
      std::string key("1_5b");
      if( notes->inq( key ) )
      {
-       std::string capt("Pressure level value=");
-       capt += fVal + " in the filename is inappropriate" ;
+       std::string capt("Pressure level ");
+       capt += hdhC::tf_val(fVal, hdhC::blank) + "in the filename is inappropriate" ;
+       capt += " in the filename is inappropriate" ;
 
        std::string text("Expected: 200 500 or 850");
 
