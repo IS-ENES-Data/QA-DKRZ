@@ -74,7 +74,7 @@ def clear(qa_var_path, fBase, logfile):
 
 
 def clearLog(qa_var_path, fBase, logfile):
-   call='grep -n "[[:space:]]*file:[[:space:]]*' + fBase + '" ' + logfile
+   call='grep -n "[[:space:]]*file:[[:space:]]*' + fBase + '" ' + logfile + ' 2> /dev/null'
    try:
       check_output = subprocess.check_output(call, shell=True)
    except:
@@ -86,7 +86,7 @@ def clearLog(qa_var_path, fBase, logfile):
    for i in range( len(words[::2])):
       nums.append( words[i][:-1] )
 
-   call='grep -n "[[:space:]]*data-set:[[:space:]]*'+fBase+'" '+ logfile
+   call='grep -n "[[:space:]]*data-set:[[:space:]]*'+fBase+'" '+ logfile + ' 2> /dev/null'
    try:
       check_output = subprocess.check_output(call, shell=True)
    except:
