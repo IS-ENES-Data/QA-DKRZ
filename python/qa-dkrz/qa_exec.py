@@ -564,7 +564,7 @@ class QaExec(object):
                 event = {}
                 event['annotation']   = 'run-time error: segmentation fault'
                 event['impact'] = 'L2'
-                event['tag']    ='S_1'
+                event['tag']    ='SF'
                 log_entry['event'].append(event)
 
         else:
