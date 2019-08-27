@@ -530,7 +530,7 @@ class QaExec(object):
 
         qa_util.mkdirP(t_vars.var_path)
 
-        cpp_run = self.g_vars.checkPrg + param
+        cpp_run = self.g_vars.checkPrg + ' ' + param
         set_qa_lock = False
 
         try:
@@ -575,17 +575,21 @@ class QaExec(object):
             check_output += self.run_PrePARE(t_vars)
 
         entry_id=''
+        entry_id = self.log.append( entry_id,
+                                    f           = t_vars.fName,
+                                    d_path      = t_vars.data_path,
+                                    r_path      = t_vars.var_path)
 
         # prepare the logfile entry
         if istatus < 5:
             self.parse_output(check_output, log_entry)
 
             entry_id = self.log.append( entry_id,
-                                        f           = t_vars.fName,
-                                        d_path      = t_vars.data_path,
-                                        r_path      = t_vars.var_path,
                                         period      = log_entry['period'],
                                         conclusion  = log_entry['conclusion'],
+                                        set_qa_lock = set_qa_lock)
+        else:
+            entry_id = self.log.append( entry_id,
                                         set_qa_lock = set_qa_lock)
 
         if 'is_event' in log_entry:
