@@ -578,7 +578,8 @@ class QaExec(object):
         entry_id = self.log.append( entry_id,
                                     f           = t_vars.fName,
                                     d_path      = t_vars.data_path,
-                                    r_path      = t_vars.var_path)
+                                    r_path      = t_vars.var_path,
+                                    set_qa_lock = set_qa_lock)
 
         # prepare the logfile entry
         if istatus < 5:
@@ -586,11 +587,7 @@ class QaExec(object):
 
             entry_id = self.log.append( entry_id,
                                         period      = log_entry['period'],
-                                        conclusion  = log_entry['conclusion'],
-                                        set_qa_lock = set_qa_lock)
-        else:
-            entry_id = self.log.append( entry_id,
-                                        set_qa_lock = set_qa_lock)
+                                        conclusion  = log_entry['conclusion'])
 
         if 'is_event' in log_entry:
             entry_id = self.log.append(entry_id, is_events=True)
