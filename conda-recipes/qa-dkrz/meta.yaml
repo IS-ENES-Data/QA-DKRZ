@@ -34,7 +34,6 @@ requirements:
     - curl
     - libgcc
     - git
-    - gcc
 #test:
 #  commands:
 #    - dkrz-cf-checker -h
