@@ -16,6 +16,9 @@ source:
 
 requirements:
   build:
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
+  host:
     - libnetcdf 4.4.*
     - jpeg 9b
     - zlib
@@ -23,7 +26,7 @@ requirements:
     - libuuid
     - expat
     - curl
-    - gcc
+    - libgcc
   run:
     - libnetcdf 4.4.*
     - jpeg 9b
