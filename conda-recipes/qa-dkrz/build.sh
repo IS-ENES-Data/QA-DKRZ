@@ -1,6 +1,6 @@
 #!/bin/bash -eu
-CC="$PREFIX/bin/gcc"
-CXX="${PREFIX}/bin/g++"
+#CC="$PREFIX/bin/gcc"
+#CXX="${PREFIX}/bin/g++"
 LIBPATH="${PREFIX}/lib"
 LDFLAGS="-Wl,-rpath ${LIBPATH}"
 
@@ -8,8 +8,8 @@ LDFLAGS="-Wl,-rpath ${LIBPATH}"
 QA_SRC=${PREFIX}/opt/qa-dkrz
 mkdir -vp ${QA_SRC}
 
-echo "CC=${CC}" > install_configure
-echo "CXX=${CXX}" >> install_configure
+#echo "CC=${CC}" > install_configure
+#echo "CXX=${CXX}" >> install_configure
 echo "CFLAGS=\"-Wall\"" >> install_configure
 echo "CXXFLAGS=\"-g -Wall -std=c++11 -D NC4\"" >> install_configure
 echo "LIB=${LIBPATH}" >> install_configure
