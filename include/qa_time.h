@@ -65,6 +65,7 @@ class QA_Time
   bool   closeEntry(void);
   bool   entry(void);
 
+  bool isClimatology;
   bool isFormattedDate;
   bool isMaxDateRange;
   bool isNoCalendar;

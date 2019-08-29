@@ -334,6 +334,8 @@ QA_Time::init(std::vector<std::string>& optStr)
           timeType = pIn->variable[time_ix].type ;
           isTime=true;
           boundsName = pIn->variable[time_ix].getAttValue("bounds") ;
+          if( pIn->variable[time_ix].isValidAtt("climatology") )
+             isClimatology=true;
           break;
        }
      }
@@ -350,6 +352,8 @@ QA_Time::init(std::vector<std::string>& optStr)
          isTime=true;
 
          boundsName = pIn->variable[time_ix].getAttValue("bounds") ;
+         if( pIn->variable[time_ix].isValidAtt("climatology") )
+            isClimatology=true;
          break;
        }
      }
@@ -572,6 +576,7 @@ QA_Time::initDefaults(void)
    // time steps are regular. Unsharp logic (i.e. month
    // Jan=31, Feb=2? days is ok, but also numerical noise).
 
+   isClimatology=false;
    isFormattedDate=false;
    isMaxDateRange=false;
    isNoCalendar=true;
@@ -1539,6 +1544,13 @@ QA_Time::testPeriod(Split& x_f)
 
   if( isNoData )
       return false;
+
+   // checks below don't make any sense for climatologies
+  if( isClimatology )
+  {
+     notes->setCheckStatus("TIME", "N/A");
+     return false;
+  }
 
   // Does the filename have a trailing date range?
   std::vector<std::string> sd;
