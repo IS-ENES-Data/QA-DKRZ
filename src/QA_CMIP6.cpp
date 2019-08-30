@@ -1126,7 +1126,7 @@ DRS_CV::checkFilenameEncoding(Split& x_filename, struct DRS_CV_Table& drs_cv_tab
 
     for( size_t i=0 ; i < text.size() ; ++i )
     {
-      if( notes->inq( keys[i], "DRS") )
+      if( notes->inq( keys[i], drsF) )
       {
         (void) notes->operate(capt + text[i]) ;
         notes->setCheckStatus(drsF, pQA->n_fail);
@@ -1731,7 +1731,7 @@ DRS_CV::getEnsembleMember(void)
   int ix;
   Variable& glob = pQA->pIn->variable[ pQA->pIn->varSz ] ;
 
-  std::string sub_exp(glob.getAttValue("sub_experiment"));
+  std::string sub_exp(glob.getAttValue("sub_experiment_id"));
   std::string variant(glob.getAttValue("variant_label"));
 
   if( sub_exp.size() && hdhC::Lower()(sub_exp) != "none")
@@ -1813,9 +1813,9 @@ DRS_CV::getPathBegIndex(
     std::string s(drs[ix]);
 
     if( s == low )
-       break;
+       return ix ;
     else if( s == up )
-       break;
+       return ix;
   }
 
   // II) CMIP6 wasn't found; look for the right-most trailing 'MIP' in the path
