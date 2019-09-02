@@ -844,11 +844,9 @@ DRS_CV::findFN_faults(Split& drs, Split& x_e,
     if( !(drs[j] == t || t == n_ast) )
     {
       capt  = "DRS (filename): ";
-      text  = " DRS item " + hdhC::tf_assign(x_e[j], drs[j]);
-      if( cvMap[x_e[j]] == "*" )
-         text += " vs. global attribute " + hdhC::tf_val(t) ;
-      else
-         text += " vs. global attribute " + hdhC::tf_assign(cvMap[x_e[j]], t) ;
+      text += " failed for global " + hdhC::tf_att(x_e[j]) + " =";
+      text += hdhC::tf_val(t);
+      text += ", found" + hdhC::tf_val(drs[j]) + " in the filename";
 
       return;
     }
@@ -934,8 +932,10 @@ DRS_CV::findPath_faults(Split& drs, Split& x_e,
           continue;
       }
 
-      text += " failure for DRS " + hdhC::tf_val(x_e[j]);
+      text += " failed for global " + hdhC::tf_att(x_e[j]) + " =";
+      text += hdhC::tf_val(t);
       text += ", found" + hdhC::tf_val(drs[i]) + " in the path" ;
+
       break;
     }
   }

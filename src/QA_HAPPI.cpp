@@ -825,9 +825,9 @@ DRS_CV::findFN_faults(Split& drs, Split& x_e,
         text = " suspicion of a missing item," ;
       else
       {
-        text += " failed for " + hdhC::tf_val(x_e[j]);
-        text += ", found in filename " + hdhC::tf_val(drs[j]) ;
-        text += " and global " + hdhC::tf_att(hdhC::empty,cvMap[x_e[j]],t) ;
+        text += " failed for global " + hdhC::tf_att(x_e[j]) + " =";
+        text += hdhC::tf_val(t);
+        text += ", found" + hdhC::tf_val(drs[j]) + " in the filename" ;
       }
 
       break;
@@ -909,7 +909,8 @@ DRS_CV::findPath_faults(Split& drs, Split& x_e,
             continue;
         }
 
-        text += " failed for " + x_e[j] + hdhC::tf_val(t);
+        text += " failed for global " + hdhC::tf_att(x_e[j]) + " =";
+        text += hdhC::tf_val(t);
         text += ", found" + hdhC::tf_val(drs[i]) + " in the path" ;
       }
 

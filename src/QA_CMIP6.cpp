@@ -1045,7 +1045,6 @@ DRS_CV::checkFilenameEncoding(Split& x_filename, struct DRS_CV_Table& drs_cv_tab
       }
     }
 
-
     // append * twice in case of no geo-info nor period;
     // surplusses are safe
     drs.append("*");
@@ -1634,9 +1633,9 @@ DRS_CV::findFN_faults(Split& drs, Split& x_e,
         text += " probably" + hdhC::tf_val(x_e[j]) ;
       else
       {
-        text += " failed for " + hdhC::tf_val(x_e[j]);
-        text += ", found in filename " + hdhC::tf_val(drs[j]) ;
-        text += " and global " + hdhC::tf_att(hdhC::empty,cvMap[x_e[j]],t) ;
+        text += " failed for global " + hdhC::tf_att(x_e[j]) + " =";
+        text += hdhC::tf_val(t);
+        text += ", found" + hdhC::tf_val(drs[j]) + " in the filename" ;
       }
       break;
     }
@@ -1709,7 +1708,8 @@ DRS_CV::findPath_faults(Split& drs, Split& x_e,
             text = " probably" + hdhC::tf_val(x_e[j]) ;
           else
           {
-            text += " failed for " + x_e[j] + hdhC::tf_val(t);
+            text += " failed for global " + hdhC::tf_att(x_e[j]) + " =";
+            text += hdhC::tf_val(t);
             text += ", found" + hdhC::tf_val(drs[i]) + " in the path" ;
           }
 
