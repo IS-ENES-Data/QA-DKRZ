@@ -1240,8 +1240,8 @@ QA_Data::checkFinally(Variable *var)
       if( notes->inq( key, name, ANNOT_NO_MT) )
       {
         std::string capt(hdhC::tf_var(var->name, hdhC::colon));
-        capt += "Entire file of const value=";
-        capt += hdhC::double2String( currMin );
+        capt += "Entire file of const value";
+        capt += hdhC::tf_val(hdhC::double2String( currMin ));
 
         if( notes->operate(capt) )
           notes->setCheckStatus(pQA->n_data, pQA->n_fail);
