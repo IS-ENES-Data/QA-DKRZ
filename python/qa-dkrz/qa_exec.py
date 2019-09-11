@@ -556,7 +556,7 @@ class QaExec(object):
                 # isSignalTerm = t
                 # issueMail = t
 
-            elif istatus > 4:
+            elif istatus > 4 or istatus < 0:
                 # uncontroled system exception, e.g. segmentation fault
                 log_entry['conclusion'] = 'segmentation fault'
                 log_entry['is_event'] = True
