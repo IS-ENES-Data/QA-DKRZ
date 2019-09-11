@@ -705,6 +705,7 @@ if __name__ == '__main__':
         # get from ~/.qa-dkrz/config.txt; also a check for incomplete installation
         get_version(qaConf)
     except:
+        print 'could not run qa-dkrz.get_version()'
         sys.exit(1)
 
     qa_init.run(log, g_vars, qaConf)
