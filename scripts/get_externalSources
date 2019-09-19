@@ -260,6 +260,8 @@ ges_cmip6_cmor()
 
 ges_cmip6_conda()
 {
+  test ! ${isUpdateCMOR} && return
+
   local conda_env cmp
   local action isNewConda
 
@@ -590,8 +592,10 @@ do
          forceUpdate=t
        elif [ ${OPTARG} = 'no-w-perm' ] ; then
          w_perm=f
-       elif [ ${OPTARG:0:2} == 'update' ] ; then
+       elif [ ${OPTARG} == 'update' ] ; then
          isUpdate=t
+       elif [ ${OPTARG} == 'update-cmor' ] ; then
+         isUpdateCMOR=t
        elif [ ${OPTARG%=*} = "qa-tables" -o ${OPTARG%=*} = "qa-home" ] ; then
          QA_TABLES=${OPTARG#*=}
        elif [ ${OPTARG%=*} = "qa-src" ] ; then

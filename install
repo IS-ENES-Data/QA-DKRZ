@@ -371,7 +371,7 @@ update()
   done
   test ${DEBUG} && end_of_inq=t  # just a mark
 
-  if [ ${isUpQA:-f} = t -a ${w_perm:-f} = t ] ; then
+  if [ ${upQA:-f} = t -a ${isUpQA:-f} = t -a ${w_perm:-f} = t ] ; then
     # search updates after a specified number of days; default: once a day
     if [ ${isCondaInstance} ] ; then
        :
@@ -496,7 +496,7 @@ update_external()
          -P $prj --qa-src=${QA_SRC} \
          --qa-tables=${QA_TABLES} --config_file=${CONFIG_FILE} \
          ${isUpdate:+--update} ${isForce:+--force-update} \
-         ${w_perm:---no-w-perm}
+         ${w_perm:---no-w-perm} ${upCMOR:+--update-cmor}
 
      if [ $? -gt 0 ] ; then
         echo "could not make install.update_external for $prj"
@@ -770,10 +770,17 @@ do
         elif [ "${OPTNAME:0:2}" = UP ] ; then
           isUpdate=t
 
-          if [ "${OPTVAL:0:4}" = auto ] ; then
-             . ${QA_SRC}/scripts/parseConfigFile AUTO_UPDATE=${AUTO_UPDATE}
-             . ${QA_SRC}/scripts/parseConfigFile UPDATE=daily
-          fi
+          for opts in ${OPTVAL//,/ } ; do
+            if [ "${opts}" = auto ] ; then
+               . ${QA_SRC}/scripts/parseConfigFile AUTO_UPDATE=${AUTO_UPDATE}
+               . ${QA_SRC}/scripts/parseConfigFile UPDATE=daily
+            elif [ "${opts}" = QA ] ; then
+               upQA=t
+            elif [ "${opts}" = CMOR ] ; then
+               upCMOR=t
+            fi
+          done
+
           continue
         elif [ "${OPTNAME:0:1}" = U ] ; then
           name_0=${OPTNAME%%_*}
@@ -883,7 +890,7 @@ if [ ${isUpdate} ] ; then
         for dn in ${next_update_cycle[*]} ; do
           for nv in ${NEXT_U_CYCLE[*]} ; do
             if [ ${dn%=*} = ${nv} ] ; then
-          . ${QA_SRC}/scripts/parseConfigFile NEXT_${nv}_UPDATE --set_frequency=${dn#*=}
+               . ${QA_SRC}/scripts/parseConfigFile NEXT_${nv}_UPDATE --set_frequency=${dn#*=}
             fi
           done
         done
