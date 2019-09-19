@@ -1972,7 +1972,7 @@ getNextVariable()
           y_caption='file is empty'
           y_tag=M3
           initLog ${nV_fls[l]}
-          unset nV_fls[${l}]
+          nV_fls[l]=''
           is=t
        fi
 
@@ -1983,7 +1983,7 @@ getNextVariable()
           y_caption="NetCDF file with wrong extension ${ext}"
           y_tag=M6c
           initLog ${nV_fls[l]}
-          unset nV_fls[${l}]
+          nV_fls[l]=''
           is=t
        fi
     else
@@ -1994,7 +1994,7 @@ getNextVariable()
           initLog ${nV_fls[l]}
        fi
 
-       unset nV_fls[${l}]
+       nV_fls[l]=''
        is=t
 
      # nc without date-range and not fx was discaded previously
