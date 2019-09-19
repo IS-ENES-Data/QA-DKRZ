@@ -636,6 +636,9 @@ QA::initCheckStatus(void)
    if(isCheckData)
      notes->setCheckStatus(n_data, "PASS");
 
+   if(isCheckCNSTY)
+     notes->setCheckStatus("CNSTY", "PASS");
+
    return;
 }
 
