@@ -947,6 +947,7 @@ clear()
   local isFL=f
   local isResume=f
   local isMessage=f
+  local isClearOnly
 
   isClear=f
 
@@ -958,6 +959,9 @@ clear()
        isClear=t
     elif [ "$f" = all ] ; then
        isClear=t
+    elif [ "$f" = only ] ; then
+       isClearOnly=t
+       continue
     elif [ "$f" = follow_links ] ; then
        test ${DEREFERENCE_SYM_LINKS:-f} = f && isFL=t
        isClear=t
@@ -1152,7 +1156,11 @@ QA result path: $QA_RESULTS/data\nDRS tree:\t${subPath}\n${note}"
   fi
 
   local retVal=1
-  test ${isClear} = f && retVal=0
+  if [ ${isClear} = f ] ; then
+     retVal=0
+  else
+     test ${isClearOnly} && retVal=0
+  fi
 
   return $retVal
 }
@@ -4654,7 +4662,6 @@ testLocks()
       getExperimentName F $1
     fi
 
-    # changed workflow: now, if CLEAR, then only cleared once
     if clear ; then
       eval $2=
       return 0  # treated as a blocked one
