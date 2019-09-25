@@ -1033,8 +1033,6 @@ clear()
          fi
        fi
     fi
-
-    test ${isClear} = t && break
   done
 
   if [ ${isClear} = t ] ; then
@@ -3698,7 +3696,7 @@ log()
      if [ ${tmp%%=*} = 'out' ] ; then
         out=${tmp#out=}
      elif [ ${tmp%%=*} = '--keep' ] ; then
-       isKeep=t
+       local isKeep=t
      fi
   done
 

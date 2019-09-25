@@ -1616,12 +1616,16 @@ QA_Time::testPeriod(Split& x_f)
      // alternative for CMIP6, when cell_methods is not defined
      std::string frequency(pQA->qaExp.getFrequency());
      size_t sz=frequency.size() ;
+     size_t pos;
+
      if( frequency[sz-2] == 'P' && frequency[sz-1] == 't' )
      {
         pointText="frequency " + frequency;
 
         pQA->pIn->variable[time_ix].isInstant = true;
      }
+     else if( (pos=frequency.rfind("hr")) < std::string::npos )
+        hrFreq=frequency.substr(0,pos);
   }
 
   if( isTimeBounds)
@@ -1808,17 +1812,17 @@ QA_Time::testPeriodAlignment(std::vector<std::string>& sd, Date** pDates,
       else
         capt.back() += "end-time, " ;
 
-      capt.back() += " found filename <";
+      capt.back() += " found in filename <";
       capt.back() += pDates[0+i]->str() + "> " ;
 
       if( isTimeBounds )
       {
-        capt.back() += "and time bounds <";
+        capt.back() += "vs. time bound value <";
         capt.back() += pDates[4+i]->str() + "> " ;
       }
       else
       {
-        capt.back() += "and time value < ";
+        capt.back() += "vs. time value < ";
         capt.back() += pDates[2+i]->str() + "> " ;
       }
 
@@ -1933,7 +1937,7 @@ QA_Time::testPeriodPrecision_CORDEX(std::vector<std::string>& sd,
   std::string my_key("T_10e");
 
   // period length per file as recommended?
-  if( frequency.substr(1,2) == "hr" )
+  if( hrFreq.size() )
   {
     // same year.
     bool isA = sd[1].substr(4,4) == "1231";
@@ -1989,18 +1993,14 @@ QA_Time::testPeriodPrecision_CORDEX(std::vector<std::string>& sd,
       }
       else
       {
-        bool isAlt = false;
+        bool isAlt = true;
         double t = firstTimeBoundsValue[0];
 
         std::string fTV;
         std::string fTBV(hdhC::double2String( (t - static_cast<int>(t))*24.) );
 
-        if( frequency.substr(1,2) == "hr"  )
-        {
-          isAlt=true;
-          double t = firstTimeValue;
-          fTV = hdhC::double2String( (t - static_cast<int>(t))*24.) ;
-        }
+        t = firstTimeValue;
+        fTV = hdhC::double2String( (t - static_cast<int>(t))*24.) ;
 
         if( isTimeBounds && s_hr0 == fTBV )
           isAlt = false;
@@ -2046,17 +2046,13 @@ QA_Time::testPeriodPrecision_CORDEX(std::vector<std::string>& sd,
       }
       else
       {
-        bool isAlt = false;
+        bool isAlt = true;
         double t = pQA->qaTime.lastTimeBoundsValue[1];
         std::string lTV;
         std::string lTBV(hdhC::double2String( (t - static_cast<int>(t))*24.) );
 
-        if( frequency.substr(1,2) == "hr" )
-        {
-          isAlt=true;
-          double t = pQA->qaTime.lastTimeValue;
-          lTV = hdhC::double2String( (t - static_cast<int>(t))*24.) ;
-        }
+        t = pQA->qaTime.lastTimeValue;
+        lTV = hdhC::double2String( (t - static_cast<int>(t))*24.) ;
 
         if( pQA->qaTime.isTimeBounds && s_hr1 == lTBV )
           isAlt = false;
