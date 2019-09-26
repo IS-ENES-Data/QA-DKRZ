@@ -20,16 +20,6 @@ compilerSetting()
   # Anything given in the install_configure file?
   if [ -f install_configure ] ; then
     . install_configure
-
-    #test ${LIB} && . ${QA_SRC}/scripts/parseConfigFile LD_LIBRARY_PATH=${LIB}
-    local i ll
-    declare -a ll
-    ll=( ${LIB//:/ } )
-    for(( i=0 ; i < ${#ll[*]} ; ++i )) ; do
-      test ! -d ${QA_SRC}/local/${ll[i]##*/} -o \
-             ! -h ${QA_SRC}/local/${ll[i]##*/} && \
-        ln -sf ${ll[i]} ${QA_SRC}/local
-    done
   fi
 
   if [ ${#locCC} -gt 0 ] ; then
