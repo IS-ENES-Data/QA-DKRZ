@@ -141,6 +141,7 @@ class LogSummary(object):
             self.annot_capt.append(capt)
             self.annot_example_capt.append(capt)
             self.annot_example_isGroup.append(False)
+            self.annot_example_isCapt.append(True)
             self.annot_tag.append(tag)
             self.annot_impact.append(impact)
 
@@ -152,6 +153,9 @@ class LogSummary(object):
             # a registered annotation
             if is_group and not self.annot_example_isGroup[ix]:
                 self.annot_example_isGroup[ix]=True
+
+            if self.annot_example_capt[ix] != self.annot_capt[ix]:
+                self.annot_example_isCapt[ix] = False
 
             # look for a group of
             # associated properties
@@ -872,6 +876,7 @@ class LogSummary(object):
         self.annot_fName_dt_id=[] # for each time interval of each var involved
         self.annot_example_capt=[] # example for grouped annotations
         self.annot_example_isGroup=[]   #
+        self.annot_example_isCapt=[]   #
 
         # count total occurrences (good and bad)
         self.file_count=0
@@ -1180,13 +1185,17 @@ class LogSummary(object):
 
                 fd.write(keys + ' ],\n')
 
+        if self.annot_example_isCapt[ix]:
+            capt = self.annot_example_capt[ix]
+
         capt = self.annot_capt[ix].strip("'")
 
         fd.write(3*tab + '"annotation": "' + capt + '"')
 
-        if self.annot_example_isGroup[ix]:
-            xmpl_capt=self.annot_example_capt[ix].strip("'")
-            fd.write(',\n' + 3*tab + '"example": "' + xmpl_capt + '"')
+        if not self.annot_example_isCapt[ix]:
+            if self.annot_example_isGroup[ix]:
+               xmpl_capt=self.annot_example_capt[ix].strip("'")
+               fd.write(',\n' + 3*tab + '"example": "' + xmpl_capt + '"')
 
         if len(self.annot_tag[ix]):
             tag = self.annot_tag[ix].strip("'")
