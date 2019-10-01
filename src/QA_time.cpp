@@ -336,6 +336,7 @@ QA_Time::init(std::vector<std::string>& optStr)
           boundsName = pIn->variable[time_ix].getAttValue("bounds") ;
           if( pIn->variable[time_ix].isValidAtt("climatology") )
              isClimatology=true;
+             isTime=false;
           break;
        }
      }
@@ -354,6 +355,7 @@ QA_Time::init(std::vector<std::string>& optStr)
          boundsName = pIn->variable[time_ix].getAttValue("bounds") ;
          if( pIn->variable[time_ix].isValidAtt("climatology") )
             isClimatology=true;
+            isTime=false;
          break;
        }
      }
@@ -389,7 +391,7 @@ QA_Time::init(std::vector<std::string>& optStr)
    }
 
    // time_bnds available? Yes, then enable a check
-   if( boundsName.size() )
+   if( isTime && boundsName.size() )
    {
       timeBounds_ix = pIn->getVarIndex(boundsName);
 
