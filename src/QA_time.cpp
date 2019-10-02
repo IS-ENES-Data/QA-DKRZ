@@ -335,8 +335,10 @@ QA_Time::init(std::vector<std::string>& optStr)
           isTime=true;
           boundsName = pIn->variable[time_ix].getAttValue("bounds") ;
           if( pIn->variable[time_ix].isValidAtt("climatology") )
+          {
              isClimatology=true;
              isTime=false;
+          }
           break;
        }
      }
@@ -354,8 +356,10 @@ QA_Time::init(std::vector<std::string>& optStr)
 
          boundsName = pIn->variable[time_ix].getAttValue("bounds") ;
          if( pIn->variable[time_ix].isValidAtt("climatology") )
+         {
             isClimatology=true;
             isTime=false;
+         }
          break;
        }
      }
