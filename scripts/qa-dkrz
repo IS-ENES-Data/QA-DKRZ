@@ -52,20 +52,6 @@
 ## SELECT p1=,p2=v1...  --> error,  SELECT  p1,p2=v1...  --> ok. \n
 ##*/
 
-annot_summary_detectType()
-{
-  local qa_res=$1
-  local logFName=${2%.log}
-
-  if ! ls ${qa_res}/Annotations/* &> /dev/null ; then
-    return 0
-  elif ls ${qa_res}/Annotations/*.json &> /dev/null ; then
-    return 0
-  fi
-
-  return 1
-}
-
 annot_summary()
 {
   test ${NO_SUMMARY:-f} = t && return
@@ -172,25 +158,10 @@ annot_summary()
          qa_res=${QA_RESULTS}/check_logs
       fi
 
-      # detect the kind of summary structure (traditionally or new)
-      if [ ${PY_SUMMARY:-f} = f -a ${TRADITIONAL_SUMMARY:-f} = f ] ; then
-        if annot_summary_detectType ${qa_res} ${LOG_FNAMES[exp_ix]} ; then
-           PY_SUMMARY=t
-        else
-           PY_SUMMARY=f
-        fi
-      fi
+      python ${QA_SRC}/python/qa-dkrz/qa_summary.py \
+            ${qa_res}/${LOG_FNAMES[exp_ix]}
 
-      if [ ${PY_SUMMARY:-f} = t ] ; then
-         python ${QA_SRC}/python/qa-dkrz/qa_summary.py \
-              ${qa_res}/${LOG_FNAMES[exp_ix]}
-
-         # annot_summary_send ${qa_res}/Annotations/${LOG_FNAMES[exp_ix]}.json
-      else
-         /bin/bash ${QA_SRC}/scripts/taskSummary ${DEBUG_X} \
-           -p ${qa_res} --src=$QA_SRC \
-           ${cvr} ${ers} ${prj} ${qrs} ${tcl} ${LOG_FNAMES[exp_ix]}
-      fi
+      # annot_summary_send ${qa_res}/Annotations/${LOG_FNAMES[exp_ix]}.json
 
       pidBuf[i]=$!
       isStart=f
