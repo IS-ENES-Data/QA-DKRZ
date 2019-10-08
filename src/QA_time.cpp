@@ -2704,8 +2704,8 @@ QA_Time::testPeriod_regularBounds(std::vector<std::string> &sd, Date** pDatesOri
         pDates[i] = new Date(*pDatesOrig[i]);
   }
 
-//  if( ! pQA->pIn->variable[time_ix].isInstant )
-//  {
+  if( ! pQA->pIn->variable[time_ix].isInstant )
+  {
      // in case of isInstant, the time value could be anytime
      // in the year, thus the years have to match
      if( sd[0].size() < 5 )
@@ -2771,7 +2771,9 @@ QA_Time::testPeriod_regularBounds(std::vector<std::string> &sd, Date** pDatesOri
          pDates[2]->shift("beg,mi");
          pDates[3]->shift("end,mi");
      }
-//  }
+  }
+  else
+     return false;
 
   bool retVal=true;
 
