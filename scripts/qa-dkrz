@@ -2166,7 +2166,8 @@ getNextVariable()
 
   local nFsSz=${#nextFile[*]}
 
-  if [ $status -eq 3 -o $status -eq 5 -o $status -eq 6 ] ; then
+  #if [ $status -eq 3 -o $status -eq 5 -o $status -eq 6 ] ; then
+  if [ $status -gt 4 -a $status -lt 9 ] ; then
 #    if [ ${PROGRESS_BAR} ] ; then
       local num=${#nV_fls[*]}
 #    fi
@@ -2180,9 +2181,12 @@ getNextVariable()
     elif [ $status -eq 5 ] ; then
       y_caption='file(s) with invalid time data'
       y_tag=M9
-    else
+    elif [ $status -eq 6 ] ; then
       y_caption='Invalid NetCDF file'
       y_tag=M0
+    else
+      y_caption='files of regular in t and climatologies'
+      y_tag=M11
     fi
 
     y_meta_data=OMIT

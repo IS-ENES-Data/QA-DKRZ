@@ -45,6 +45,7 @@ return:  output: \n
   5      Invalid time data.\n
   6      Could not open NetCDF data file.\n
   7      Could not open NetCDF QA file.\n
+  8      A mix of files with regular time and climatic values;r respectively."
 >10      Ambiguity test failed (values accumulate):\n
   +1        misaligned dates in filenames \n
   +2        modification time check failed \n
@@ -158,8 +159,8 @@ class SyncFiles
    int  print(void);
    int  printTimelessFile(std::string &);
    void readInput(void);
-   void readArgv(int optInd, int argc, char *argv[]);
-   int  run(void);
+   int readArgv(int optInd, int argc, char *argv[]);
+   int  run(int);
 
    void setTarget(std::string q)        {qa_target=q;}
    void setPath(std::string &p);
@@ -305,13 +306,14 @@ int main(int argc, char *argv[])
   }
 
   // Note= argc counts from 1, but argv[0] == this executable
+  int ensembleType;
   if( opt.optind == argc )
     syncFiles.readInput();
   else
-    syncFiles.readArgv(opt.optind, argc, argv);
+    ensembleType = syncFiles.readArgv(opt.optind, argc, argv);
 
   // this does all
-  return syncFiles.run();
+  return syncFiles.run(ensembleType);
 }
 
 
@@ -1228,10 +1230,13 @@ SyncFiles::readInput(void)
   return;
 }
 
-void
+int
 SyncFiles::readArgv
 (int i, int argc, char *argv[])
 {
+  bool isClim=false;
+  bool isRegular=false;
+
   for( ; i < argc ; ++i)
   {
     ensemble->member.push_back( new Member );
@@ -1240,64 +1245,93 @@ SyncFiles::readArgv
       ensemble->member.back()->setPath(path);
 
     ensemble->member.back()->setFilename(argv[i]);
+
+    if( ensemble->member.back()->filename.rfind("-clim.nc") < std::string::npos )
+       isClim=true;
+    else
+       isRegular=true;
   }
 
   // sz will be changed corresponding to the effective range
   ensemble->sz = ensemble->member.size() ;
   ensemble->last = ensemble->sz -1; // the real size
 
-  return;
+  int retVal=0;
+  if( isClim )
+  {
+     if( isRegular )
+        retVal=2;
+     else
+        retVal=1;
+  }
+
+  return retVal;
 }
 
 int
-SyncFiles::run(void)
+SyncFiles::run(int ensembleType)
 {
+  // ensembleType: 0: regular, 1: only clim, 2: mix of 1 and 2
+
   returnValue=0;
 
-  // we append the qa_target, if available
-  if( qa_target.size()  )
-    ensemble->addTarget(qa_target);
-
-  // read dates from nc-files,
-  // sort dates in ascending order (old --> young)
-  // and get modification times of files.
-  // Any annotation would be done there.
-  std::string str;
-
-  // isFNameAlignment is usually false
-  returnValue = ensemble->getTimes(str, isFNameAlignment) ;
-
-  if( str.size() )  // exit condition found
+  if( ensembleType == 0 )
   {
-    std::cout << str ;
-    return returnValue ;
-  }
+     // we append the qa_target, if available
+     if( qa_target.size()  )
+       ensemble->addTarget(qa_target);
 
-  // Did any 'no-record' occur? Error cases are trapped.
-  if( ensemble->isNoRec )
-  {
-    returnValue = printTimelessFile(str) ;
-    if( str.size() )
-      std::cout << str ;
+     // read dates from nc-files,
+     // sort dates in ascending order (old --> young)
+     // and get modification times of files.
+     // Any annotation would be done there.
+     std::string str;
 
-    return returnValue ;
-  }
+     // isFNameAlignment is usually false
+     returnValue = ensemble->getTimes(str, isFNameAlignment) ;
 
-  // Check for ambiguities, return 0 for PASS.
-  // Safe for a single file, because this was processed before
-  if( (returnValue = ensemble->testAmbiguity
+     if( str.size() )  // exit condition found
+     {
+       std::cout << str ;
+       return returnValue ;
+     }
+
+     // Did any 'no-record' occur? Error cases are trapped.
+     if( ensemble->isNoRec )
+     {
+       returnValue = printTimelessFile(str) ;
+       if( str.size() )
+         std::cout << str ;
+
+       return returnValue ;
+     }
+
+     // Check for ambiguities, return 0 for PASS.
+     // Safe for a single file, because this was processed before
+     if( (returnValue = ensemble->testAmbiguity
         (str, isPrintOnlyMarked, isModificationTest, isMixingRefused )) )
-  {
-    if( str.size() )
-    {
-      std::cout << str ;
-      return returnValue;
-    }
-  }
+     {
+       if( str.size() )
+       {
+         std::cout << str ;
+         return returnValue;
+       }
+     }
 
-  // successful run
-  if( print() == 1 )
-      return 1;
+     // successful run
+     if( print() == 1 )
+         return 1;
+  }
+  else
+  {
+     if(ensembleType == 1)
+        // pure clim-files; no time analysis
+        returnValue=0;
+     else
+        returnValue=8;
+
+     (void) print() ;
+  }
 
   return returnValue ;
 }
