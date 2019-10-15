@@ -4632,7 +4632,7 @@ testLocks()
     getExperimentName F $1
   fi
 
-  if [ "${2}" ] ; then
+  if [ "${!2}" ] ; then
      local logF=$LOG_FNAME_DIR/${CURR_LOG_FNAME}.log
 
      if ! grep -q $1 $logF ; then
