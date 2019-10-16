@@ -6324,11 +6324,11 @@ CF::chap433_getParamVars( Variable& var,
 {
   // test for a valid ft att
   std::string& att_ft = var.attValue[att_ft_ix][0];
+  bool is_changed_order=false;
   Split x_att_ft(att_ft);
 
   // split also something like asdf:bsdf at colons
   size_t pos;
-  //bool isMissingBlank=false;
 
   for(size_t i=0 ; i < x_att_ft.size() ; ++i )
   {
@@ -6337,7 +6337,6 @@ CF::chap433_getParamVars( Variable& var,
       {
           x_att_ft.insert(i+1, x_att_ft[i].substr(pos+1));
           x_att_ft.replace(i, x_att_ft[i].substr(0,pos+1));
-          //isMissingBlank=true;
       }
   }
 
@@ -6427,8 +6426,14 @@ CF::chap433_getParamVars( Variable& var,
      for( size_t j=0 ; j < v_ft_sz ; ++j )
      {
        for( size_t k=0 ; k < x_valid_ft[j].size() ; ++k )
+       {
            if( x_valid_ft[j][k] == att_ft_pv[i].first )
-                  ++num[j];
+           {
+               ++num[j];
+               if( i != k )
+                  is_changed_order=true;
+           }
+       }
      }
   }
 
@@ -6460,7 +6465,7 @@ CF::chap433_getParamVars( Variable& var,
      valid_ix = -1 ;
      att_ft_pv.push_back( std::pair<std::string, std::string> (hdhC::empty,hdhC::empty) );
   }
-  else if( zx[0] < 2 )
+  else if( num[zx[0]] < 2 )
   {
     valid_ix = -1 ; //
     att_ft_pv.push_back( std::pair<std::string, std::string> (hdhC::empty,hdhC::empty) );
@@ -6468,15 +6473,35 @@ CF::chap433_getParamVars( Variable& var,
   else
     valid_ix = zx[0] ;
 
-  if( valid_ix > -1 && isFault )
+  if( valid_ix > -1 )
   {
-    if( notes->inq(bKey + "433n", var.name) )
+    if( isFault )
     {
-        std::string capt(hdhC::tf_att(var.name, n_formula_terms, att_ft));
-        capt += " with syntax fault";
+      if( notes->inq(bKey + "433n", var.name) )
+      {
+         std::string capt(hdhC::tf_att(var.name, n_formula_terms, att_ft));
+         capt += " with syntax fault";
 
-        (void) notes->operate(capt) ;
-        notes->setCheckStatus( n_CF, fail );
+         (void) notes->operate(capt) ;
+         notes->setCheckStatus( n_CF, fail );
+      }
+    }
+    else if( is_changed_order )
+    {
+      // adjust valid_units to the sequence of provided fterms
+      std::vector<std::pair<std::string, std::string> > swaped_att;
+      Split x_valid_ft( valid_ft[valid_ix] );
+
+      for( size_t j=0 ; j < x_valid_ft.size() ; ++j )
+      {
+         for( size_t i=0 ; i < att_ft_pv.size() ; ++i )
+         {
+            if( att_ft_pv[i].first == x_valid_ft[j] )
+               swaped_att.push_back(att_ft_pv[i]);
+         }
+      }
+
+      att_ft_pv = swaped_att;
     }
   }
 
@@ -6539,7 +6564,12 @@ CF::chap433_verify_FT(
           {
             // check the units of the parameters
             int iu = pIn->variable[i].getAttIndex(n_units);
-            if( iu == -1 || pIn->variable[i].attValue[iu][0] == "1" )
+            std::string aV;
+
+            if( iu > -1 )
+               aV = pIn->variable[i].attValue[iu][0] ;
+
+            if( iu == -1 || (aV.size() == 0 || aV == "1") )
             {
               if( x_fUnits[k] != "1" && notes->inq(bKey + "432h", var.name) )
               {
@@ -6556,10 +6586,10 @@ CF::chap433_verify_FT(
             }
             else
             {
-              if( cmpUnits(pIn->variable[i].attValue[iu][0], x_fUnits[k]) )
-                paramVarUnits.push_back(
-                  std::pair<std::string, std::string>
-                  (pIn->variable[i].name, pIn->variable[i].attValue[iu][0]) );
+              if( cmpUnits(aV, x_fUnits[k]) )
+                  paramVarUnits.push_back(
+                     std::pair<std::string, std::string>
+                        (pIn->variable[i].name, aV) );
               else
               {
                 if( notes->inq(bKey + "432h", var.name) )
@@ -6569,7 +6599,7 @@ CF::chap433_verify_FT(
                   capt += n_variable ;
                   capt += hdhC::tf_val(pIn->variable[i].name, hdhC::blank) ;
                   capt += "has " ;
-                  capt += hdhC::tf_assign(n_units, pIn->variable[i].attValue[iu][0]) ;
+                  capt += hdhC::tf_assign(n_units, aV) ;
                   if( x_fUnits[k] == "1" )
                     capt += ", but " + n_dimension + "less is required";
                   else
