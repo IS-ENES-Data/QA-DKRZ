@@ -12,7 +12,7 @@ getCondaPath()
   # no conda in PATH;
   # was this script launched from qa-dkrz of a conda installation?
   # look for bin/conda in QA_SRC
-  local path=$QA_SRC
+  local path=$( which conda )
 
   local i pth pc sz dirs dir
   declare -a pc dirs
