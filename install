@@ -245,16 +245,16 @@ ship()
 
 syncTables()
 {
-#  if [ ${isSyncTables} ] ; then
-    if ! mkdir -p ${QA_TABLES}/tables  ; then
-      echo "failure: mkdir -p ${QA_TABLES}/tables"
-      exit_fnct 1
-    fi
+   if [ ${w_perm} ] ; then
+     if ! mkdir -p ${QA_TABLES}/tables  ; then
+       echo "failure: mkdir -p ${QA_TABLES}/tables"
+       exit_fnct 1
+     fi
 
-    rsync -auz --exclude '*~' $QA_SRC/tables ${QA_TABLES} &> /dev/null
-#  fi
+     rsync -auz --exclude '*~' $QA_SRC/tables ${QA_TABLES} &> /dev/null
+   fi
 
-  return
+   return
 }
 
 tr_option()
@@ -338,62 +338,32 @@ unship()
 
 update()
 {
-  local prj isUp
+  local prj
 
   local prjs
   declare -a prjs
   prjs=( $* )
   test ${#prjs[*]} -gt 0 && prjs[${#prjs[*]}]=CF
 
-  if [ ${isForce} ] ; then
-    isUp=t
-    isUpQA=t
-  elif [ ${isUpdate} ] ; then
-    isUp=t
-  fi
-
   for prj in $* ; do
     if ! . ${QA_SRC}/scripts/inqRunEnv ${prj} ; then
       isUp=t  # incomplete
     elif . ${QA_SRC}/scripts/parseConfigFile AUTO_UPDATE ; then
-      if [ ! ${isUpQA} ] ; then
-        if ! . ${QA_SRC}/scripts/parseConfigFile NEXT_QA_UPDATE --inquire ; then
-          isUpQA=t
-        fi
-
-        continue
-      fi
-    else
-      continue
+      isUp=t
     fi
 
-    eval isUp_${prj}=t
+    test ${isUp} && eval isUp_${prj}=t
   done
-  test ${DEBUG} && end_of_inq=t  # just a mark
+  test ${DEBUG} && end_of_inq=t  # just a mark for debugging
 
-  if [ ${upQA:-f} = t -a ${isUpQA:-f} = t -a ${w_perm:-f} = t ] ; then
-    # search updates after a specified number of days; default: once a day
-    if [ ${isCondaInstance} ] ; then
-       :
-       #test ! ${CONDA_QA_ENV} && \
-       #  . ${QA_SRC}/scripts/parseConfigFile CONDA_QA_ENV
-
-       #if [ ${isUpQA:-f} != f -a -w ${QA_SRC} ] ; then
-       #   if update_CONDA_env "${CONDA_QA_NAME}" "${CONDA_QA_CHANNELS}" \
-       #               "${CONDA_PATH}"   "${CONDA_QA_ENV:-qa-dkrz}" ; then
-
-       #     . ${QA_SRC}/scripts/parseConfigFile NEXT_QA_UPDATE ${isForce:+--force}
-       #     . ${QA_SRC}/scripts/parseConfigFile \
-       #          CONDA_QA_ENV=${CONDA_QA_ENV:-${CONDA_PATH%/bin/conda}/envs/qa-dkrz}
-
-       #     # updates the QA_CONDA_REVISION entry in the config-file
-       #     # $QA_SRC/scripts/getVersion --force ${DEBUG} &> /dev/null
-       #     . ${QA_SRC}/scripts/parseConfigFile \
-       #          QA_VERSION=$( python $QA_SRC/python/qa-dkrz/qa_version.py )
-       #   fi
-       # fi
-    elif [ -d ${QA_SRC}/.git -a -w ${QA_SRC} ] ; then
-      test -w ${QA_SRC} && update_QA_SRC
+  if [ ${upQA:-f} = t -a ${w_perm:-f} = t ] ; then
+    if [ ! ${isCondaInstance} ] ; then
+      if [ -d ${QA_SRC}/.git ] ; then
+         update_QA_SRC
+      else
+         echo "no git repository; no update"
+         return
+      fi
     fi
   fi
 
@@ -403,9 +373,6 @@ update()
         eval isPRJ=isUp_${prj}
         if [ ${isPRJ} ] ; then
            update_external $prj
-#          if ! update_external $prj ; then
-#             isSyncTables=t
-#          fi
         fi
       done
   fi
@@ -424,7 +391,7 @@ update_CONDA_env()
   test ${conda_env:-none} = none && conda_env=cmor
   test ! ${action} && action=update
 
-  test ${NET:-t} = f && return
+  test ! ${NET} && return
   test "${conda_env}" = '-n ' && conda_env=
 
   if [ ! -w "${QA_SRC}" ] ; then
@@ -476,7 +443,7 @@ EOF
 
 update_external()
 {
-  test ${NET:-t} = f && return 0
+  test ! ${NET} && return 0
 
   local prj=$1
   test ${PROJECT_VIRT} && prj=${PROJECT_VIRT}
@@ -507,6 +474,10 @@ update_external()
      eval nextUpdate=\$NEXT_${prj}_UPDATE
 
      . ${QA_SRC}/scripts/parseConfigFile NEXT_${prj}_UPDATE ${isForce:+--force}
+
+     v=$( python ${QA_SRC}/python/qa-dkrz/qa_version.py -P $prj )
+      . ${QA_SRC}/scripts/parseConfigFile ${prj}_VERSION=$v
+
      return 1
   fi
 
@@ -515,7 +486,7 @@ update_external()
 
 update_QA_SRC()
 {
-  if [ ${NET:-t} = t ] ; then
+  if [ ! ${NET} ] ; then
     if [ ${isForce:-f} = t ] || \
            ! . ${QA_SRC}/scripts/parseConfigFile NEXT_QA_UPDATE --inquire
     then
@@ -564,7 +535,8 @@ update_QA_SRC()
 
         . ${QA_SRC}/scripts/parseConfigFile NEXT_QA_UPDATE ${isForce:+--force}
 
-#        $QA_SRC/scripts/getVersion --force ${DEBUG} &> /dev/null
+         QA_VERSION=$( python ${QA_SRC}/python/qa-dkrz/qa_version.py --qa )
+         . ${QA_SRC}/scripts/parseConfigFile QA_VERSION=$QA_VERSION
 
         . ${QA_SRC}/scripts/parseConfigFile --read
       fi
@@ -577,6 +549,13 @@ update_QA_SRC()
 # ----- main ------
 zeroArg=$0
 initialArgs=($*)
+
+for arg in ${initialArgs[*]} ; do
+   if [ ${arg} = '--debug' ] ; then
+		 set -x
+	    break
+   fi
+done
 
 # resolve symbolic links and realtive paths
 getSrcPath
@@ -633,7 +612,7 @@ do
             CONFIG_FILE=${OPTVAL}
         elif [ ${UOPTARG:0:5} = DEBUG -o ${UOPTARG} = 'DEBUG=INSTALL' ] ; then
           export DEBUG='--debug'
-          set -x
+          # set -x  # already set before
         elif [ "${OPTNAME}" = HOME ] ; then
           export QA_TABLES=${OPTVAL}
         elif [ "${OPTNAME}" = QA_TABLES ] ; then
@@ -646,28 +625,17 @@ do
   esac
 done
 
-# freeze
 if [ -w $QA_SRC ] ; then
    w_perm=t
-else
-   exit
-fi
 
-if [ ! -w $QA_SRC -o ${NET:-t} = f ] ; then
-   if [ ! ~/.qa-dkrz/config.txt ] ; then
-      if [ $QA_SRC/.qa-dkrz/config.txt ] ; then
-        mkdir -p ~/.qa-dkrz
-        cp $QA_SRC/.qa-dkrz/config.txt ~/.qa-dkrz
-      else
-        echo "Please, ask your QA-DKRZ admin to provide .qa-dkrz/config.txt"
-        exit
-      fi
+   if [ ! -f ~/.qa-dkrz/config.txt ] ; then
+      mkdir -p ~/.qa-dkrz
+      touch ~/.qa-dkrz/config.txt
    fi
-fi
-
-if [ ! -f ~/.qa-dkrz/config.txt ] ; then
-   mkdir -p ~/.qa-dkrz
-   touch ~/.qa-dkrz/config.txt
+else
+   if [ ! -d ~/.qa-dkrz ] ; then
+      cp -r $QA_SRC/.qa-dkrz ~
+   fi
 fi
 CONFIG_FILE=~/.qa-dkrz/config.txt
 
@@ -727,7 +695,6 @@ do
 
         elif [ "${OPTNAME}" = FORCE ] ; then
           isForce=t
-          isUpdate=t
         elif [ "${OPTNAME}" = HELP ] ; then
           descript
           exit_fnct 41
@@ -815,7 +782,7 @@ shift $(( $OPTIND - 1 ))
 
 if [ ! ${isUpdate} ] ; then
   if . ${QA_SRC}/scripts/parseConfigFile AUTO_UPDATE ; then
-     test ${NET:-t} = t && isUpdate=t
+     test ${NET} && isUpdate=t
   fi
 fi
 
@@ -921,23 +888,10 @@ if [ ${isShip} ] ; then
    exit_fnct 41
 fi
 
-# add versions
-QA_VERSION=$( python ${QA_SRC}/python/qa-dkrz/qa_version.py --qa )
-. ${QA_SRC}/scripts/parseConfigFile QA_VERSION=$QA_VERSION
-
-for p in ${projects[*]} CF ; do
-   v=$( python ${QA_SRC}/python/qa-dkrz/qa_version.py -P $p )
-   . ${QA_SRC}/scripts/parseConfigFile ${p}_VERSION=$v
-done
-
-# for those working with a frozen installation
-if [ ! -d $QA_SRC/.qa-dkrz/config.txt ] ; then
-   mkdir -p $QA_SRC/.qa-dkrz
-   cp ~/.qa-dkrz/config.txt $QA_SRC
+if [ ! ${w_perm} ] ; then
+   . ${QA_SRC}/scripts/parseConfigFile QA_VERSION
+   exit 0
 fi
-
-test ! ${w_perm} && exit 0
-test ${isFrozen} && exit 0
 
 # conda ?
 test ${PWD/\/bin\/conda\//} != ${PWD} && exit 0
