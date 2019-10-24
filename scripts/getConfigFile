@@ -1,29 +1,22 @@
-export CONFIG_FILE
+# not called by install, just by qa-dkrz
 
-if [ ${w_perm:-t} = t ] ; then
-  if [ ! ${CONFIG_FILE} ] ; then
-     export CONFIG_FILE=${HOME}/.qa-dkrz/config.txt
-  fi
-else
-   CONFIG_FILE=${QA_SRC}/.qa-dkrz/config.txt
-   CONFIG_READ_ONLY=t
-   return 0
+if [ ! ${CONFIG_FILE} ] ; then
+   if [ -f ${HOME}/.qa-dkrz/config.txt ] ; then
+      CONFIG_FILE=${HOME}/.qa-dkrz/config.txt
+   elif [ -f ${QA_SRC}/.qa-dkrz/config.txt ] ; then
+      CONFIG_FILE=${QA_SRC}/.qa-dkrz/config.txt
+      CONFIG_READ_ONLY=t
+   fi
 fi
 
 gCF_retVal=0
 
-if [ ! -f ${CONFIG_FILE} ] ; then
-  if [ ! -w ${QA_SRC} -a -f ${QA_SRC}/.qa-dkrz/config.txt ] ; then
-     mkdir -p ~/.qa-dkrz
-     cp -r ${QA_SRC}/.qa-dkrz/config.txt ~/.qa-dkrz
-  else
-     mkdir -p ${CONFIG_FILE%/*} 2> /dev/null
-     touch ${CONFIG_FILE} 2> /dev/null
-     gCF_retVal=1
-  fi
+if [ ! -s ${CONFIG_FILE} ] ; then
+   echo "please, run ./install [opts]"
+   exit
 fi
 
-test ! -s ${CONFIG_FILE} && gCF_retVal=1
+export CONFIG_FILE
 
-return $gCF_retVal
+return
 
