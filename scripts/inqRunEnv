@@ -355,7 +355,17 @@ iRE_scanCondaEnv()
   local conda_path # could be different for cmor
   declare -a envs paths
 
-  test ! ${CONDA_PATH} && return  # not installed by conda
+  if [ ! ${CONDA_PATH}  ] ; then
+     local p
+     for p in ${prj[*]} ; do
+       if [ "$p" = 'CMIP6' ] ; then
+          echo "CMIP6 requires conda && cmor" > /dev/stderr
+          exit 1
+       fi
+     done
+
+     return  # not required
+  fi
 
   if [ $1 = qa-dkrz ] ; then
     if [ ${CONDA_QA_ENV} ] ; then
@@ -385,14 +395,14 @@ iRE_scanCondaEnv()
 
       if [ ${CONDA_CMOR_ENV} ] ; then
          uxp=( $( find $CONDA_CMOR_ENV -name "udunits2.xml" ) )
-#      else
-#         uxp=( $( find $CONDA_CMOR_PATH -name "udunits2.xml" ) )
+
+         test ${uxp[0]:0:2} = './' && uxp[0]=${PWD}/${uxp[0]:2}
+
+         UDUNITS2_XML_PATH=${uxp[0]}
+         . ${QA_SRC}/scripts/parseConfigFile UDUNITS2_XML_PATH=$UDUNITS2_XML_PATH
+      else
+         echo "CONDA_CMOR_ENV is required for CMIP6" > /dev/stderr
       fi
-
-      test ${uxp[0]:0:2} = './' && uxp[0]=${PWD}/${uxp[0]:2}
-
-      UDUNITS2_XML_PATH=${uxp[0]}
-      . ${QA_SRC}/scripts/parseConfigFile UDUNITS2_XML_PATH=$UDUNITS2_XML_PATH
     fi
   fi
 
