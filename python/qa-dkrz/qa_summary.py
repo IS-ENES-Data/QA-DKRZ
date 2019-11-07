@@ -474,6 +474,9 @@ class LogSummary(object):
             for line in fd:
                count += 1
                line = line.rstrip(' \n')
+               if len(line) == 0:
+						continue
+
                blk.append(line)
 
                words = line.split(None, 1)
