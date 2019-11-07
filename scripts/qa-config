@@ -849,30 +849,40 @@ naming()
 output()
 {
   # Return the configuration and selected experiments
-  # and parameters to the calling director.
+  # and parameters to the calling instance.
 
   set -f
 
   # selection on the command-line cancels any selection in config-files
-  if [ ${sl_args} ] ; then
-    for(( i=0 ; i < ${#sl_args[*]} ; ++i )) ; do
-      if [ ${sl_args[i]:0:1} = '/' ] ; then
-        # rule: if absolute path on cmd-line, then cancel previous
-        unsetKWL PROJECT_DATA
+  local i j
 
-        pathList=
-        varList=
+  if [ ${sl_args} ] ; then
+    local saved_pL curr_sl
+    declare -a saved_pL=( ${pathList[*]} )
+    declare -a curr_sls
+    pathList=
+    varList=
+
+    for(( i=0 ; i < ${#sl_args[*]} ; ++i )) ; do
+      curr_sls=()
+
+      if [ ${sl_args[i]:0:1} = '/' ] ; then
+        # rule: if absolute path on cmd-line, then cancel any previous
+        unsetKWL PROJECT_DATA
+        curr_sls[0]=${sl_args[i]}
       else
         if [ ${sl_args[i]/=/} = ${sl_args[i]} ] ; then
           # only variables; no path components
-          for(( j=0 ; j < ${#pathList[*]} ; ++j )) ; do
-            varList[j]=${sl_args[i]}
+          for(( j=0 ; j < ${#saved_pL[*]} ; ++j )) ; do
+             curr_sls[${#curr_sls[*]}]=${saved_pL[j]}=${sl_args[i]}
           done
-          continue
+
+          curr_sl="${curr_sls[*]}"
         fi
       fi
 
-      sel_lock S ${sl_args[i]}
+
+      sel_lock S ${curr_sl// /,}
     done
   fi
 
@@ -913,8 +923,8 @@ output()
   varList=( ${varList[*]//,/ } )
   for(( i=0 ; i < ${#pathList[*]} -1 ; ++i )) ; do
     for(( j=i+1 ; j < ${#pathList[*]} ; ++j )) ; do
-      if [ "${varList[i]} = "${varList[j]} ] ; then
-        if [ "${pathList[i]} = "${pathList[j]} ] ; then
+      if [ "${varList[i]}" = "${varList[j]}" ] ; then
+        if [ "${pathList[i]}" = "${pathList[j]}" ] ; then
           unset pathList[$j]
           unset varList[$j]
         fi
@@ -1950,7 +1960,7 @@ do
     P)  setKWL PROJECT=$OPTARG ;;
     Q)  setKWL NO_STATUS=t ;;
     q)  setKWL QUIET=t ;;
-    S)  sl_args=( ${OPTARG//,/} )
+    S)  sl_args=( ${OPTARG//,/ } )
         ;;
     s)  setKWL SESSION_DATE=${OPTARG} ;;
     T)  ;; # already caught
@@ -2055,10 +2065,7 @@ if [ $# -gt 0 ] ; then
           sl_args[${#sl_args[*]}]=$(pwd)/${f}
        fi
      fi
-
   done
-
-#  sl_args=( ${sl_args[*]} ${*//,/ } )
 fi
 
 set +f

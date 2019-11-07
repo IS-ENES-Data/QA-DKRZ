@@ -3097,7 +3097,6 @@ init()
     syncOptsInit="${syncOptsInit} --fname-alignment --continuous"
   fi
 
-
   # progress bar
 #  if [ ${PROGRESS_BAR:-f} = t ] ; then
     # write to stdout
