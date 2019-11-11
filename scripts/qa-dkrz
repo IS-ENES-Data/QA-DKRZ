@@ -958,24 +958,14 @@ clear()
             && ls ${QA_RESULTS}/data/${subPath}/${fBase[ix]}.clear &> /dev/null ; then
          isClear=t
        fi
+    elif [ ${f%=*} = date ] ; then
+       if clear_date ; then
+          isClear=t
+       fi
     elif [ ${f%=*} = tag ] ; then
-       local i words num nums
-       declare -a words nums
-
-       nums=( $(getBlockNums $logF ${fBase[ix]}) )
-
-       for num in ${nums[*]} ; do
-          words=( $(sed -n "${num},/status:/ p" $logF ) )
-
-          for(( i=0 ; i < ${#words[*]} ; ++i )) ; do
-            if [ ${words[i]} = 'tag:' ] ; then
-               if [ ${words[i+1]} = "${f#*=}" ] ; then
-                 isClear=t
-                 break 2
-               fi
-            fi
-          done
-       done
+       if clear_tag ; then
+          isClear=t
+       fi
     elif [ ${f%=*} = regex ] ; then
        # ensure that pattern is unique
        if expr match ${fBase[ix]} ".*${f#*/}" &> /dev/null ; then
@@ -1132,6 +1122,48 @@ QA result path: $QA_RESULTS/data\nDRS tree:\t${subPath}\n${note}"
   fi
 
   return $retVal
+}
+
+clear_date()
+{
+  local f_date  i
+  if [ ! ${last_logfile_date} ] ; then
+      last_logfile_date=$( tac $logF | grep -m 1 'date:' | awk '{print $3}' )
+  fi
+
+  for(( i=0 ; i < ${#nV_fls[*]} ; ++i )) ; do
+     f_date=$( ls -l --time-style='+%FT%T' \
+               $nextPath/${nV_fls[i]} 2> /dev/null \
+               | awk '{print $6}' )
+
+     if [[ ${last_logfile_date} < ${f_date} ]] ; then
+        return 0
+     fi
+  done
+
+  return 1
+}
+
+clear_tag()
+{
+    local i words num nums
+    declare -a words nums
+
+    nums=( $(getBlockNums $logF ${fBase[ix]}) )
+
+    for num in ${nums[*]} ; do
+       words=( $(sed -n "${num},/status:/ p" $logF ) )
+
+       for(( i=0 ; i < ${#words[*]} ; ++i )) ; do
+         if [ ${words[i]} = 'tag:' ] ; then
+            if [ ${words[i+1]} = "${f#*=}" ] ; then
+              return 0
+            fi
+         fi
+       done
+    done
+
+    return 1
 }
 
 copyPreamble()
