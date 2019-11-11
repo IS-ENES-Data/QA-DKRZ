@@ -226,7 +226,7 @@ ship()
             progress_wheel &
             job_id=$!
           fi
-          if [ isCondaInstance} ] ; then
+          if [ ${isCondaInstance} ] ; then
              tar rf ${pth}/QA-DKRZ.tar ${bp##*/}
           else
              tar --exclude="${bp##*/}/envs/qa-dkrz" --exclude="${bp##*/}/qa-dkrz*" \
@@ -357,14 +357,12 @@ update()
   test ${DEBUG} && end_of_inq=t  # just a mark for debugging
 
   if [ ${upQA:-f} = t -a ${w_perm:-f} = t ] ; then
-    if [ ! ${isCondaInstance} ] ; then
       if [ -d ${QA_SRC}/.git ] ; then
          update_QA_SRC
       else
          echo "no git repository; no update"
          return
       fi
-    fi
   fi
 
   if [ ${isUp} ] ; then
