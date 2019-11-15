@@ -616,41 +616,37 @@ currPWD=$(pwd)
 cd $QA_TABLES &> /dev/null
 
 # Note that CF may-be stand-alone or together with another project
+status=0
 if ! . $QA_SRC/scripts/parseConfigFile NEXT_CF_UPDATE --inquire \
         || [ ${forceUpdate:-f} = t ] ; then
    if ! ges_cf ; then
      cd ${currPWD} &> /dev/null
-     return 41
+     status 41
    fi
-fi
-
-if . $QA_SRC/scripts/parseConfigFile NEXT_${prj}_UPDATE --inquire \
+elif ! . $QA_SRC/scripts/parseConfigFile NEXT_${prj}_UPDATE --inquire \
        && [ ${forceUpdate:-f} = f ] ; then
-  return 0
-fi
 
-status=0
-
-if [ "$prj" = CORDEX ] ; then
-  if ! ges_cordex ; then
-    status=$?
+  if [ "$prj" = CORDEX ] ; then
+    if ! ges_cordex ; then
+      status=$?
+    fi
+  elif [ "$prj" = CMIP6 ] ; then
+    if ! ges_cmip6 ; then
+      status=$?
+    fi
   fi
-elif [ "$prj" = CMIP6 ] ; then
-  if ! ges_cmip6 ; then
-    status=$?
+
+  if [ ${#err[*]} -gt 0 ] ; then
+     for(( k=0 ; k < ${#err[*]} ; ++k )) ; do
+        echo -e "${err[k]}"
+     done
+
+     status=41
   fi
+
+  test ${status} -eq 0 && \
+     . $QA_SRC/scripts/parseConfigFile NEXT_${prj}_UPDATE
 fi
-
-if [ ${#err[*]} -gt 0 ] ; then
-   for(( k=0 ; k < ${#err[*]} ; ++k )) ; do
-      echo -e "${err[k]}"
-   done
-
-   status=41
-fi
-
-test ${status} -eq 0 && \
-   . $QA_SRC/scripts/parseConfigFile NEXT_${prj}_UPDATE
 
 cd ${currPWD} &> /dev/null
 

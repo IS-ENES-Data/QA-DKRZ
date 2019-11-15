@@ -456,6 +456,8 @@ update_external()
     isUp=t
   fi
 
+  local retVal=0
+
   if [ $isUp ] ; then
      . ${QA_SRC}/scripts/get_externalSources \
          -P $prj --qa-src=${QA_SRC} \
@@ -476,10 +478,10 @@ update_external()
      v=$( python ${QA_SRC}/python/qa-dkrz/qa_version.py -P $prj )
       . ${QA_SRC}/scripts/parseConfigFile ${prj}_VERSION=$v
 
-     return 1
+     retVal=1
   fi
 
-  return 0
+  return $retVal
 }
 
 update_QA_SRC()
@@ -652,6 +654,7 @@ fi
 
 # unset for command-line usage
 UPDATE=
+NET=t
 
 OPTIND=
 while getopts :BdhT:-: option ${sArgs[*]}
@@ -701,15 +704,10 @@ do
         elif [ "${UOPTARG:0:4}" = LINK ] ; then
           isLink=t
         elif [ "${OPTNAME}" = NET ] ; then
-          test ! ${OPTVAL} && OPTVAL='E'
-
           OPTVAL=$( echo "${OPTVAL}" | tr "[:lower:]" "[:upper:]" )
-          if [ ${OPTVAL:0:1} = Y -o ${OPTVAL:0:1} = E -o ${OPTVAL:0:1} = T ] ; then
-             . ${QA_SRC}/scripts/parseConfigFile NET=delete
-          elif [ ${OPTVAL:0:1} = N -o ${OPTVAL:0:1} = D -o ${OPTVAL:0:1} = F \
-                   -o ${OPTVAL:0:1} = S ] ; then
-             NET=f
-             . ${QA_SRC}/scripts/parseConfigFile NET=f
+          if [ "${OPTVAL:0:1}" = 'N' ] ; then
+              isNoNet=f
+              unset NET
           fi
         elif [ "${OPTNAME}" = NO_PROGRESS_WHEEL ] ; then
            isNoPW=t
@@ -892,7 +890,7 @@ if [ ! ${w_perm} ] ; then
 fi
 
 # conda ?
-test ${PWD/\/bin\/conda\//} != ${PWD} && exit 0
+test ${zeroArg/\/envs\/qa-dkrz\/opt\//} != ${zeroArg} && exit 0
 
 if [ ${isBuild:-f} = t -a ${isLink:-f} = t ] ; then
   echo "scripts/install.sh: options --build and --link exclude each other"
