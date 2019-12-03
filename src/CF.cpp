@@ -4861,12 +4861,19 @@ CF::chap33(void)
 
            else if( notes->inq(bKey + "33e", var.name) )
            {
-             std::string capt(hdhC::tf_att(var.name, n_units, var.units));
-             capt += "is not CF compatible with " ;
-             capt += hdhC::tf_assign(n_standard_name, var.snTableEntry[0].std_name) ;
+			    std::string t_var(hdhC::clearChars(var.units," "));
+				 std::string t_table(hdhC::clearChars(var.snTableEntry[0].canonical_units," "));
 
-             (void) notes->operate(capt) ;
-             notes->setCheckStatus( n_CF, fail );
+				 if( t_var != t_table )
+				 {
+                std::string capt(hdhC::tf_att(var.name, n_units,  var.units));
+                capt += "is not CF compatible with " ;
+                capt += hdhC::tf_assign(n_standard_name,
+                        var.snTableEntry[0].std_name) ;
+
+                (void) notes->operate(capt) ;
+                notes->setCheckStatus( n_CF, fail );
+				 }
            }
         }
 
