@@ -1570,11 +1570,16 @@ QA_Time::testPeriod(Split& x_f)
   // now that we have found two candidates for a date
   // compose ISO-8601 strings
 
-  Date* pDates[6];
+  Date* pDates[8];
+
+  // index 0: date from the first filename period (mutable)
+  // index 1: date from the last filename period (mutable)
   // index 2: date of first time value
   // index 3: date of last  time value
   // index 4: date of first time-bound value, if available; else 0
   // index 5: date of last  time-bound value, if available; else 0
+  // index 6: real date from the first filename period
+  // index 7: real date from the last filename period
 
   pDates[0] = new Date() ;
   pDates[1] = new Date() ;
@@ -1584,6 +1589,9 @@ QA_Time::testPeriod(Split& x_f)
 
   pDates[1]->setFormattedDate();
   pDates[1]->setDate(sd[1], refDate.getCalendar());
+
+  pDates[6] = new Date(*pDates[0]) ;
+  pDates[7] = new Date(*pDates[1]) ;
 
   // necessary for validity (not sufficient)
   if( *(pDates[0]) != *(pDates[1]) && *(pDates[0]) > *(pDates[1]) )
@@ -1819,7 +1827,7 @@ QA_Time::testPeriodAlignment(std::vector<std::string>& sd, Date** pDates,
         capt.back() += "end-time, " ;
 
       capt.back() += " found in filename <";
-      capt.back() += pDates[0+i]->str() + "> " ;
+      capt.back() += pDates[6+i]->str() + "> " ;
 
       if( isTimeBounds )
       {
@@ -2696,7 +2704,7 @@ QA_Time::testPeriod_regularBounds(std::vector<std::string> &sd, Date** pDatesOri
 {
   Date* pDates[6];
 
-  for( size_t i=0 ; i < 6 ; ++i )
+  for( size_t i=0 ; i < 8 ; ++i )
   {
      pDates[i] = 0 ;
 
