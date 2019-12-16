@@ -2806,35 +2806,6 @@ getSelectedPaths()
   return
 }
 
-getSrcPath()
-{
-   local i items p
-   declare -a items
-
-   p=$0
-
-   while [ -h $p ] ; do
-      # resolve symbolic links: cumbersome but robust,
-      items=( $(ls -l $p) )
-      i=$((${#items[*]}-1))
-      p=${items[i]}
-   done
-
-   # only the directory
-   p=${p%/*}
-
-   # resolve relative path
-   if [ ${p:0:1} != '/' ] ; then
-     cd $p &> /dev/null
-     p=$(pwd)
-     cd - &> /dev/null
-   fi
-
-   export QA_SRC=$p
-
-   return
-}
-
 has()
 {
   local c i j t
@@ -5222,7 +5193,7 @@ test $# -eq 1 -a "${1:0:9}" = '--install' && STOP_AFTER_INSTALL=t
 umask 002
 
 # resolve symbolic links and relative paths
-getSrcPath
+. getSrcPath
 test ${QA_SRC##*/} = scripts && QA_SRC=${QA_SRC%/scripts}
 
 if [ ! -w $QA_SRC ] ; then
