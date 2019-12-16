@@ -486,7 +486,7 @@ update_external()
 
 update_QA_SRC()
 {
-  if [ ! ${NET} ] ; then
+  if [ ${NET} ] ; then
     if [ ${isForce:-f} = t ] || \
            ! . ${QA_SRC}/scripts/parseConfigFile NEXT_QA_UPDATE --inquire
     then
