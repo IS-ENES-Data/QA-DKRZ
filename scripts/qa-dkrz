@@ -2806,6 +2806,39 @@ getSelectedPaths()
   return
 }
 
+getSrcPath()
+{
+   local name p p0
+
+   p0=${0%/*}
+   name=${0##*/}
+
+   if [ ${p0:0:2} = './' ] ; then
+      p0=${PWD}/${p0:2}
+   elif [ ${p0:0:3} = '../' ] ; then
+      p0=${p0:3}
+      p0=${PWD}/${p0%/*}
+   elif [ ${p0:0:1} != '/' ] ; then
+      p0=${PWD}/${p0}
+   fi
+
+   p=${p0}/$name
+
+   while [ -h $p ] ; do
+      # resolve symbolic links
+      p=$( ls -l $p 2> /dev/null | awk '{print $11}')
+
+      test ${p:0:1} != '/' && p=${p0%/*}/$p
+   done
+
+   # only the directory
+   p=${p%/*}
+
+   export QA_SRC=${p%%QA-DKRZ*}QA-DKRZ
+
+   return
+}
+
 has()
 {
   local c i j t
@@ -5193,7 +5226,8 @@ test $# -eq 1 -a "${1:0:9}" = '--install' && STOP_AFTER_INSTALL=t
 umask 002
 
 # resolve symbolic links and relative paths
-. getSrcPath
+getSrcPath
+
 test ${QA_SRC##*/} = scripts && QA_SRC=${QA_SRC%/scripts}
 
 if [ ! -w $QA_SRC ] ; then
