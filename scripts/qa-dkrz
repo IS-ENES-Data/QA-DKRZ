@@ -925,22 +925,23 @@ clear()
   local logF=$LOG_FNAME_DIR/${CURR_LOG_FNAME}.log
 
   # arbitrary order of arguments
-  for f in ${CLEAR//,/ } ; do
+  local clear_args
+  declare -a clear_args
+  clear_args=( ${CLEAR//,/ } )
+
+  for f in ${clear_args[*]} ; do
     if [ ${f} = 't' ] ; then
        isClear=t
     elif [ "$f" = all ] ; then
        isClear=t
     elif [ "$f" = only ] ; then
        isClearOnly=t
-       continue
+       test ${#clear_args[*]} -eq 1 && isClear=t
     elif [ "$f" = follow_links ] ; then
        test ${DEREFERENCE_SYM_LINKS:-f} = f && isFL=t
        isClear=t
     elif [ "${f:0:3}" = res ] ; then
        isResume=t
-       #isClear=t
-    elif [ "$f" = only ] ; then
-       isCLEAR_ONLY=t
        #isClear=t
     elif [ "${f:0:4}" = lock ] ; then
        # locked  files
@@ -1381,7 +1382,7 @@ finally()
 
   if [ ${isTERM:-f} = t ] ; then
      # clear current results
-     \rm -rf $PROC_POOL/*
+     test ${PROC_POOL} && \rm -rf $PROC_POOL/*
   fi
 
   # release file with pid, if the session finished
