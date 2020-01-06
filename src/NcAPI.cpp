@@ -3174,82 +3174,6 @@ NcAPI::getDimSize(int d)
   return layout.dimSize[d];
 }
 
-std::vector<bool>
-NcAPI::get_FillValueStr(int vid, std::vector<std::string>& fV)
-{
-    // Get fill values
-    // If no attribute defined fill-value is available, then _FV and/or MV
-    // will return the default. This is also indicated by a false return value.
-
-   fV.clear();
-
-   std::vector<bool> isR;
-   if( vid < 0 )
-     return isR;
-
-   std::string vName(layout.varidMap[vid]);
-
-   isR.push_back(false);
-   isR.push_back(false);
-   isR.push_back(false);
-
-   fV.push_back("");
-   fV.push_back("");
-   fV.push_back("");
-
-   nc_type type = layout.varType[vid];
-
-   std::string str_FV("_FillValue");
-   std::string str_MV("missing_value");
-
-   int aid_FV = getAttID(str_FV, vid);
-   int aid_MV = getAttID(str_MV, vid);
-
-   bool is=false;
-   if( aid_FV > -1 && getAttType(str_FV, vName) != type )
-     is=true;
-   if( aid_MV > -1 && getAttType(str_MV, vName) != type )
-     is=true;
-
-   if( is )
-   {
-     std::string key="NC_3_12" ;
-     std::string capt("types of variable <" + vName + "> and ");
-     capt += str_FV + "/" + str_MV + " do not match" ;
-
-     exceptionHandling(key, capt, "", vName);
-     return isR;
-   }
-
-   is=false;
-
-   if( aid_FV > -1 )
-   {
-      std::vector<std::string> vs;
-      getAttValues(vs, str_FV, vName) ;
-      fV[0] = vs[0] ;
-
-      isR[0]=true;
-   }
-
-   if( aid_MV > -1 )
-   {
-      std::vector<std::string> vs;
-      getAttValues(vs, str_MV, vName) ;
-      fV[1] = vs[0] ;
-
-      isR[1]=true;
-   }
-
-   // str_FV provides only the C++ type
-//   fV.push_back( getDefaultFillValue(type, str_FV) );
-//   fV[2]="" ;  // as is
-
-   isR[2] = true;
-
-   return isR;
-}
-
 template <typename T>
 bool
 NcAPI::get_FillValue(std::string& vName,
@@ -3286,23 +3210,43 @@ NcAPI::get_FillValue(std::string& vName,
    int aid_VX = getAttID(str_VX, vid);
    int aid_VR = getAttID(str_VR, vid);
 
-   bool is=false;
+	std::string str;
    if( aid_FV > -1 && getAttType(str_FV, vName) != type )
-     is=true;
+     str=str_FV ;
    if( aid_MV > -1 && getAttType(str_MV, vName) != type )
-     is=true;
+	{
+	  if( str.size() )
+   	  str += "," + str_MV;
+	  else
+   	  str = str_MV;
+	}
    if( aid_VN > -1 && getAttType(str_VN, vName) != type )
-     is=true;
+	{
+	  if( str.size() )
+   	  str += "," + str_VN;
+	  else
+   	  str = str_VN;
+	}
    if( aid_VX > -1 && getAttType(str_VX, vName) != type )
-     is=true;
+	{
+	  if( str.size() )
+   	  str += "," + str_VX;
+	  else
+   	  str = str_VX;
+	}
    if( aid_VR > -1 && getAttType(str_VR, vName) != type )
-     is=true;
+	{
+	  if( str.size() )
+   	  str += "," + str_VR;
+	  else
+   	  str = str_VR;
+	}
 
-   if( is )
+   if( str.size() )
    {
      std::string key="NC_3_12";
      std::string capt("types of variable <" + vName + "> and ");
-     capt += str_FV + "/" + str_MV + " do not match" ;
+     capt += str + " do(es) not match" ;
 
      exceptionHandling(key, capt, "", vName);
      mode=0;
@@ -3360,7 +3304,6 @@ NcAPI::get_FillValue(std::string& vName,
       mode->push_back('R');
       isR=true;
    }
-
 
    return isR;
 }
