@@ -1726,11 +1726,11 @@ getFilenameBase()
   local fileNames
   declare -a fileNames
 
-  if [ ${QUERY_NON_NC_FILE:-f} = t ] ; then
+#  if [ ${QUERY_NON_NC_FILE:-f} = t ] ; then
     fileNames=($(find ${PROJECT_DATA}/${subPath} -maxdepth 1 ! -type d -name "*"))
-  else
-    fileNames=($(find ${PROJECT_DATA}/${subPath} -maxdepth 1 -name "*.nc"))
-  fi
+#  else
+#    fileNames=($(find ${PROJECT_DATA}/${subPath} -maxdepth 1 -name "*.nc"))
+#  fi
 
   if [ ${IGNORE_BROKEN_LINKS:-f} = t ] ; then
     for(( j=${#fileNames[*]} - 1 ; j >= 0 ; --j )) ; do
@@ -1926,8 +1926,24 @@ getNextVariable()
 
   if [ ${#nV_fls[*]} -eq 0 ] ; then
     # empty dir was trapped before
-    nextFile=  # ignore, try next
+    y_impact=L2
+    y_caption='empty directory'
+    y_tag=M1
+    test ! ${IGNORE_EMPTY_DIR} && initLog ${1}
+    nextFile=  # try next
     return 0
+  fi
+
+  if [ ${1:0:1} = '.' ] ; then
+     for(( l=${#nV_fls[*]} - 1 ;  l > -1 ; --l )) ; do
+       y_impact=L2
+       y_caption='hidden file'
+       y_tag=M3
+       test ! ${IGNORE_HIDDEN_FILE} && initLog ${nV_fls[l]}
+     done
+
+     nextFile= # try next variable
+     return 0
   fi
 
   local num=${#nV_fls[*]}
@@ -1961,30 +1977,25 @@ getNextVariable()
     return 0
   fi
 
-  for(( l=0 ;  l < ${#nV_fls[*]} ; ++l )) ; do
+  for(( l=${#nV_fls[*]} - 1 ;  l > -1 ; --l )) ; do
     f=$nextPath/${nV_fls[l]}
-    local num=${#nV_fls[*]}
 
     if [ -d ${nV_fls[l]} ] ; then
-       if [ ${QUERY_EMPTY_DIR} ] ; then
-         y_impact=L2
-         y_caption="empty directory"
-         y_tag=M1
-         y_status=1
-         initLog ${nV_fls[l]}
-       fi
-       unset nV_fls[${l}]
+       y_impact=L2
+       y_caption="expected file, found directory"
+       y_tag=M1
+       y_status=1
+       initLog ${nV_fls[l]}
+       unset nV_fls[l]
        is=t
 
     elif [ ! -s $nextPath/${nV_fls[l]} ] ; then
-       if [ ${QUERY_EMPTY_FILE:-f} = t ] ; then
-          y_impact=L2
-          y_caption='file is empty'
-          y_tag=M3
-          initLog ${nV_fls[l]}
-          nV_fls[l]=''
-          is=t
-       fi
+       y_impact=L2
+       y_caption='file is empty'
+       y_tag=M3
+       initLog ${nV_fls[l]}
+       unset nV_fls[l]
+       is=t
 
     elif testValidNC.x $nextPath/${nV_fls[l]} ; then
        local ext=${nV_fls[l]##*.}
@@ -1992,19 +2003,16 @@ getNextVariable()
           y_impact=L2
           y_caption="NetCDF file with wrong extension ${ext}"
           y_tag=M6c
-          initLog ${nV_fls[l]}
-          nV_fls[l]=''
+          test ! ${IGNORE_WRONG_EXTENSION} && initLog ${nV_fls[l]}
+          unset nV_fls[l]
           is=t
        fi
     else
-       if [ ${QUERY_NON_NC_FILE:-f} = t ] ; then
-          y_caption="${nV_fls[l]} is not NetCDF"
-          y_impact=L1
-          y_tag=M0a
-          initLog ${nV_fls[l]}
-       fi
-
-       nV_fls[l]=''
+       y_caption="${nV_fls[l]} is not NetCDF"
+       y_impact=L1
+       y_tag=M0a
+       initLog ${nV_fls[l]}
+       unset nV_fls[l]
        is=t
 
      # nc without date-range and not fx was discaded previously
