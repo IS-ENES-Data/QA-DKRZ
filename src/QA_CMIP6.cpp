@@ -4771,27 +4771,24 @@ QA_Exp::init(std::vector<std::string>& optStr)
 
    // Check varname from filename with those in the file.
    // Is the shortname in the filename also defined in the nc-header?
-   if( pQA->isCheckCV)
-   {
-     std::vector<std::string> vNames( pQA->pIn->nc.getVarName() ) ;
-     size_t i;
-     for( i=0 ; i < vNames.size() ; ++i )
-       if( fVarname == vNames[i] )
+   std::vector<std::string> vNames( pQA->pIn->nc.getVarName() ) ;
+   size_t i;
+   for( i=0 ; i < vNames.size() ; ++i )
+      if( fVarname == vNames[i] )
          break;
 
-     if( i == vNames.size() )
-     {
-       std::string key("1_3");
-       if( notes->inq( key, pQA->fileStr) )
-       {
-         std::string capt("variable ");
-         capt += hdhC::tf_assign("acronym", fVarname);
-         capt += " in the filename does not match any variable in the file" ;
+   if( i == vNames.size() )
+   {
+      std::string key("1_3");
+      if( notes->inq( key, pQA->fileStr) )
+      {
+        std::string capt("variable ");
+        capt += hdhC::tf_assign("acronym", fVarname);
+        capt += " in the filename does not match any variable in the file" ;
 
-         (void) notes->operate(capt) ;
-         notes->setCheckStatus("CV",  pQA->n_fail );
-       }
-     }
+        (void) notes->operate(capt) ;
+        notes->setCheckStatus("CV",  pQA->n_fail );
+      }
    }
 
    return;
