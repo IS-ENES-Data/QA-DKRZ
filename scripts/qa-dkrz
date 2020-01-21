@@ -928,6 +928,7 @@ clear()
   local clear_args
   declare -a clear_args
   clear_args=( ${CLEAR//,/ } )
+  test "${force_clear}" = 't' && clear_args=( t )
 
   for f in ${clear_args[*]} ; do
     if [ ${f} = 't' ] ; then
@@ -2094,6 +2095,14 @@ getNextVariable()
   fi
 
   qa_fl=$( ls ${QA_RESULTS}/data/${subPath}/qa_${1}.nc 2> /dev/null)
+
+  if [ -e $qa_fl ] ; then
+    if ! testValidNC.x $qa_fl ; then
+      # clear a corrupt file
+      \rm -f "$qa_fl"
+      local force_clear=t
+    fi
+  fi
 
   # apply rules, clearings, and test for qa_note files
   if [ "${SHOW_CLEAR}" ] ; then
@@ -4690,26 +4699,16 @@ testLocks()
         # activate clear for this fBase file, when there is a qa_'.nc file,
         # but no entry in the log-file. Note that the entry could be indicated
         # by file: or data-set: .
-
-        local saveClear="${CLEAR}"
-        if [ ${CLEAR} ] ; then
-           CLEAR="${CLEAR},$1"
-        else
-           CLEAR=$1
-        fi
+        local force_clear=t
      fi
   fi
 
 
   # conditions for clearing are described in the configuration file
-  if [ ${CLEAR} ] ; then
+  if [ ${CLEAR:-f} != f -o ${force_clear:-f} = t ] ; then
 #trace \
 
     if clear ; then
-      test ${saveClear} && CLEAR=${saveClear}
-
-      eval $2=
-      test
       return 0  # treated as a blocked one
     fi
   fi
