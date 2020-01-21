@@ -1929,7 +1929,7 @@ getNextVariable()
     y_impact=L2
     y_caption='empty directory'
     y_tag=M1
-    test ! ${IGNORE_EMPTY_DIR} && initLog ${1}
+    test ! ${IGNORE_EMPTY_DIR} && initLog ${1} --keepRes
     nextFile=  # try next
     return 0
   fi
@@ -1939,7 +1939,7 @@ getNextVariable()
        y_impact=L2
        y_caption='hidden file'
        y_tag=M3
-       test ! ${IGNORE_HIDDEN_FILE} && initLog ${nV_fls[l]}
+       test ! ${IGNORE_HIDDEN_FILE} && initLog ${nV_fls[l]} --keepRes
      done
 
      nextFile= # try next variable
@@ -1966,7 +1966,7 @@ getNextVariable()
         y_impact=L2
         y_caption='broken link'
         y_tag=M2
-        initLog ${nV_fls[l]}
+        initLog ${nV_fls[l]} --keepRes
 
         is=t
       fi
@@ -1985,7 +1985,7 @@ getNextVariable()
        y_caption="expected file, found directory"
        y_tag=M1
        y_status=1
-       initLog ${nV_fls[l]}
+       initLog ${nV_fls[l]} --keepRes
        unset nV_fls[l]
        is=t
 
@@ -1993,7 +1993,7 @@ getNextVariable()
        y_impact=L2
        y_caption='file is empty'
        y_tag=M3
-       initLog ${nV_fls[l]}
+       initLog ${nV_fls[l]} --keepRes
        unset nV_fls[l]
        is=t
 
@@ -2003,7 +2003,7 @@ getNextVariable()
           y_impact=L2
           y_caption="NetCDF file with wrong extension ${ext}"
           y_tag=M6c
-          test ! ${IGNORE_WRONG_EXTENSION} && initLog ${nV_fls[l]}
+          test ! ${IGNORE_WRONG_EXTENSION} && initLog ${nV_fls[l]} --keepRes
           unset nV_fls[l]
           is=t
        fi
@@ -2011,7 +2011,7 @@ getNextVariable()
        y_caption="${nV_fls[l]} is not NetCDF"
        y_impact=L1
        y_tag=M0a
-       initLog ${nV_fls[l]}
+       initLog ${nV_fls[l]} --keepRes
        unset nV_fls[l]
        is=t
 
@@ -2032,7 +2032,7 @@ getNextVariable()
       y_impact=L2
       y_caption='no permission to read netCDF file'
       y_tag=M4
-      initLog ${nV_fls[f]}
+      initLog ${nV_fls[f]} --keepRes
 
       nextFile=  # ignore, try next
       return 0
@@ -2155,6 +2155,11 @@ getNextVariable()
      FREQUENCY=${x_path[${FREQ_INDEX_PATH}]}
   fi
   #syncOpts="${syncOpts} --freq=${FREQUENCY}"
+
+  if ${#nV_fls[*]} -eq 0 ] ; then
+     nextFile=
+     return 0
+  fi
 
   nxtFl="$( ${QA_BIN#*:}/syncFiles.x \
      $syncOpts -P ${nextPath} ${nV_fls[*]} )"
@@ -3218,6 +3223,27 @@ initLog()
      kind="data-set"
   fi
 
+  if [ ${EXPLICIT_LOGFILENAME} ] ; then
+      getExperimentName X ${nextFile[0]}
+  elif [ ${LOG_PATH_INDEX[0]} ] ; then
+      if ! getExperimentName P ${subPath} ; then
+        getExperimentName F ${nextFile[0]}
+      fi
+  else
+      getExperimentName F ${nextFile[0]}
+  fi
+  out=$LOG_FNAME_DIR/${CURR_LOG_FNAME}.log
+
+  if [ "${2}" = '--keepRes' ] ; then
+     local num_f=$( grep -n $1 $out | awk '{print $1}')
+     if [ ${num_f} ] ; then
+        local num_p=$( grep -n ${nextPath} $out | awk '{print $1}')
+        if [ "${num_p%:}" = "$(( ${num_f%:} + 1 ))" ] ; then
+           return
+        fi
+     fi
+  fi
+
   sTxt[$((ix++))]="3${kind}: $1"
   sTxt[$((ix++))]="3data_path: ${nextPath}"
   sTxt[$((ix++))]="3result_path: ${QA_DATADIR}/${subPath}"
@@ -3251,14 +3277,16 @@ initLog()
 
   mkdir -p ${QA_RESULTS}/data/${subPath}
 
-  if [ "$2" != 'no-lock' ] ; then
-    log --keep out=${QA_RESULTS}/data/${subPath}/qa_lock_${1}.txt
-  fi
+#  if [ "$2" != 'no-lock' ] ; then
+#    log --keep out=${QA_RESULTS}/data/${subPath}/qa_lock_${1}.txt
+#  fi
 
   log
 
   sendSubject="Annotation: ${y_caption}"
   sendEMail
+
+  return
 }
 
 ##//! Determination of various tables for the QA.
@@ -3650,14 +3678,6 @@ log()
 
   s_out="${s_out} - date: $( date +'%FT%T' )"
 
-#  if [ ${QA_HOST} = $HOSTNAME ] ; then
-#  test ${ix} -lt 2 && \
-#    echo  "${sp[ix]}date: $( date +'%FT%T' )" >> $out
-#  else
-#    tryRemote ssh ${QA_HOST} \
-#      echo -e ${str} >> $out
-#  fi
-
   # The total output is subdivided into chunks of pmax characters.
   # Effect of \n is preserved.
   local i k str0 str
@@ -3708,7 +3728,7 @@ log()
 
   done
 
-  local i out tmp
+  local i tmp
 
   for(( i=1 ; i <= $# ; ++i )) ; do
      tmp=${!i}
@@ -3718,19 +3738,6 @@ log()
        local isKeep=t
      fi
   done
-
-  if [ ! ${out} ] ; then
-    if [ ${EXPLICIT_LOGFILENAME} ] ; then
-      getExperimentName X ${nextFile[0]}
-    elif [ ${LOG_PATH_INDEX[0]} ] ; then
-      if ! getExperimentName P ${subPath} ; then
-        getExperimentName F ${nextFile[0]}
-      fi
-    else
-      getExperimentName F ${nextFile[0]}
-    fi
-    out=$LOG_FNAME_DIR/${CURR_LOG_FNAME}.log
-  fi
 
   echo -e "${s_out}" >> $out
 
