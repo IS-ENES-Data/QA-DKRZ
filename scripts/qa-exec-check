@@ -1099,6 +1099,8 @@ run()
   # ++++++++++++++++++++++++++++++++++
 
   # read output of the run
+  test ! -f out_${name}.txt && return
+
   ans=$(<out_${name}.txt)
 
   # run PrePARE (D.Nadeau, LLNL)
