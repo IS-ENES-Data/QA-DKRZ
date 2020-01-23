@@ -2165,7 +2165,7 @@ getNextVariable()
   fi
   #syncOpts="${syncOpts} --freq=${FREQUENCY}"
 
-  if ${#nV_fls[*]} -eq 0 ] ; then
+  if [ ${#nV_fls[*]} -eq 0 ] ; then
      nextFile=
      return 0
   fi
