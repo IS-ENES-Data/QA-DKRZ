@@ -2096,7 +2096,7 @@ getNextVariable()
 
   qa_fl=$( ls ${QA_RESULTS}/data/${subPath}/qa_${1}.nc 2> /dev/null)
 
-  if [ -e $qa_fl ] ; then
+  if [ -e "$qa_fl" ] ; then
     if ! testValidNC.x $qa_fl ; then
       # clear a corrupt file
       \rm -f "$qa_fl"
