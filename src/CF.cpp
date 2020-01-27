@@ -7624,6 +7624,7 @@ CF::chap56_gridMappingParams(Variable &var, std::string &gmn)
             capt += "Grid_mapping parameter" ;
             if( miss_ix.size() > 1 )
                 capt += 's';
+            capt += ' ';
 
             for( size_t i=0 ; i < miss_ix.size() ; ++i )
             {
@@ -7633,12 +7634,12 @@ CF::chap56_gridMappingParams(Variable &var, std::string &gmn)
               capt += hdhC::empty + gmp[miss_ix[i]] ;
             }
 
-            if( miss_ix.size() > 1 )
+            if( miss_ix.size() < 1 )
                 capt += " is";
             else
                 capt += " are";
 
-            capt += "missing" ;
+            capt += " missing" ;
 
             (void) notes->operate(capt) ;
             notes->setCheckStatus( n_CF );
