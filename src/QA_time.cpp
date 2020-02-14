@@ -774,6 +774,10 @@ QA_Time::initResumeSession(void)
         firstTimeBoundsValue[1] += refTimeOffset ;
         lastTimeBoundsValue[0] += refTimeOffset ;
         lastTimeBoundsValue[1] += refTimeOffset ;
+
+        //if only a single time value is available
+        if( refTimeStep == 0 )
+           refTimeStep=firstTimeValue - prevTimeValue ;
       }
    }
 
