@@ -2,31 +2,53 @@
 
 get_QA_path()
 {
-   local i items p src
-   declare -a items
+   local name p p0 pth
 
-   p=$0
+   p0=$0
+   pth=$PWD
 
-   while [ -h $p ] ; do
-      # resolve symbolic links: cumbersome but robust,
-      # because I am not sure that ls -l $p | awk '{print $11}'
-      # works for any OS
+   while : ; do
+      name=${p0##*/}
+      p0=${p0%/*}/
 
-      items=( $(ls -l $p) )
-      i=$((${#items[*]}-1))ls
-      p=${items[i]}
+      if [ ${p0} = '/' ] ; then
+         echo "there is something wrong with ${p0}"
+         exit 1
+      elif [ ${p0:0:1} = '/' ] ; then
+         pth=${p0%/}
+      else
+         # please, mind the trailing '/'
+         if [ ${p0:0:2} = '..' ] ; then
+            p0=${pth%/*}/${p0#*/}
+         elif [ ${p0:0:1} = '.' ] ; then
+            p0=${pth}/${p0#*/}
+         else
+            # relative path, whatever
+            p0=${pth}/$p0
+         fi
+
+         p0=${p0}${name}
+      fi
+
+      if [ -h $p0 ] ; then
+        # resolve symbolic links
+        p0=$( ls -l $p0 2> /dev/null | awk '{print $11}')
+
+        if [ ${p0:0:1} = '/'} ] ; then
+           pth=${p0%/*}
+           continue
+        fi
+      else
+        break
+      fi
    done
 
-   p=${p%/*}
+   # only the directory
+   p0=${p0%/*}
 
-   # resolve relative path
-   if [ ${p:0:1} != '/' ] ; then
-     cd $p &> /dev/null
-     p=$(pwd)
-     cd - &> /dev/null
-   fi
+   test ${p0##*/} = 'bin' && p0=${p0%/bin}/opt/qa-dkrz/
 
-   QA_PATH=${p%/*}
+   QA_PATH=${p0%/*}
 
    return
 }

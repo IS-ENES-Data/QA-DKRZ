@@ -2715,6 +2715,21 @@ getSelectedPaths()
     recurrCount=$(( recurrCount + 1 ))
   fi
 
+  # remove duplicates
+  if [ ${#currDirs[*]} > 1 ] ; then
+     for(( k=${#currDirs[*]}-1 ; k > -1 ; --k )) ; do
+       test ! ${currDirs[k]} && continue
+
+       for(( l=k-1 ; l > -1 ; --l )) ; do
+          if [ ${currDirs[k]} = ${currDirs[l]} ] ; then
+             currDirs[l]=''
+          fi
+       done
+     done
+
+     currDirs=( ${currDirs[*]} )
+  fi
+
   local entries
 
   for(( i=0 ; i < ${#currDirs[*]} ; ++i )) ; do
@@ -2831,33 +2846,53 @@ getSelectedPaths()
 
 getSrcPath()
 {
-   local name p p0
+   local name p p0 pth
 
-   p0=${0%/*}
-   name=${0##*/}
+   p0=$0
+   pth=$PWD
 
-   if [ ${p0:0:2} = './' ] ; then
-      p0=${PWD}/${p0:2}
-   elif [ ${p0:0:3} = '../' ] ; then
-      p0=${p0:3}
-      p0=${PWD}/${p0%/*}
-   elif [ ${p0:0:1} != '/' ] ; then
-      p0=${PWD}/${p0}
-   fi
+   while : ; do
+      name=${p0##*/}
+      p0=${p0%/*}/
 
-   p=${p0}/$name
+      if [ ${p0} = '/' ] ; then
+         echo "there is something wrong with ${p0}"
+         exit 1
+      elif [ ${p0:0:1} = '/' ] ; then
+         pth=${p0%/}
+      else
+         # please, mind the trailing '/'
+         if [ ${p0:0:2} = '..' ] ; then
+            p0=${pth%/*}/${p0#*/}
+         elif [ ${p0:0:1} = '.' ] ; then
+            p0=${pth}/${p0#*/}
+         else
+            # relative path, whatever
+            p0=${pth}/$p0
+         fi
 
-   while [ -h $p ] ; do
-      # resolve symbolic links
-      p=$( ls -l $p 2> /dev/null | awk '{print $11}')
+         p0=${p0}${name}
+      fi
 
-      test ${p:0:1} != '/' && p=${p0%/*}/$p
+      if [ -h $p0 ] ; then
+        # resolve symbolic links
+        p0=$( ls -l $p0 2> /dev/null | awk '{print $11}')
+
+        if [ ${p0:0:1} = '/'} ] ; then
+           pth=${p0%/*}
+           continue
+        fi
+      else
+        break
+      fi
    done
 
    # only the directory
-   p=${p%/*}
+   p0=${p0%/*}
 
-   export QA_SRC=${p%%QA-DKRZ*}QA-DKRZ
+   test ${p0##*/} = 'script' && p0=${p0%/script}
+
+   export QA_SRC=${p0%QA-DKRZ*}QA-DKRZ
 
    return
 }
@@ -5161,6 +5196,7 @@ voidX()
 {
   # toggle between set -x and set +x in a way that
   # restores the original setting after calling twice
+  test ${isNoToggleX} && return
 
   if [ ${isSetX:-t} = t ] ; then
     test "$(set -o |grep xtrace | awk '{print $2}')" = off && return
@@ -5243,8 +5279,6 @@ umask 002
 # resolve symbolic links and relative paths
 getSrcPath
 
-test ${QA_SRC##*/} = scripts && QA_SRC=${QA_SRC%/scripts}
-
 if [ ! -w $QA_SRC ] ; then
    w_perm=f
 fi
@@ -5289,6 +5323,8 @@ for(( j=0 ; j < ${#optargs[*]} ; ++j )) ; do
        . $QA_SRC/scripts/qa-help  # exit 1
     elif [ ${arg} = '--debug' ] ; then
        set -x
+    elif [ ${arg} = '--dis-void' -o ${arg} = '--disable-void' ] ; then
+       isNoToggleX=t
     elif [ ${arg} = '-f' ] ; then
        args[${#args[*]}]='-f'
 
@@ -5338,9 +5374,8 @@ test ${#args[*]} -eq 0 && args[0]='--help'
 # HOME/.qa-dkrz/config.txt by default
 . ${QA_SRC}/scripts/getConfigFile
 
-# is it in a conda built?
+# is this in a conda built?
 . ${QA_SRC}/scripts/getCondaPath
-
 
 init ${args[*]}
 
