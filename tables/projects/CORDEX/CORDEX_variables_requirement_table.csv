@@ -1,28 +1,28 @@
 ,Table:,1hr
 # created by Tim Keber, kber@iau.uni-frankfurt.de
 output variable name,cell_methods
-tas,point
-pr,mean
-huss,point
-sfcWind,point
-clt,mean
-rsds,mean
-rlds,mean
-hfls,mean
-hfss,mean
-rsus,mean
-rlus,mean
-evspsbl,mean
-evspsblpot,mean
-mrros,point
-mrro,mean
-prc,mean
-uas,mean
-vas,mean
-ts,point
-prw,mean
-clwvi,mean
-clivi,point
+tas,time: point
+pr,time: mean
+huss,time: point
+sfcWind,time: point
+clt,time: mean
+rsds,time: mean
+rlds,time: mean
+hfls,time: mean
+hfss,time: mean
+rsus,time: mean
+rlus,time: mean
+evspsbl,time: mean
+evspsblpot,time: mean
+mrros,time: point
+mrro,time: mean
+prc,time: mean
+uas,time: mean
+vas,time: mean
+ts,time: point
+prw,time: mean
+clwvi,time: mean
+clivi,time: point
 ,Table:,3hr
 ,3-hourly output (3hr),21 Feb 2014 Version 3.1
 output variable name,cell_methods
@@ -322,12 +322,12 @@ areacella,m2,,,,,,,,,0,Atmosphere Grid-Cell Area,cell_area,,atmos land
 orog,m,,,,,,,,,0,Surface Altitude,surface_altitude,,atmos
 sftlf,%,,,,,,,,,0,Land Area Fraction,land_area_fraction,,atmos
 sftgif,%,,,,,,,,,0,Fraction of Grid Cell Covered with Glacier,land_ice_area_fraction,,land
-mrsofc,kg m-2,,,,,,,,,0,Capacity of Soil to Store Water,soil_moisture_content_at_field_capacity,,land 
-rootd,m,,,,,,,,,0,Maximum Root Depth,root_depth,,land 
+mrsofc,kg m-2,,,,,,,,,0,Capacity of Soil to Store Water,soil_moisture_content_at_field_capacity,,land
+rootd,m,,,,,,,,,0,Maximum Root Depth,root_depth,,land
 a The column specifies the direction of fluxes (redundantly with the standard:name); if given as a NetCDF attribute it must have the value as given here
 b If given as a NetCDF attribute it must have the value as given here
 ,,frq: frequency  [samples per day]
-green: if available,,ag: aggregation 
+green: if available,,ag: aggregation
       a:           averaged over output interval (in model)
        i:            instantaneous
       number: minimum  samples per day if not averaged over interval
