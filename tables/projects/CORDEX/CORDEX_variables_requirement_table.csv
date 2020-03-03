@@ -1,28 +1,3 @@
-,Table:,1hr
-# created by Tim Keber, kber@iau.uni-frankfurt.de
-output variable name,cell_methods
-tas,time: point
-pr,time: mean
-huss,time: point
-sfcWind,time: point
-clt,time: mean
-rsds,time: mean
-rlds,time: mean
-hfls,time: mean
-hfss,time: mean
-rsus,time: mean
-rlus,time: mean
-evspsbl,time: mean
-evspsblpot,time: mean
-mrros,time: point
-mrro,time: mean
-prc,time: mean
-uas,time: mean
-vas,time: mean
-ts,time: point
-prw,time: mean
-clwvi,time: mean
-clivi,time: point
 ,Table:,3hr
 ,3-hourly output (3hr),21 Feb 2014 Version 3.1
 output variable name,cell_methods
@@ -31,7 +6,6 @@ pr,time: mean
 ps, time: point
 psl, time: point
 huss, time: point
-hurs, time: point
 sfcWind, time: point
 clt,time: mean
 sund,time: sum
@@ -45,200 +19,200 @@ prc,time: mean
 ,Table:,6hr
 ,6-hourly output (6hr),21 Feb 2014 Version 3.1
 output variable name,cell_methods,cell_methods (2nd option)
-evspsbl,time: mean,time: mean
-evspsblpot,time: mean,time: mean
-mrfso,time: point,time: point area: mean where land
-mrros,time: mean,time: mean area: mean where land
-mrro,time: mean,time: mean area: mean where land
-mrso,time: point,time: point area: mean where land
-snw,time: point,time: point area: mean where land
-snm,time: mean,time: mean area: mean where land
-rlut,time: mean,time: mean
-rsdt,time: mean,time: mean
-rsut,time: mean,time: mean
-uas,time: point,time: point
-vas,time: point,time: point
-tauu,time: mean,time: mean
-tauv,time: mean,time: mean
-ts,time: point,time: point
-zmla,time: point,time: point
-prw,time: point,time: point
-clwvi,time: point,time: point
-clivi,time: point,time: point
-ua850,time: point,time: point
-va850,time: point,time: point
-ta850,time: point,time: point
-hus850,time: point,time: point
-ua500,time: point,time: point
-va500,time: point,time: point
-zg500,time: point,time: point
-ta500,time: point,time: point
-ua200,time: point,time: point
-va200,time: point,time: point
-ta200,time: point,time: point
-zg200,time: point,time: point
-clh,time: mean,time: mean
-clm,time: mean,time: mean
-cll,time: mean,time: mean
-snc,time: point,time: point
-snd,time: point,time: point area: mean where land
+evspsbl,time: mean
+evspsblpot,time: mean
+mrfso,time: point area: mean where land
+mrros,time: mean area: mean where land
+mrro,time: mean area: mean where land
+mrso,time: point area: mean where land
+snw,time: point area: mean where land
+snm,time: mean area: mean where land
+rlut,time: mean
+rsdt,time: mean
+rsut,time: mean
+uas,time: point
+vas,time: point
+tauu,time: mean
+tauv,time: mean
+ts,time: point
+zmla,time: point
+prw,time: point
+clwvi,time: point
+clivi,time: point
+ua850,time: point
+va850,time: point
+ta850,time: point
+hus850,time: point
+ua500,time: point
+va500,time: point
+zg500,time: point
+ta500,time: point
+ua200,time: point
+va200,time: point
+ta200,time: point
+zg200,time: point
+clh,time: mean
+clm,time: mean
+cll,time: mean
+snc,time: point
+snd,time: point area: mean where land
 ,Table:,day
 ,daily output (day),21 Feb 2014 Version 3.1
 output variable  name,cell_methods,cell_methods (2nd option)
-tas,time: mean,time: mean
+tas,time: mean
 tasmax,time: maximum,time: maximum
 tasmin,time: minimum,time: minimum
-pr,time: mean,time: mean
-ps,time: mean,time: mean
-psl,time: mean,time: mean
-huss,time: mean,time: mean
-hurs,time: mean,time: mean
-sfcWind,time: mean,time: mean
+pr,time: mean
+ps,time: mean
+psl,time: mean
+huss,time: mean
+hurs,time: mean
+sfcWind,time: mean
 sfcWindmax,time: maximum,time: maximum
-clt,time: mean,time: mean
+clt,time: mean
 sund,time: sum,time: sum
-rsds,time: mean,time: mean
-rlds,time: mean,time: mean
-hfls,time: mean,time: mean
-hfss,time: mean,time: mean
-rsus,time: mean,time: mean
-rlus,time: mean,time: mean
-evspsbl,time: mean,time: mean
-evspsblpot,time: mean,time: mean
-mrfso,time: mean,time: mean area: mean where land
-mrros,time: mean,time: mean area: mean where land
-mrro,time: mean,time: mean area: mean where land
-mrso,time: mean,time: mean area: mean where land
-snw,time: mean,time: mean area: mean where land
-snm,time: mean,time: mean area: mean where land
+rsds,time: mean
+rlds,time: mean
+hfls,time: mean
+hfss,time: mean
+rsus,time: mean
+rlus,time: mean
+evspsbl,time: mean
+evspsblpot,time: mean
+mrfso,time: mean area: mean where land
+mrros,time: mean area: mean where land
+mrro,time: mean area: mean where land
+mrso,time: mean area: mean where land
+snw,time: mean area: mean where land
+snm,time: mean area: mean where land
 prhmax,time: maximum,time: maximum
-prc,time: mean,time: mean
-rlut,time: mean,time: mean
-rsdt,time: mean,time: mean
-rsut,time: mean,time: mean
-uas,time: mean,time: mean
-vas,time: mean,time: mean
+prc,time: mean
+rlut,time: mean
+rsdt,time: mean
+rsut,time: mean
+uas,time: mean
+vas,time: mean
 wsgsmax,time: maximum,time: maximum
-tauu,time: mean,time: mean
-tauv,time: mean,time: mean
-ts,time: mean,time: mean
-zmla,time: mean,time: mean
-prw,time: mean,time: mean
-clwvi,time: mean,time: mean
-clivi,time: mean,time: mean
-ua850,time: mean,time: mean
-va850,time: mean,time: mean
-ta850,time: mean,time: mean
-hus850,time: mean,time: mean
-ua500,time: mean,time: mean
-va500,time: mean,time: mean
-zg500,time: mean,time: mean
-ta500,time: mean,time: mean
-ua200,time: mean,time: mean
-va200,time: mean,time: mean
-ta200,time: mean,time: mean
-zg200,time: mean,time: mean
-clh,time: mean,time: mean
-clm,time: mean,time: mean
-cll,time: mean,time: mean
-snc,time: mean,time: mean
-snd,time: mean,time: mean area: mean where land
-sic,time: mean,time: mean
-prsn,time: mean,time: mean
+tauu,time: mean
+tauv,time: mean
+ts,time: mean
+zmla,time: mean
+prw,time: mean
+clwvi,time: mean
+clivi,time: mean
+ua850,time: mean
+va850,time: mean
+ta850,time: mean
+hus850,time: mean
+ua500,time: mean
+va500,time: mean
+zg500,time: mean
+ta500,time: mean
+ua200,time: mean
+va200,time: mean
+ta200,time: mean
+zg200,time: mean
+clh,time: mean
+clm,time: mean
+cll,time: mean
+snc,time: mean
+snd,time: mean area: mean where land
+sic,time: mean
+prsn,time: mean
 ,Table:,mon
 ,monthly output (mon),21 Feb 2014 Version 3.1
 output variable name,cell_methods,cell_methods (2nd option)
-tas,time: mean,time: mean
+tas,time: mean
 tasmax,time: maximum within days time: mean over days,time: maximum within days time: mean over days
 tasmin,time: minimum within days time: mean over days,time: minimum within days time: mean over days
-pr,time: mean,time: mean
-psl,time: mean,time: mean
-huss,time: mean,time: mean
-hurs,time: mean,time: mean
-sfcWind,time: mean,time: mean
+pr,time: mean
+psl,time: mean
+huss,time: mean
+hurs,time: mean
+sfcWind,time: mean
 sfcWindmax,time: maximum within days time: mean over days,time: maximum within days time: mean over days
-clt,time: mean,time: mean
+clt,time: mean
 sund,time: sum within days time: mean over days,time: sum within days time: mean over days
-rsds,time: mean,time: mean
-rlds,time: mean,time: mean
-hfls,time: mean,time: mean
-hfss,time: mean,time: mean
-rsus,time: mean,time: mean
-rlus,time: mean,time: mean
-evspsbl,time: mean,time: mean
-mrfso,time: mean,time: mean area: mean where land
-mrros,time: mean,time: mean area: mean where land
-mrro,time: mean,time: mean area: mean where land
-mrso,time: mean,time: mean area: mean where land
-snw,time: mean,time: mean area: mean where land
-snm,time: mean,time: mean area: mean where land
-rlut,time: mean,time: mean
-rsdt,time: mean,time: mean
-rsut,time: mean,time: mean
-uas,time: mean,time: mean
-vas,time: mean,time: mean
-ua850,time: mean,time: mean
-va850,time: mean,time: mean
-ta850,time: mean,time: mean
-hus850,time: mean,time: mean
-ua500,time: mean,time: mean
-va500,time: mean,time: mean
-zg500,time: mean,time: mean
-ta500,time: mean,time: mean
-ua200,time: mean,time: mean
-va200,time: mean,time: mean
-ta200,time: mean,time: mean
-zg200,time: mean,time: mean
-snc,time: mean,time: mean
-snd,time: mean,time: mean area: mean where land
-sic,time: mean,time: mean
+rsds,time: mean
+rlds,time: mean
+hfls,time: mean
+hfss,time: mean
+rsus,time: mean
+rlus,time: mean
+evspsbl,time: mean
+mrfso,time: mean area: mean where land
+mrros,time: mean area: mean where land
+mrro,time: mean area: mean where land
+mrso,time: mean area: mean where land
+snw,time: mean area: mean where land
+snm,time: mean area: mean where land
+rlut,time: mean
+rsdt,time: mean
+rsut,time: mean
+uas,time: mean
+vas,time: mean
+ua850,time: mean
+va850,time: mean
+ta850,time: mean
+hus850,time: mean
+ua500,time: mean
+va500,time: mean
+zg500,time: mean
+ta500,time: mean
+ua200,time: mean
+va200,time: mean
+ta200,time: mean
+zg200,time: mean
+snc,time: mean
+snd,time: mean area: mean where land
+sic,time: mean
 ,Table:,sem
 ,seasonal output (sem),21 Feb 2014 Version 3.1
 output variable name,cell_methods,cell_methods (2nd option)
-tas,time: mean,time: mean
+tas,time: mean
 tasmax,time: maximum within days time: mean over days,time: maximum within days time: mean over days
 tasmin,time: minimum within days time: mean over days,time: minimum within days time: mean over days
-pr,time: mean,time: mean
-psl,time: mean,time: mean
-huss,time: mean,time: mean
-hurs,time: mean,time: mean
-sfcWind,time: mean,time: mean
+pr,time: mean
+psl,time: mean
+huss,time: mean
+hurs,time: mean
+sfcWind,time: mean
 sfcWindmax,time: maximum within days time: mean over days,time: maximum within days time: mean over days
-clt,time: mean,time: mean
+clt,time: mean
 sund,time: sum within days time: mean over days,time: sum within days time: mean over days
-rsds,time: mean,time: mean
-rlds,time: mean,time: mean
-hfls,time: mean,time: mean
-hfss,time: mean,time: mean
-rsus,time: mean,time: mean
-rlus,time: mean,time: mean
-evspsbl,time: mean,time: mean
-mrfso,time: mean,time: mean area: mean where land
-mrros,time: mean,time: mean area: mean where land
-mrro,time: mean,time: mean area: mean where land
-mrso,time: mean,time: mean area: mean where land
-snw,time: mean,time: mean area: mean where land
-snm,time: mean,time: mean area: mean where land
-rlut,time: mean,time: mean
-rsdt,time: mean,time: mean
-rsut,time: mean,time: mean
-uas,time: mean,time: mean
-vas,time: mean,time: mean
-ua850,time: mean,time: mean
-va850,time: mean,time: mean
-ta850,time: mean,time: mean
-hus850,time: mean,time: mean
-ua500,time: mean,time: mean
-va500,time: mean,time: mean
-zg500,time: mean,time: mean
-ta500,time: mean,time: mean
-ua200,time: mean,time: mean
-va200,time: mean,time: mean
-ta200,time: mean,time: mean
-zg200,time: mean,time: mean
-snc,time: mean,time: mean
-snd,time: mean,time: mean area: mean where land
-sic,time: mean,time: mean
+rsds,time: mean
+rlds,time: mean
+hfls,time: mean
+hfss,time: mean
+rsus,time: mean
+rlus,time: mean
+evspsbl,time: mean
+mrfso,time: mean area: mean where land
+mrros,time: mean area: mean where land
+mrro,time: mean area: mean where land
+mrso,time: mean area: mean where land
+snw,time: mean area: mean where land
+snm,time: mean area: mean where land
+rlut,time: mean
+rsdt,time: mean
+rsut,time: mean
+uas,time: mean
+vas,time: mean
+ua850,time: mean
+va850,time: mean
+ta850,time: mean
+hus850,time: mean
+ua500,time: mean
+va500,time: mean
+zg500,time: mean
+ta500,time: mean
+ua200,time: mean
+va200,time: mean
+ta200,time: mean
+zg200,time: mean
+snc,time: mean
+snd,time: mean area: mean where land
+sic,time: mean
 ,Table:,fx
 ,time invariant output (fx),21 Feb 2014 Version 3.1
 output variable name
