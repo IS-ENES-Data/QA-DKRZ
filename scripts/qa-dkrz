@@ -754,11 +754,12 @@ checkClosedMessages()
 {
   # qaExecutors have added locked or closed files for finished runs
   local expName f fs ffs ff g
-  declare -a ffs
+  declare -a ffs fs
+  local retVal=1
 
   fs=( $( ls $PROC_POOL/*.closed 2> /dev/null ) )
 
-  for f in ${fs} ; do
+  for f in ${fs[*]} ; do
     expName="$( grep LOG_FNAME= $f )"
     expName=${expName#LOG_FNAME=}
 
@@ -784,6 +785,7 @@ checkClosedMessages()
 #         tryCom \
          \rm -f "$ff"
 
+         retVal=0
 #         isAnythingDone=t
       fi
     done
@@ -826,7 +828,7 @@ checkClosedMessages()
     \rm  $f
   done
 
-  return
+  return $retVal
 }
 
 ##//! Look for lock-files preventing processing of a file.
@@ -1168,6 +1170,76 @@ clear_tag()
     return 1
 }
 
+compose_project_datav()
+{
+   # split filename
+   local is fname pf x_pf
+   declare -a x_pf
+   x_pf=(${PROVIDED_FILES[*]//,/ })
+
+   # transpose to total paths and find commonly path prefix
+   local cpf cpfs pf
+   declare -a cpfs
+   for(( ix=0 ; ix < ${#x_pf[*]} ; ++ix )) ; do
+      pf=${x_pf[ix]}
+
+      if [ ${pf:0:2} = './' ] ; then
+         x_pf[ix]=${PWD}${pf:1}
+      elif [ ${x_pf:0:3} = '../' ] ; then
+         x_pf[ix]=${PWD%/*}${pf:2}
+      elif [ ${pf:0:1} != '/' ] ; then
+         # relative path
+         x_pf[ix]=${PWD}/${pf}
+      fi
+   done
+
+   while : ; do
+      # compare leading path items one by one
+      cpfs=( ${x_pf[*]#${cpf}/} )
+      cpfs=( ${cpfs[*]%%/*} )
+
+      for(( ix=1 ; ix < ${#cpfs[*]} ; ++ix )) ; do
+         if [ ${cpfs[ix-1]} != ${cpfs[ix]} ] ; then
+            break 2
+         fi
+      done
+
+      test -f ${cpf}/${cpfs[0]} && break
+
+      cpf=${cpf}/${cpfs[0]}
+   done
+
+   # now there is a common prefix and varying tails
+   PROJECT_DATAV=( ${cpf} )
+
+   local name
+   for(( ix=0 ; ix < ${#x_pf[*]} ; ++ix )) ; do
+      name=${x_pf[ix]##*/}
+      x_pf[ix]=${x_pf[ix]%/*}
+
+      if [ ${x_pf[ix]} = ${PROJECT_DATAV} ] ; then
+         PROJECT_DATAV=${PROJECT_DATAV%/*}
+         echo "0 ${x_pf[ix]##*/} ${name}" >> $pathListFile
+      else
+         pf=${x_pf[ix]#${PROJECT_DATAV}}
+         echo "0 $pf $name" >> $pathListFile
+      fi
+
+      SELECT_VAR_LIST+=( '.*' )
+      #SELECT_VAR_LIST+=( ${x_pf##*/} )
+      #SELECT_VAR_LIST+=( ${SELECT_VAR_LIST[0]%%_*}_ )
+      SELECT_PATH_LIST+=( '.*' )
+      #SELECT_PATH_LIST[0]=${SELECT_PATH_LIST[0]%/*}=
+   done
+
+   echo "---EOF---" >> $pathListFile
+
+   NO_SUMMARY=t
+   #unset QUERY_NON_NC_FILE
+
+   return
+}
+
 copyPreamble()
 {
   test ${isShow:-f} = t && return
@@ -1398,19 +1470,15 @@ finally()
 
   # Note: there could be 2 sub-dirs and files in PROC_POOL during operation
   local f fs
-  declare -a fs
-  fs=( $( ls -d $PROC_POOL/* 2> /dev/null) )
+#  declare -a fs
+#  fs=( $( ls -d $PROC_POOL/* 2> /dev/null) )
 
   local count=0
-  while [ ${#fs[*]} -gt 2 ] || ls -d $PROC_POOL/*/* 2> /dev/null ; do
-
+#  while [ ${#fs[*]} -gt 2 ] || ls -d $PROC_POOL/*/* 2> /dev/null ; do
+  while ! checkClosedMessages ; do
     # the OS may have slow FS operations
     if [ $((count++)) -lt 5 ] ; then
-      # final update of log-files
-      checkClosedMessages
-
-      sleep 0.1
-      fs=( $( ls -d $PROC_POOL/* 2> /dev/null) )
+      sleep 1
       continue
     fi
 
@@ -2337,7 +2405,7 @@ getNextSubPath()
     progressAtomicNum=$(( ${progressAtomicNum} + 1 ))
 
     subPath=${line[1]}
-    explFName=${line[2]}  # available only for a single file selection
+    explFName=${line[2]}  # available only when files are provided on cmd-line
     test ${line[0]} -gt -1 && PROJECT_DATA=${PROJECT_DATAV[${line[0]}]}
 
     # if read returned true, although there was currently no more entry
@@ -2398,89 +2466,19 @@ getPaths()
 
   test ${SHOW_PATH_SEARCH:-f} = t && set -x
 
-  set -f
-
   # filename
   pathListFile=${SESSION_LOGDIR}/path-list.txt
 
-  # special: only a file is provided for a single check
-  if [ ! ${PROJECT_DATAV} ] ; then
-     # split filename
-     local fname x_pf
-     declare -a x_pf
-     x_pf=(${PROVIDED_FILES//,/ })
-
-     if [ ${#x_pf[*]} -eq 1 ] ; then
-       if [ ${x_pf:0:2} = './' ] ; then
-         x_pf=${PWD}${x_pf:1}
-         echo "-1 ${PWD} ${x_pf##*/}" > $pathListFile
-       elif [ ${x_pf:0:3} = '../' ] ; then
-         x_pf=${PWD%/*}${x_pf:2}
-         echo "-1 ${PWD%/*} ${x_pf##*/}" > $pathListFile
-       elif [ ${x_pf:0:1} != '/' ] ; then
-         # relative path
-         if [ ${x_pf##*/} = ${x_pf} ] ; then
-            echo "-1 ${PWD} ${x_pf}" > $pathListFile
-         else
-            echo "-1 ${PWD}/${x_pf%/*} ${x_pf##*/}" > $pathListFile
-         fi
-         x_pf=${PWD}/${x_pf}
-       else
-         # absolute path
-         echo "-1 ${x_pf%/*} ${x_pf##*/}" > $pathListFile
-       fi
-       echo "---EOF---" >> $pathListFile
-
-       # assumption that there is no file on root '/'
-       x_pf=${x_pf:1} # strip leading /
-       PROJECT_DATAV=/${x_pf%/*}
-       SELECT_VAR_LIST[0]=${x_pf##*/}
-       SELECT_VAR_LIST[0]=${SELECT_VAR_LIST[0]%%_*}_
-       SELECT_PATH_LIST[0]='.*'
-       #SELECT_PATH_LIST[0]=${SELECT_PATH_LIST[0]%/*}=
-       NO_SUMMARY=t
-       unset QUERY_NON_NC_FILE
-       IS_SINGLE_FILE_MODE=t
-       set +f
-       return
-     else
-       exit 1
-     fi
+  # special: only [path/]file(s) provided
+  if [ ${PROVIDED_FILES} ] ; then
+     PROJECT_DATAV=()
+     compose_project_datav
+     return
   fi
+
+  set -f
 
   PROJECT_DATAV=( ${PROJECT_DATAV[*]//,/ } )
-
-  # very special: no SELECT at all
-  if [ ${#SELECT_PATH_LIST[*]} -eq 0 \
-        -a ${#SELECT_VAR_LIST[*]} -eq 0 ] ; then
-    local i
-    for(( i=0 ; i < ${#PROJECT_DATAV[*]} ; ++i )) ; do
-
-      if [ -f ${PROJECT_DATAV[i]} ] ; then
-        # it is a file !!!
-        SELECT_VAR_LIST[${#SELECT_VAR_LIST[*]}]=${PROJECT_DATAV[i]##*/}
-        PROJECT_DATAV[i]=${PROJECT_DATAV[i]%/*}
-        SELECT_PATH_LIST[${#SELECT_PATH_LIST[*]}]=${PROJECT_DATAV[i]##*/}
-        PROJECT_DATAV[i]=${PROJECT_DATAV[i]%/*}
-      else
-        SELECT_PATH_LIST[${#SELECT_PATH_LIST[*]}]=${PROJECT_DATAV[i]##*/}
-        SELECT_VAR_LIST[${#SELECT_VAR_LIST[*]}]='.*'
-        PROJECT_DATAV[i]=${PROJECT_DATAV[i]%/*}
-
-        # a directory or something with RegExpr
-#        splitAtRegExp ${PROJECT_DATAV[i]}
-
-#        if [ ! ${splitRE_1} ] ; then
-#          SELECT_PATH_LIST[${#SELECT_PATH_LIST[*]}]='.*'
-#        else
-#          SELECT_PATH_LIST[${#SELECT_PATH_LIST[*]}]=${splitRE_1}
-#          PROJECT_DATAV[i]=${splitRE_0}
-#        fi
-
-#        SELECT_VAR_LIST[${#SELECT_VAR_LIST[*]}]='.*'
-      fi
-    done
-  fi
 
   # very special: a SELECT of a full path
   # take into account selections from outside of PROJECT_PATH,
@@ -2523,12 +2521,11 @@ getPaths()
     fi
   done
 
-  \rm -f "${pathListFile}"
+  #\rm -f "${pathListFile}"
 
   if is_TPUT ; then
     echo "getPaths ... " > $TTY
   fi
-
   getSelectedPaths ${PROJECT_DATAV[*]} &
   getPathPID=$!
 
@@ -2716,7 +2713,7 @@ getSelectedPaths()
   fi
 
   # remove duplicates
-  if [ ${#currDirs[*]} > 1 ] ; then
+  if [ ${#currDirs[*]} -gt 1 ] ; then
      for(( k=${#currDirs[*]}-1 ; k > -1 ; --k )) ; do
        test ! ${currDirs[k]} && continue
 
@@ -4442,7 +4439,6 @@ rmEmptyPaths()
   return
 }
 
-
 setKWL()
 {
   # store keywords for empty values
@@ -4498,10 +4494,8 @@ splitAtRegExp()
     fi
   done
 
-  local slash=
   for(( ; i < ${#items[*]} ; ++i )) ; do
-    splitRE_1=${splitRE_1}${slash}${items[i]}
-    local slash=/
+    splitRE_1=${splitRE_1}${splitRE_1:+/}${items[i]}
   done
 
   set +f
