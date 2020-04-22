@@ -1,21 +1,34 @@
-# not called by install, just by qa-dkrz
 
-if [ ! ${CONFIG_FILE} ] ; then
-   if [ -f ${HOME}/.qa-dkrz/config.txt ] ; then
-      CONFIG_FILE=${HOME}/.qa-dkrz/config.txt
-   elif [ -f ${QA_SRC}/.qa-dkrz/config.txt ] ; then
-      CONFIG_FILE=${QA_SRC}/.qa-dkrz/config.txt
-      CONFIG_READ_ONLY=t
+gCF_run()
+{
+   local p=${QA_SRC}
+   if [ ! ${QA_SRC} ] ; then
+      p=${0%/scripts/qa-dkrz}
    fi
-fi
 
-gCF_retVal=0
+   if [ -w ${p} ] ; then
+      # QA_SRC is writable: create/use config.txt in HOME
+      CONFIG_FILE=${HOME}/.qa-dkrz/config.txt
+   else
+      if [ -r $p/.qa-dkrz/config.txt ] ; then
+         # use external configuration
+         CONFIG_FILE=$p/.qa-dkrz/config.txt
+         CONFIG_READ_ONLY=t
+      fi
+   fi
 
-if [ ! -s ${CONFIG_FILE} ] ; then
-   echo "please, run ./install [opts]"
-   exit
-fi
+   gCF_retVal=0
 
-export CONFIG_FILE
+   if [ ! -s ${CONFIG_FILE} ] ; then
+      if [ ${0##*/} = 'qa-dkrz' ] ; then
+        echo "please, run ./install [opts]"
+        exit
+      fi
+   fi
 
-return
+   export CONFIG_FILE
+
+   return
+}
+
+gCF_run $*

@@ -1007,6 +1007,7 @@ clear()
            tryCom \
            ls ${QA_RESULTS}/data/${subPath}/*_${fBase[ix]}* 2> /dev/null ) )
 
+      if [ ! comment ] ; then
       for f in ${fs[*]} ; do
         if [ -h $f ] ; then
            deref_link target ${f}
@@ -1038,6 +1039,7 @@ clear()
            break
         fi
       done
+      fi
 
       if [ $isMessage = t ]  ; then
         if [ $isResume = t ] ; then
@@ -2258,7 +2260,7 @@ getNextVariable()
 
   # a fixed variable?
   if [ $status -eq 4 ] ; then
-    if [ "${qa_fl}" ] ; then
+    if [ ${#qa_fl} -gt 0 -o "${CHECK_MODE}" = 'time' -o "${CHECK_MODE}" = 'TIME'] ; then
        # already processed?
 #      if [ ${PROGRESS_BAR} ] ; then
         # get number of data files for progress estimation
@@ -2270,7 +2272,6 @@ getNextVariable()
       return 0
     fi
   fi
-
 
   # expand \newline, but preserve potential blanks
   nextFile=()
@@ -2294,8 +2295,6 @@ getNextVariable()
 #    if [ ${PROGRESS_BAR} ] ; then
       local num=${#nV_fls[*]}
 #    fi
-
-#    isAnythingDone=t
 
     y_impact=L2
     if [ $status -eq 3 ] ; then
@@ -2350,6 +2349,15 @@ getNextVariable()
 
     nextFile= # ignore, try next
     return 0
+  fi
+
+  if [ "${CHECK_MODE}" = 'time' -o "${CHECK_MODE}" = 'TIME' ] ; then
+     for(( i=0 ; i < ${#nextFile[*]} ; ++i )) ; do
+       initLog ${nextFile[i]}
+     done
+
+     nextFile= # ignore, try next
+     return 0
   fi
 
   if [ ${TEST_FNAME_ALIGNMENT} ] ; then
@@ -3285,15 +3293,21 @@ initLog()
      fi
   fi
 
+  local ix
   sTxt[$((ix++))]="3${kind}: $1"
   sTxt[$((ix++))]="3data_path: ${nextPath}"
   sTxt[$((ix++))]="3result_path: ${QA_DATADIR}/${subPath}"
   sTxt[$((ix++))]="3conclusion: FAIL"
-  sTxt[$((ix++))]="3events:"
-  sTxt[$((ix++))]="3 - event:"
-  sTxt[$((ix++))]="7annotation: ${y_caption}"
-  sTxt[$((ix++))]="7impact: ${y_impact}"
-  sTxt[$((ix++))]="7tag: ${y_tag}"
+
+  if [ "${y_caption}" ] ; then
+     sTxt[$((ix++))]="3events:"
+     sTxt[$((ix++))]="3 - event:"
+     sTxt[$((ix++))]="7annotation: ${y_caption}"
+     sTxt[$((ix++))]="7impact: ${y_impact}"
+     sTxt[$((ix++))]="7tag: ${y_tag}"
+  else
+     sTxt[$((ix-1))]="3conclusion: CF: disabled, CNSTY: disabled, CV: disabled, DATA: disabled, DRS: disabled, TIME: PASS"
+  fi
 
   y_meta_data=
   y_time_values=
@@ -3323,7 +3337,7 @@ initLog()
 #  fi
 
   log
-
+exit
   sendSubject="Annotation: ${y_caption}"
   sendEMail
 
@@ -3919,20 +3933,21 @@ mkLinks()
     fi
   done
 
+  local ix
   if [ ${grfs[0]} ] ; then
-    sTxt[0]="3data_path: ${PROJECT_DATA}${saveSubPath}"
-    sTxt[1]="3annotation: 'symbolic link to QA results'"
-    sTxt[2]="3info: $((${#grfs[*]}+2))"
-    sTxt[3]="3 - qa_linkpath= ${dest_path}${saveSubPath}"
-    sTxt[4]="3 - qa_target_path= ${grf[0]%/*}"
+    sTxt[$((ix++))]="3data_path: ${PROJECT_DATA}${saveSubPath}"
+    sTxt[$((ix++))]="3annotation: 'symbolic link to QA results'"
+    sTxt[$((ix++))]="3info: $((${#grfs[*]}+2))"
+    sTxt[$((ix++))]="3 - qa_linkpath= ${dest_path}${saveSubPath}"
+    sTxt[$((ix++))]="3 - qa_target_path= ${grf[0]%/*}"
 
     if [ ${#grfs[*]} -gt 1 ] ; then
       local l
       for(( l=0 ; l <  ${#grfs[*]} ; ++l )) ; do
-         sTxt[$((l+4))]="3 - qa_file= ${grfs[l]}"
+         sTxt[$((ix++))]="3 - qa_file= ${grfs[l]}"
       done
     else
-      sTxt[4]="3 - qa_file= ${grfs}"
+      sTxt[$((ix++))]="3 - qa_file= ${grfs}"
     fi
 
     local k n text

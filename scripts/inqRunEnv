@@ -132,7 +132,7 @@ iRE_CMIP6()
            echo "   conda create -n cmor -c conda-forge -c pcmdi cmor ."
            echo "If cmor isn't installed, yet, please quit and do so, otherwise provide"
            echo "the path to the conda environment containing the CMOR package"
-           read -p "$askStr" answ 2> ${TTY}
+           read -p "$askStr" answ # 2> ${TTY}
 
            case ${answ:0:1} in
               '') exit 0  ;;

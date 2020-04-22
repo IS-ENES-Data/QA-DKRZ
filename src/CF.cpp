@@ -7582,7 +7582,7 @@ CF::chap56_gridMappingParams(Variable &var, std::string &gmn)
                 if( notes->inq(bKey + "56i", var.name) )
                 {
                     std::string capt(hdhC::tf_var(var.name, hdhC::colon)) ;
-                    capt += "Warning: Grid_mapping parameter " ;
+                    capt += "Warning: Grid mapping parameter " ;
                     capt += gmp[i] ;
                     capt += " is deprecated." ;
 
@@ -7621,17 +7621,17 @@ CF::chap56_gridMappingParams(Variable &var, std::string &gmn)
         if( notes->inq(bKey + "56h", var.name) )
         {
             std::string capt(hdhC::tf_var(var.name, hdhC::colon)) ;
-            capt += "Grid_mapping parameter" ;
+            capt += "Grid mapping parameter" ;
             if( miss_ix.size() > 1 )
                 capt += 's';
-            capt += hdhC::empty;
+            capt += hdhC::blank;
 
             for( size_t i=0 ; i < miss_ix.size() ; ++i )
             {
               if(i)
-                  capt += ", " ;
+                  capt += "," ;
 
-              capt += hdhC::empty + gmp[miss_ix[i]] ;
+              capt += hdhC::blank + gmp[miss_ix[i]] ;
             }
 
             if( miss_ix.size() < 1 )

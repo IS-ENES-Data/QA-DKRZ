@@ -1,45 +1,35 @@
 getCondaPath()
 {
-  if [ ${CONDA_PATH} ] ; then
-    return
-  else
-     # could be defined for CMIP6/PrePARE
-     if . $QA_SRC/scripts/parseConfigFile CONDA_PATH ; then
-       export CONDA_PATH
-     fi
-  fi
+  if [ ! ${CONDA_PATH} ] ; then
+    if ! . $QA_SRC/scripts/parseConfigFile CONDA_PATH ; then
+       # Was $0 launched out of a conda installation?
+       # Look for bin/conda in QA_SRC
 
-  # no conda in PATH;
-  # was this script launched from qa-dkrz of a conda installation?
-  # look for bin/conda in QA_SRC
-  local path=$( which conda )
+       local i pth items sz
+       declare -a items
 
-  local i pth pc sz dirs dir
-  declare -a pc dirs
+       items=( ${0//\// } )
+       sz=$(( ${#items[*]} - 1 )) # skip the executable, leave only path items
 
-  pc=( ${path//\// } )
-  sz=$(( ${#pc[*]} -2 ))
+       for(( i=0; i < sz ; ++i )) ; do
+         pth="${pth}/${items[i]}"
 
-  for(( i=0; i < sz ; ++i )) ; do
-    pth="${pth}/${pc[i]}"
+         if [ -f ${pth}/bin/conda ] ; then
+             # no effect when write permission is not granted
+             . $QA_SRC/scripts/parseConfigFile CONDA_PATH=${CONDA_PATH}
 
-    if [ -f ${pth}/bin/conda ] ; then
-       pth="${pth}/bin/conda"
-       break
+            isCondaInstance=t
+
+            CONDA_PATH="${pth}/bin/conda"
+            break
+         fi
+       done
     fi
-  done
-
-  if [ ${i} -lt ${sz} ] ; then
-     if [ ! ${CONDA_PATH} ] ; then
-        export CONDA_PATH="${pth}"
-        . $QA_SRC/scripts/parseConfigFile CONDA_PATH=${CONDA_PATH}
-     fi
-
-     isCondaInstance=t
   fi
 
   # CONDA_PATH could be empty, if conda is neither referenced
   # by PATH nor by alias.
+  export CONDA_PATH
 
   return
 }

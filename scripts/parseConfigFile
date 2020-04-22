@@ -354,6 +354,8 @@ pC_voidX()
   # toggle between set -x and set +x in a way that
   # restores the original setting after calling twice
 
+  test ${isNoToggleX} && return
+
   if [ ${isSetX:-t} = t ] ; then
     test "$(set -o |grep xtrace | awk '{print $2}')" = off && return
 
@@ -401,12 +403,18 @@ for arg in $* ; do
   fi
 done
 
-test ${CONFIG_READ_ONLY} && pC_read_only=t
+if [ ${CONFIG_READ_ONLY} ] ; then
+    pC_read_only=t
+elif [ ! -w ${CONFIG_FILE} ] ; then
+    pC_read_only=t
+fi
 
 if [ "${CONFIG_FILE}" ] ; then
-  if [ ! -f "${CONFIG_FILE}" ] ; then
-    mkdir -p ${CONFIG_FILE%/*}
-    touch ${CONFIG_FILE}
+  if [ ! $/pC_read_only} ] ; then
+    if [ ! -f "${CONFIG_FILE}" ] ; then
+      mkdir -p ${CONFIG_FILE%/*}
+      touch ${CONFIG_FILE}
+    fi
   fi
 else
   pC_voidX

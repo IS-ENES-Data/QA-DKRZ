@@ -645,7 +645,7 @@ loadSetting()
   fi
 
   for pD in ${PROJECT_DATA[*]//,/ } ; do
-    if [ ! -d "$pD" ] ; then
+    if [ ! -e "$pD" ] ; then
       std_out "PROJECT_DATA: $pD not found"
       std_out flush
       exit 1
@@ -909,13 +909,14 @@ output()
   test ${unset_PD:-f} = t && unsetKWL PROJECT_DATA
 
   # Prepare the settings as key=val, where val could also be an array.
+  array=()
   for key in ${keyWordList[*]} ; do
     test QA_DATA_ROOT = ${key} && continue
     test DATA_ROOT_FS = ${key} && continue
     test QA_PROJECT   = ${key} && continue
 
     eval val=( \${${key}[*]} )
-    test ${val} &&  array[${#array[*]}]=${key}=${val[*]}
+    test ${val} &&  array+=( ${key}=${val[*]} )
   done
 
   # remove duplicates
@@ -1971,6 +1972,9 @@ do
     -)  if [ "${UOPTARG:0:7}" = AUTO_UP ] ; then
           installArgs+="${OPTARG},"
 
+        elif [ "${OPTNAME}" = DIS-VOID ] ; then
+          isNoToggleX=t
+
         elif [ "${OPTNAME}" = FORCE ] ; then
           installArgs+="${--OPTARG},"
 
@@ -2035,15 +2039,19 @@ done
 shift $(( $OPTIND - 1 ))
 
 for p_f in $* ; do
+   test ! "${PROVIDED_FILES[0]}" && PROVIDED_FILES=()
    if [ ${p_f##*.} = nc ] ; then
-     PROVIDED_FILES[${#PROVIDED_FILES[*]}]=$p_f
+     PROVIDED_FILES+=($p_f)
    else
      # a project for passing to install
      installArgs="${installArgs},$p_f"
    fi
 done
 
-test ${#PROVIDED_FIELS[*]} -gt 0 && setKWL PROVIDED_FILES=${PROVIDED_FILES[*]// /,}
+if [ ${#PROVIDED_FILES[*]} -gt 0 ] ; then
+   PROVIDED_FILES="${PROVIDED_FILES[*]}"
+   setKWL PROVIDED_FILES=${PROVIDED_FILES// /,}
+fi
 
 if [ ${isInstall:-f} = t -a ${#installArgs[*]} -gt 0 ] ; then
    test ${DEBUG_CONF} && installArgs="--debug,${installArgs}"

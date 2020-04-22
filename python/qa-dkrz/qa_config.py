@@ -356,7 +356,7 @@ class QaConfig(object):
 
         parser.add_argument('--clear', nargs='?',
             default='', const='t', dest='CLEAR',
-            help="Clear previous results related to other options.")
+            help="Clear previous results depending on various options.")
 
         parser.add_argument('--config-file', dest='CONFIG_FILE',
             help="Contains paths and update frequencies.")
@@ -520,6 +520,39 @@ class QaConfig(object):
         return self.cfg.getOpts()
 
 
+    def get_config_file(self):
+        # if self.qa_src has write permission, then use the config file in home.
+        # else: config-file in qa_src is read-only. A fault, if not existing.
+
+        if os.access(self.qa_src, os.W_OK):
+           self.home = os.path.join( os.environ['HOME'], '.qa-dkrz')
+           self.cfg_file = os.path.join( os.environ['HOME'], '.qa-dkrz', 'config.txt')
+        else:
+           self.cfg_file = os.path.join( self.qa_src, '.qa-dkrz', 'config.txt')
+           if os.access(self.cfg_file, os.R_OK):
+              self.cfg_file_RONLY = True
+           else:
+              self.cfg_file_RONLY = False
+
+        # config-file has to be installed previously
+        try:
+           sz = os.path.getsize(self.cfg_file)
+        except:
+           sz=0
+        else:
+           pass
+
+        if sz == 0:
+           print 'Missing or incomplete installation.'
+           print 'Please, run: qa-dkrz install --up --force PROJECT-name'
+           sys.exit(1)
+
+
+        self.cfg.read_file( self.cfg_file, section=self.qa_src)
+
+        return
+
+
     def getOpt(self, key, dct={}, bStr=False):
         if len(dct):
             curr_dct = dct
@@ -618,6 +651,7 @@ class QaConfig(object):
 
         return ( lp, lv)
 
+
     def isOpt(self, key, dct={}):
         # a) an option exists, then return True, but,
         # b) if the type is bool, then return the value
@@ -631,9 +665,11 @@ class QaConfig(object):
 
             if type(val) == BooleanType:
                 return val
+            elif type(val) == StringType:
+               if len(val) > 0 and not val == 'f':
+                  return True
             else:
-                if not val == 'f':
-                    return True
+               return True
 
         return False
 
@@ -797,23 +833,7 @@ class QaConfig(object):
         cLO = self.commandLineOpts( self.create_parser() )
 
         self.curr_dir = os.getcwd()
-
-        # is it defined in QA_SRC/.qa-conf ? Else: try home
-        self.home = os.path.join( os.environ['HOME'], '.qa-dkrz')
-        qa_src_qaconf=os.path.join(self.qa_src, '.qa-dkrz')
-
-        if os.path.isfile( os.path.join(self.home, 'config.txt') ):
-           self.cfg_file=os.path.join(self.home, 'config.txt')
-        elif os.path.isfile( os.path.join(qa_src_qaconf, 'config.txt') ):
-           self.cfg_file=os.path.join(qa_src_qaconf, 'config.txt')
-        elif os.path.isfile( os.path.join(self.qa_src, '.qa-config.txt') ):
-           self.cfg_file=os.path.join(self.qa_src, '.qa-config.txt')
-        elif os.path.isfile( os.path.join(self.qa_src, '.qa.cfg') ):
-           self.cfg_file=os.path.join(self.qa_src, '.qa.cfg')
-        else:
-           self.cfg_file=os.path.join(self.home, 'qa.cfg')
-
-        self.cfg.read_file( self.cfg_file, section=self.qa_src)
+        self.get_config_file()
 
         self.cfg_opts = self.getCFG_opts(self.qa_src) # (multiple) ..._qa.conf files
 

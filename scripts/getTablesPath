@@ -19,6 +19,8 @@ getTablesPath()
   qts=( $( grep 'QA_TABLES[[:space:]]*=' $CONFIG_FILE ) )
   # remove effect of blanks between QA_TABLES and '=';
   # take only the first one
+  sleep 1
+
   for(( i=0 ;  i < ${#qts[*]} ; ++i )) ; do
      if [ "${qts[i]}" = QA_TABLES= ] ; then
        :
@@ -55,7 +57,7 @@ getTablesPath()
   test ${DEBUG} && set -x
 
   test ! ${QA_TABLES} && QA_TABLES=${dpath}
-
+exit
   local i
   for i in 1 2 3 ; do
      if [ ${i} -eq 3 ] ; then

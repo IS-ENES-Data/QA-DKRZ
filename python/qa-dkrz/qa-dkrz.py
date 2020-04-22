@@ -107,10 +107,7 @@ def clearLog(qa_var_path, fBase, logfile):
 
 
 def clearInq(qa_var_path, fBase, logfile):
-    if not qaConf.isOpt('CLEAR'):
-       return
-
-#    isFollowLink = False
+    #isFollowLink = False
     v_clear = qaConf.getOpt('CLEAR')
 
     if v_clear == 't':
@@ -197,14 +194,13 @@ def clearInq(qa_var_path, fBase, logfile):
         if isClear:
             # now do the clearance
             clear(qa_var_path, fBase, logfile)
-            return
 
     return
 
 
 def final():
    # special for no project, but a single file: display log-file
-   if not qaConf.isOpt("PROJECT_DATA"):
+   if not qaConf.isOpt("QA_RESULTS"):
       for logName in g_vars.log_fnames:
          logName = os.path.join(qaConf.dOpts["QA_RESULTS"], 'check_logs', logName+'.log')
 
@@ -383,41 +379,47 @@ def get_version(qaConf):
 
     # this is mandatory
     isVerbose=False  # directly from the tables
+    rev=''
 
+    '''
     if qaConf.isOpt('VERBOSE'):
         isVerbose=True
+    elif qaConf.isOpt('CONDA'):
+        prj = qaConf.getOpt('PROJECT')
+        if qaConf.isOpt(prj + '_VERSION'):
+            rev += '|' + qaConf.getOpt(prj + '_VERSION')
+        else:
+            isVerbose=True
     elif qaConf.isOpt("QA_VERSION"):
-        rev=qaConf.dOpts["QA_VERSION"]
-        rev += '|' + qaConf.dOpts["CF_VERSION"]
+        rev=qaConf.getOpt('QA_VERSION')
+        rev += '|' + qaConf.getOpt("CF_VERSION")
 
         prj = qaConf.getOpt('PROJECT')
         if qaConf.isOpt(prj + '_VERSION'):
-            rev += '|' + qaConf.dOpts[prj + '_VERSION']
+            rev += '|' + qaConf.getOpt(prj + '_VERSION')
         else:
             isVerbose=True
-    else:
-        print 'Incomplete installation.'
-        print 'Please, run: qa-dkrz install --up --force PROJECT-name'
-
-        sys.exit(1)
 
     if isVerbose:
-        com_line_opts = ["--section=" + qaConf.getOpt("QA_SRC")]
+    '''
 
-        try:
-            rev = qa_version.get_version( opts=qaConf.dOpts,
+    com_line_opts = ["--section=" + qaConf.getOpt("QA_SRC")]
+
+    try:
+       rev = qa_version.get_version( opts=qaConf.dOpts,
                                         com_line_opts=com_line_opts)
-        except:
-            print 'please, run: qa-dkrz install --force --up ' + prj
-            sys.exit(1)
+    except:
+       print 'could not run get_version.py'
+       #print 'please, run: qa-dkrz install --force --up ' + prj
+       #sys.exit(1)
+    else:
+       if qaConf.isOpt('SHOW_VERSION'):
+           print rev
+           sys.exit(0)
 
-    if qaConf.isOpt('SHOW_VERSION'):
-        print rev
-        sys.exit(0)
+       qaConf.dOpts["QA_VERSION"] = rev
 
-    qaConf.dOpts["QA_VERSION"] = rev
-
-    return
+    return True
 
 
 def prepareExample(qaConf):
@@ -652,17 +654,43 @@ def summary():
 
 
 def testLock(t_vars, fBase):
-    if qaConf.isOpt('CLEAR'):
-        logfile = os.path.join(g_vars.check_logs_path, t_vars.log_fname + '.log')
+    retVal=False
+    force_clear=False
 
+    logfile = os.path.join(g_vars.check_logs_path, t_vars.log_fname + '.log')
+
+    # any QA result file of a previous check?
+    t_vars.qaFN = 'qa_' + fBase + '.nc'
+    qaNc = os.path.join(t_vars.var_path, t_vars.qaFN)
+
+    if qaConf.isOpt('CLEAR'):
+       force_clear=True
+       cv = qaConf.getOpt('CLEAR')
+       if cv.find('only') > -1:
+          retVale=True
+    elif os.path.isfile(logfile):
+       if os.path.isfile(qaNc):
+           # activate clear for this fBase file, when there is a qa_'.nc file,
+           # but no entry in the log-file. Note that the entry could be indicated
+           # by file: or data-set: .
+           try:
+               subprocess.check_call('grep', '-q', fBase, logfile)
+           except:
+               force_clear=True
+           else:
+               pass
+
+    if force_clear:
         clearInq(t_vars.var_path, fBase, logfile)
 
     # any qa_lock file?
-    f_lock = os.path.join(t_vars.var_path, 'qa_lock_' + fBase + '.txt')
-    if os.path.exists(f_lock):
-        return True
+    if not retVal:
+       f_lock = os.path.join(t_vars.var_path, 'qa_lock_' + fBase + '.txt')
 
-    return False
+       if os.path.exists(f_lock):
+           retVal=True
+
+    return retVal
 
 
 if __name__ == '__main__':
@@ -703,7 +731,9 @@ if __name__ == '__main__':
 
     try:
         # get from ~/.qa-dkrz/config.txt; also a check for incomplete installation
-        get_version(qaConf)
+        if not get_version(qaConf):
+			  sys.exit(1)
+
     except:
         print 'could not run qa-dkrz.get_version()'
         sys.exit(1)
