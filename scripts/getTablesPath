@@ -57,7 +57,7 @@ getTablesPath()
   test ${DEBUG} && set -x
 
   test ! ${QA_TABLES} && QA_TABLES=${dpath}
-exit
+
   local i
   for i in 1 2 3 ; do
      if [ ${i} -eq 3 ] ; then
