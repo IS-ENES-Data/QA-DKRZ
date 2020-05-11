@@ -1,4 +1,4 @@
-getTablesPath()
+getTablesPath_()
 {
   # path to the current user's home
   export QA_TABLES
@@ -13,77 +13,31 @@ getTablesPath()
      return 0
   fi
 
-  # take QA_TABLES from other config file sections, if any.
-  local i qt qts
-  declare -a qts
-  qts=( $( grep 'QA_TABLES[[:space:]]*=' $CONFIG_FILE ) )
-  # remove effect of blanks between QA_TABLES and '=';
-  # take only the first one
-  sleep 1
+  local p_tables
 
-  for(( i=0 ;  i < ${#qts[*]} ; ++i )) ; do
-     if [ "${qts[i]}" = QA_TABLES= ] ; then
-       :
-     elif [ "${qts[i]#QA_TABLES=}" != ${qts[i]} ] ; then
-       QA_TABLES=${qts[i]#QA_TABLES=}
-       break
-     elif [ "${qts[i]}" = QA_TABLES ] ; then
-       :
-     elif [ "${qts[i]}" = '=' ] ; then
-       i=$((i+1))
-       QA_TABLES=${qts[i]}
-       break
-     elif [ "${#qts[i]}" -gt 1 -a ${qts[i][0]} = '=' ] ; then
-       QA_TABLES=${qts[i]:1}
-       break
-     else
-       QA_TABLES=${qts[i]}
-       break
-     fi
-  done
-  qts=()
-
-  local  dpath=${QA_SRC}/QA_Tables
-
-  if [ ! -w $dpath ] ; then
-    dpath=${HOME}/.qa-dkrz/QA_TABLES
-  fi
-
-  test ${DEBUG} && set +x
-
-  echo -e "\nPlease, specify variable QA_TABLES [default: ${dpath}], " # > ${TTY}
-  read -p "the spot for external tables and programs: " QA_TABLES # 2> ${TTY}
-
-  test ${DEBUG} && set -x
-
-  test ! ${QA_TABLES} && QA_TABLES=${dpath}
-exit
-  local i
-  for i in 1 2 3 ; do
-     if [ ${i} -eq 3 ] ; then
-       echo "Could not mkdir QA_TABLES=${QA_TABLES}."
-       exit 41
-     fi
-
-     if mkdir -p ${QA_TABLES} &> /dev/null ; then
-        . $QA_SRC/scripts/parseConfigFile QA_TABLES=${QA_TABLES}
-        break
-     fi
-
-     echo "Could not mkdir QA_TABLES=${QA_TABLES} (missing permission?)."
-     dpath=${HOME}/.qa-dkrz
-     read -p "Do you want to try ${dpath} ? " QA_TABLES # 2> ${TTY}
-  done
-
-  if [ -d $QA_TABLES ] ; then
-     if [ ! -w $QA_TABLES ] ; then
-       echo "directory $QA_TABLES without write permissions,"
-       exit 41
-     fi
+  if try_other_sections ; then
+     QA_TABLES=$p_tables
   else
-     echo "no such directory QA_TABLES,"
-     echo "please, restart with added option --qa-tables=path"
-     exit 41
+     p_tables=${HOME}/.qa-dkrz/QA_TABLES
+
+     local i
+     while : ; do
+        echo -e -n "\nPlease, specify a new spot for project tables "
+        read -p "[default: ${p_tables}], <cancel>: " QA_TABLES
+
+        if mkdir -p ${QA_TABLES} &> /dev/null ; then
+           break
+        fi
+
+        echo "Could not mkdir ${QA_TABLES} (missing permission?)."
+        echo "Note that you need permissions because external table will be downloaded."
+
+        i=$(( i + 1 ))
+        if [ ${i} = 3 ] ; then
+          echo "Sorry, too many attempts. Exit"
+          exit 41
+        fi
+     done
   fi
 
   if [ ${QA_TABLES} ] ; then
@@ -93,8 +47,88 @@ exit
   return 0
 }
 
+try_other_sections()
+{
+  # before asking for a QA-TABLE spot, the config.txt file is
+  # investigated for possibilities
+
+  # try QA_TABLES from other config file sections, if any.
+  local i qts
+  declare -a qts
+
+  qts=( $( grep 'QA_TABLES[[:space:]]*=' $CONFIG_FILE ) )
+  qts=( ${qts[*]#*=} )
+
+  if [ ${#qts[*]} -eq 0 ] ; then
+     return 1
+  elif [ ${#qts[*]} -gt 1 ] ; then
+     # compare to the first one
+     for(( i=1 ;  i < ${#qts[*]} ; ++i )) ; do
+        if [ "${qts[0]}" = "${qts[i]}" ] ; then
+          qts[i]=
+        fi
+     done
+     qts=( ${qts[*]} )
+  fi
+
+  local prompt_text ix
+  echo -e "\nA path to project tables is required."
+
+  if [ ${#qts[*]} -eq 1 ] ; then
+     prompt_text="Do you want to use ${qts[0]}. <y>, <[no|new]>, <cancel>: "
+
+     while : ; do
+       read -p "${prompt_text}"  p_tables
+
+       case ${p_tables:0:1} in
+         ( n | '') return 1  ;;
+           c)      exit 41   ;;
+           y)      ix=0      ;;
+           *)      continue  ;;
+       esac
+
+       echo ''  # just for a newline
+       break
+     done
+  else
+
+     while : ; do
+       prompt_text=
+
+       for (( i=0 ; i < ${#qts[*]} ; ++i )) ; do
+         echo "Found for index ${i}: ${qts[i]}"
+       done
+
+       prompt_text="<enter index for selection:>, <[new|no]>, <cancel>: "
+       read -p "${prompt_text}" ix
+
+       if [ ${ix} -ge ${#qts[*]} ] ; then
+          echo "Sorry, input exceeds available number."
+          continue
+       fi
+
+       case ${ix:0:1} in
+         ( 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7) break  ;;
+         ( n |  '') return 1  ;;
+         *)         continue ;;
+       esac
+
+       echo ''  # just for a newline
+       break
+     done
+
+  fi
+
+  p_tables="${qts[ix]}"
+
+  return 0
+}
+
+
 # main
 
-getTablesPath $1
+getTablesPath_ $1
 
-return 0
+test ${isDebug} && echo "return: getTablesPath" > /dev/null
+
+return

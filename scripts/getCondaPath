@@ -1,35 +1,26 @@
-getCondaPath()
+getCondaPath_()
 {
-  if [ ! ${CONDA_PATH} ] ; then
-    if ! . $QA_SRC/scripts/parseConfigFile CONDA_PATH ; then
+  if [ ! ${CONDA_PATH_QA} ] ; then
+    if ! . $QA_SRC/scripts/parseConfigFile CONDA_PATH_QA ; then
        # Was $0 launched out of a conda installation?
        # Look for bin/conda in QA_SRC
 
-       local i pth items sz
-       declare -a items
+       local pth
 
-       items=( ${0//\// } )
-       sz=$(( ${#items[*]} - 1 )) # skip the executable, leave only path items
+       pth=${QA_SRC%/qa-dkrz/opt/qa-dkrz}
+       pth=${pth%/${envs}}/bin/conda
 
-       for(( i=0; i < sz ; ++i )) ; do
-         pth="${pth}/${items[i]}"
+       if [ -f "${pth}" ] ; then
+         isCondaInstance=t
 
-         if [ -f ${pth}/bin/conda ] ; then
-             # no effect when write permission is not granted
-             . $QA_SRC/scripts/parseConfigFile CONDA_PATH=${CONDA_PATH}
-
-            isCondaInstance=t
-
-            CONDA_PATH="${pth}/bin/conda"
-            break
-         fi
-       done
+         CONDA_PATH_QA=${pth}
+       fi
     fi
   fi
 
   # CONDA_PATH could be empty, if conda is neither referenced
   # by PATH nor by alias.
-  export CONDA_PATH
+  export CONDA_PATH_QA
 
   return
 }
@@ -37,5 +28,8 @@ getCondaPath()
 
 # main
 
-getCondaPath
+getCondaPath_
 
+test ${isDebug} && echo "return: getCondaPath" > /dev/null
+
+return

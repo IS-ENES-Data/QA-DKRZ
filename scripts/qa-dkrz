@@ -480,7 +480,7 @@ callQaConfig()
     SHOW_CLEAR=t
   fi
 
-  if [ ! ${CONDA_PATH} ] ; then
+  if [ ! ${CONDA_PATH_QA} ] ; then
     local lib
     lib=$( grep '^[[:space:]]*LIB=' ${QA_SRC}/install_configure )
     export LD_LIBRARY_PATH=${lib#*=}
@@ -3010,12 +3010,6 @@ init()
   fi
 
   local prj=${PROJECT}
-
-  if [ ! "${INSTALL_ARGS}" ] ; then
-    if . ${QA_SRC}/scripts/parseConfigFile AUTO_UPDATE ; then
-       INSTALL_ARGS="--up,${prj}"
-    fi
-  fi
 
   if [ "${INSTALL_ARGS}" ] ; then
     # checksum of current qa-dkrz

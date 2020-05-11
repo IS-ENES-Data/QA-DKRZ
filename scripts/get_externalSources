@@ -1,7 +1,9 @@
 WGET_TOUT=60
 
-ges_cf()
+cf()
 {
+  test ! ${isUpTables} && return 1
+
   if ! mkdir -p $QA_TABLES/tables/projects/CF ; then
      mkdir -p $1
      return 41
@@ -13,7 +15,7 @@ ges_cf()
   local html=standard-names.html
 
   # purpose: contains links and version data to the latest xml tables
-  if ! ges_cf_html ; then
+  if ! cf_html ; then
      # already up2date
      return 0
   fi
@@ -22,31 +24,29 @@ ges_cf()
   local status=0
   local retVal=0
 
-  if ! ges_get_xml $ges_cf_STANDARD_NAME_TABLE ; then
+  if ! get_xml $cf_STANDARD_NAME_TABLE ; then
      retVal=1
   fi
 
-  if ! ges_get_xml $ges_cf_REGION_LIST_TABLE ; then
+  if ! get_xml $cf_REGION_LIST_TABLE ; then
      retVal=1
   fi
 
-  if ! ges_get_xml $ges_cf_AREA_TYPE_TABLE ; then
+  if ! get_xml $cf_AREA_TYPE_TABLE ; then
      retVal=1
   fi
-
-  . $QA_SRC/scripts/parseConfigFile NEXT_CF_UPDATE
 
   return $retVal
 }
 
-ges_cf_html()
+cf_html()
 {
   local last now
   local status=0
 
   # html page contains access to cf related tables
 
-  ges_checkDate init $html
+  checkDate init $html
 
   wget --timeout=$WGET_TOUT -q -N $org/$html
 
@@ -55,24 +55,24 @@ ges_cf_html()
     return 41
   fi
 
-  if ! ges_checkDate $html ; then
+  if ! checkDate $html ; then
      return 1
   fi
 
   # get version and date
 
   # current links to latest xml versions
-  ges_cf_STANDARD_NAME_TABLE="$(grep -m 1 cf-standard-name-table.xml $html)"
-  ges_cf_STANDARD_NAME_TABLE="${ges_cf_STANDARD_NAME_TABLE%\"*}"
-  ges_cf_STANDARD_NAME_TABLE="${ges_cf_STANDARD_NAME_TABLE#*\"}"
+  cf_STANDARD_NAME_TABLE="$(grep -m 1 cf-standard-name-table.xml $html)"
+  cf_STANDARD_NAME_TABLE="${cf_STANDARD_NAME_TABLE%\"*}"
+  cf_STANDARD_NAME_TABLE="${cf_STANDARD_NAME_TABLE#*\"}"
 
-  ges_cf_AREA_TYPE_TABLE="$(grep -m 1 area-type-table.xml $html)"
-  ges_cf_AREA_TYPE_TABLE="${ges_cf_AREA_TYPE_TABLE%\"*}"
-  ges_cf_AREA_TYPE_TABLE="${ges_cf_AREA_TYPE_TABLE#*\"}"
+  cf_AREA_TYPE_TABLE="$(grep -m 1 area-type-table.xml $html)"
+  cf_AREA_TYPE_TABLE="${cf_AREA_TYPE_TABLE%\"*}"
+  cf_AREA_TYPE_TABLE="${cf_AREA_TYPE_TABLE#*\"}"
 
-  ges_cf_REGION_LIST_TABLE="$(grep -m 1 standardized-region-list.xml $html)"
-  ges_cf_REGION_LIST_TABLE="${ges_cf_REGION_LIST_TABLE%\"*}"
-  ges_cf_REGION_LIST_TABLE="${ges_cf_REGION_LIST_TABLE#*\"}"
+  cf_REGION_LIST_TABLE="$(grep -m 1 standardized-region-list.xml $html)"
+  cf_REGION_LIST_TABLE="${cf_REGION_LIST_TABLE%\"*}"
+  cf_REGION_LIST_TABLE="${cf_REGION_LIST_TABLE#*\"}"
 
   # get versions
   local v=
@@ -105,7 +105,7 @@ ges_cf_html()
   return 0
 }
 
-ges_convert_xml2txt()
+convert_xml2txt()
 {
   local xmlFile=$1
   local txtFile=cf-${1%xml}txt
@@ -141,8 +141,7 @@ ges_convert_xml2txt()
   return 0
 }
 
-
-ges_get_xml()
+get_xml()
 {
   local table="$1"
 
@@ -156,19 +155,19 @@ ges_get_xml()
   # xml is parsed by the c++ executable
   test "${1##*/}" = cf-standard-name-table.xml && return 0
 
-  ges_convert_xml2txt ${table##*/}
+  convert_xml2txt ${table##*/}
 
   return $?
 }
 
-ges_checkDate()
+checkDate()
 {
    if [ $1 = init ] ; then
-     ges_currFile[${#ges_currFile[*]}]=$2
-     ges_last[${#ges_last[*]}]=0
+     currFile[${#currFile[*]}]=$2
+     last[${#last[*]}]=0
 
      if [ -f $2 ] ; then
-       ges_last=$( ls -l --time-style='+%s' $2 | awk '{print $6}' )
+       last=$( ls -l --time-style='+%s' $2 | awk '{print $6}' )
      fi
 
      return 1
@@ -176,24 +175,26 @@ ges_checkDate()
 
    # find index of currFile for $1, i.e. the filename
    local i
-   for(( i=0 ; i < ${#ges_currFile[*]} ; ++i )) ; do
-     test $1 = ${ges_currFile[i]} && break
+   for(( i=0 ; i < ${#currFile[*]} ; ++i )) ; do
+     test $1 = ${currFile[i]} && break
    done
 
    local now
-   now=$( ls -l --time-style='+%s' ${ges_currFile[i]} | awk '{print $6}' )
-   test ${now} -gt ${ges_last[i]}  && return 0
+   now=$( ls -l --time-style='+%s' ${currFile[i]} | awk '{print $6}' )
+   test ${now} -gt ${last[i]}  && return 0
 
    return 1
 }
 
-ges_cmip6()
+cmip6()
 {
+   test ! ${w_perm} && return 1
+
    local status=0
    local isCMIP6=t
 
    if [ ! ${XLSX2CSV} ] || [ ! -f "${XLSX2CSV}" ] ; then
-     if ! ges_xlsx2csv ; then
+     if ! xlsx2csv ; then
         status=$?
      fi
    fi
@@ -204,31 +205,25 @@ ges_cmip6()
    fi
    cd $QA_TABLES/tables/projects/$prj &> /dev/null
 
-   if [ ! ${PrePARE} ] ; then
-     forceUpdate=t
-   elif [ ! ${UDUNITS2_XML_PATH} ] ; then
-     forceUpdate=t
-   fi
-
-   if ! ges_cmip6_mip ; then # non-cmor tables
+   if ! cmip6_tables_I ; then
       status=$?
    fi
 
-   if [ ${w_perm:-t} = t ] ; then
-     if ! ges_cmip6_conda ; then
-       status=$?
-     fi
+   if ! cmip6_cmor ; then
+      status=$?
+   fi
 
-     if ! ges_cmip6_cmor ; then
-       status=$?
-     fi
+   if ! cmip6_tables_II ; then
+     status=$?
    fi
 
    return $status
 }
 
-ges_cmip6_cmor()
+cmip6_tables_II()
 {
+   test ! ${isUpTables} && return 1
+
    # Clone the CMIP6 table to your working directory.
    # Disable SSL verification (firewall only).
 
@@ -258,78 +253,93 @@ ges_cmip6_cmor()
    return $status
 }
 
-ges_cmip6_conda()
+cmip6_cmor()
 {
-  test ! ${isUpdateCMOR} && return
+  test ! ${isUpCmorConda} && return 1
 
   local conda_env cmp
   local action isNewConda
 
-  test ${#CONDA_CMOR_ENV} -gt 0 -a ${#PrePARE} -gt 0 && action=update
+  if [ ${CONDA_PATH_CMOR} ] ; then
+     test ! -e ${CONDA_PATH_CMOR} && CONDA_PATH_CMOR=  # this is no typo
+  fi
 
-  if [ ! ${action} ] ; then
-    . $QA_SRC/scripts/parseConfigFile CONDA_CMOR_ENV
-    . $QA_SRC/scripts/parseConfigFile PrePARE
+  if [ ${CONDA_PATH_CMOR} ] && [ -d ${CONDA_PATH_QA%/bin/conda}/envs/cmor ] ; then
+      CONDA_PATH_CMOR=${CONDA_PATH_QA}
+      . $QA_SRC/scripts/parseConfigFile CONDA_PATH_CMOR=${CONDA_PATH_CMOR}
+  fi
 
-    test ${#CONDA_CMOR_ENV} -gt 0 -a ${#PrePARE} -gt 0 && action=update
+  if [ ${CONDA_CMOR_ENV} ] && [ ${PrePARE} ] ; then
+     action=update
   fi
 
   if [ ! ${action} ] ; then
-    if [ ${CONDA_PATH} ] ; then
-      cmp=${CONDA_PATH%/bin/conda}
+    if [ ${CONDA_PATH_CMOR} ] ; then
+      cmp=${CONDA_PATH_CMOR%/bin/conda}
       if [ -d $cmp/envs/cmor ] ; then
          CONDA_CMOR_ENV=$cmp/envs/cmor
-         test -f $CONDA_CMOR_ENV/bin/PrePARE && \
+         . $QA_SRC/scripts/parseConfigFile CONDA_CMOR_ENV=${CONDA_CMOR_ENV}
+
+         if [ -f $CONDA_CMOR_ENV/bin/PrePARE ] ; then
             PrePARE=$CONDA_CMOR_ENV/bin/PrePARE
+           . $QA_SRC/scripts/parseConfigFile PrePARE=${PrePARE}
+         fi
       fi
     else
-       . $QA_SRC/scripts/parseConfigFile CONDA_PATH
+       # try other sections of the configuration file for matches
+       local prep
+       declare -a prep
+       prep=( $( grep PrePARE= ${CONFIG_FILE} ) )
+       prep=${prep[0]#PrePARE=}
+       if [ ${#prep} -gt 0 ] ; then
+          if [ -f "${prep}" ] ; then
+             . $QA_SRC/scripts/parseConfigFile PrePARE=${prep}
+             PrePARE=${prep}
+          fi
 
-       if [ ! ${CONDA_PATH} ] ; then
-          # try the configuration file for matches
-          local prep=( $( grep PrePARE= ~/.qa-dkrz/config.txt ) )
-          prep=${prep[0]#PrePARE=}
-          if [ ${#prep[*]} -gt 0 ] ; then
-             if [ -f ${prep} ] ; then
-                . $QA_SRC/scripts/parseConfigFile PrePARE=${prep}
-                PrePARE=${prep}
-             fi
+          local cce=${PrePARE%/bin/PrePARE}
+          if [ -d $cce ] ; then
+             . $QA_SRC/scripts/parseConfigFile CONDA_CMOR_ENV=${cce}
+             CONDA_CMOR_ENV=$cce
+          fi
 
-             local cce=${PrePARE%/bin/PrePARE}
-             if [ -f ${CONDA_CMOR_ENV} ] ; then
-                . $QA_SRC/scripts/parseConfigFile CONDA_CMOR_ENV=${cce}
-                CONDA_CMOR_ENV=$cce
-             fi
-
-             local cp=${CONDA_CMOR_ENV%/envs/cmor}/bin/conda
-             if [ -f ${CONDA_PATH} ] ; then
-                . $QA_SRC/scripts/parseConfigFile CONDA_PATH=${cp}
-                CONDA_PATH=$cp
-             fi
-          else
-            echo "please, install conda"
-            exit
+          local cp=${CONDA_CMOR_ENV%/envs/cmor}/bin/conda
+          if [ -f $cp ] ; then
+             . $QA_SRC/scripts/parseConfigFile CONDA_PATH_CMOR=${cp}
+             CONDA_PATH_CMOR=$cp
           fi
        fi
     fi
   fi
 
-  if [ ${CONDA_PATH} ] ; then
+  if [ ${CONDA_PATH_CMOR} ] ; then
     if [ ! ${CONDA_CMOR_ENV} ] ; then
-      cmp=${CONDA_PATH%/bin/conda}
+      cmp=${CONDA_PATH_CMOR%/bin/conda}/envs/cmor
 
-      if [ -d $cmp/envs/cmor ] ; then
-         CONDA_CMOR_ENV=$cmp/envs/cmor
-         test -f $CONDA_CMOR_ENV/bin/PrePARE && \
-             PrePARE=$CONDA_CMOR_ENV/bin/PrePARE
+      if [ -d $cmp ] ; then
+         CONDA_CMOR_ENV=$cmp
+         . $QA_SRC/scripts/parseConfigFile CONDA_CMOR_ENV=${cmp}
       fi
     fi
 
-    # look for existing miniconda with a cmor installation
-    . ${QA_SRC}/scripts/inqRunEnv funct=iRE_scanCondaEnv PrePARE
+    if [ ! ${PrePARE} ] ; then
+         test -f $CONDA_CMOR_ENV/bin/PrePARE && \
+             PrePARE=$CONDA_CMOR_ENV/bin/PrePARE
+    fi
 
-  else
-    isNewConda=t
+    if [ ! ${UDUNITS2_XML_PATH} ] && [ ${CONDA_CMOR_ENV} ] ; then
+        local uxp
+        declare -a uxp
+
+        uxp=( $( find $CONDA_CMOR_ENV -name "udunits2.xml" 2> /dev/null ) )
+
+        if [ -f ${uxp[0]} ] ; then
+           test ${uxp[0]:0:2} = './' && uxp[0]=${PWD}/${uxp[0]:2}
+           UDUNITS2_XML_PATH=${uxp[0]}
+
+           . ${QA_SRC}/scripts/parseConfigFile UDUNITS2_XML_PATH=${uxp[0]}
+        fi
+    fi
   fi
 
   if [ ${PrePARE} ] ; then
@@ -338,54 +348,43 @@ ges_cmip6_conda()
      action=create
   fi
 
-  if [ ${action} = create ] ; then
+  if [ ! ${CONDA_PATH_CMOR} ] ; then
      local prompt_text
-     echo -e "\nCMIP6 requires conda for running CMOR." # > ${TTY}
-     if [ ${isNewConda} ] ; then
-       prompt_text=" <yes: in ${CONDA_CMOR_ENV%/bin/*}, [no]>: "
-     else
-       echo -e "\nDifferent installation modes are available:" # > ${TTY}
-       echo    "    <a> environment of its own (original) " # > ${TTY}
-       echo    "    <b> environment of qa-dkrz " # > ${TTY}
-       echo    "    <c> a separate miniconda instantiated in the user-space" # > ${TTY}
-       echo    "    <no> exit"
-       prompt_text="Select: <a, b, user-defined-path, [no]>: "
-     fi
+     echo -e "\nCMIP6 requires conda for running CMOR; ~5GB." # > ${TTY}
 
-     local quest
+     prompt_text=" <yes: path where to install, [cancel]>: "
+     local p_quest
 
      while : ; do
        read -p "${prompt_text}"  quest # 2> ${TTY}
 
-       case ${quest:0:1} in
-         ( n |  '') exit 41  ;;
-         (       a) conda_env=cmor  ;;
-         (       b) conda_env=qa-dkrz  ;;
-         *) if [ ${quest:0:1} != '/' ] ; then
-              echo "Please, provide absolute path (in case of no typo)" # > ${TTY}
+       case ${p_quest:0:1} in
+         ( c |  '') exit 41  ;;
+         *) if [ ${p_quest:0:1} != '/' ] ; then
+              echo "Please, provide absolute path" # > ${TTY}
               continue
-            else
-              CONDA_CMOR_ENV=$quest
-              isNewConda=t
             fi
             ;;
        esac
 
+       echo ''  # just for a newline
        break
      done
+
+     if [ ${p_quest} ] ; then
+       if make_miniconda ${p_quest} ; then
+         CONDA_PATH_CMOR=${CONDA_PATH_CMOR}/miniconda2/bin/conda
+         . $QA_SRC/scripts/parseConfigFile CONDA_PATH_CMOR=${CONDA_PATH_CMOR}
+         CONDA_CMOR_ENV=${CONDA_PATH_CMOR%/bin/conda}/envs/cmor
+       fi
+     fi
   fi
 
-  if [ ${isNewConda} ] ; then
-    if ges_make_miniconda ${CONDA_CMOR_ENV} ; then
-      CONDA_CMOR_ENV=${CONDA_CMOR_ENV}/bin/conda
-      . $QA_SRC/scripts/parseConfigFile CONDA_CMOR_ENV=${CONDA_CMOR_ENV}
-    fi
-  fi
-
-  if [ ${CONDA_CMOR_ENV} ] ; then
+  if [ ${CONDA_PATH_CMOR} ] ; then
     if update_CONDA_env "${CONDA_CMOR_NAME}" "${CONDA_CMOR_CHANNELS}" \
-          "${CONDA_CMOR_ENV}" ${conda_env:-cmor} ${action} ; then
+          "${CONDA_PATH_CMOR}" ${conda_env:-cmor} ${action} ; then
 
+      . $QA_SRC/scripts/parseConfigFile CONDA_CMOR_ENV=${CONDA_CMOR_ENV}
       return 0
     fi
   fi
@@ -393,18 +392,19 @@ ges_cmip6_conda()
   return 41
 }
 
-ges_cmip6_mip()
+cmip6_tables_I()
 {
+   test ! ${isUpTables} && return 1
    local last now
 
    mkdir -p ${QA_TABLES}/tables/projects/CMIP6
    cd ${QA_TABLES}/tables/projects/CMIP6 &> /dev/null
 
-   ges_checkDate init CMIP6_MIP_tables.xlsx
+   checkDate init CMIP6_MIP_tables.xlsx
 
    wget --timeout=${WGET_TOUT} -l1 -N -np  \
       http://proj.badc.rl.ac.uk/svn/exarch/CMIP6dreq/tags/latest/dreqPy/docs/CMIP6_MIP_tables.xlsx \
-      >> log_cmip6_tables.txt 2>&1
+      >> log_cmip6_tables_II.txt 2>&1
 
    if [ $? -gt 0 ] ; then
       err[${#err[*]}]="wget CMIP6_MIP_tables.xlsx from http://proj.badc.rl.ac.uk"
@@ -412,7 +412,7 @@ ges_cmip6_mip()
       return 41
    fi
 
-   if ges_checkDate CMIP6_MIP_tables.xlsx ; then
+   if checkDate CMIP6_MIP_tables.xlsx ; then
      echo "CMIP6 - last update:" > README.txt
      echo "  CMIP6_MIP_tables.xlsx: $( date +'%F %T' )" > README.txt
 
@@ -424,13 +424,13 @@ ges_cmip6_mip()
    if [ -d CMIP6_CVs ] ; then
      cd CMIP6_CVs
 
-     if [ "$(ges_getGitBranch)" != master ] ; then
+     if [ "$(getGitBranch)" != master ] ; then
        git checkout master &> /dev/null
      fi
 
-     git fetch && git reset --hard origin/master >> log_cmip6_tables.txt 2>&1
+     git fetch && git reset --hard origin/master >> log_cmip6_tables_II.txt 2>&1
    else
-     git clone https://github.com/WCRP-CMIP/CMIP6_CVs >> log_cmip6_tables.txt 2>&1
+     git clone https://github.com/WCRP-CMIP/CMIP6_CVs >> log_cmip6_tables_II.txt 2>&1
    fi
 
    local status=$?
@@ -442,8 +442,10 @@ ges_cmip6_mip()
    return $status
 }
 
-ges_cordex()
+cordex()
 {
+   test ! ${isUpTables} && return 1
+
    local status
 
    if ! mkdir -p $QA_TABLES/tables/projects/$prj ; then
@@ -456,7 +458,7 @@ ges_cordex()
    if [ -d IS-ENES-Data.github.io ] ; then
      cd IS-ENES-Data.github.io
 
-     if [ "$(ges_getGitBranch)" != master ] ; then
+     if [ "$(getGitBranch)" != master ] ; then
        git checkout master &> /dev/null
      fi
 
@@ -488,24 +490,24 @@ ges_cordex()
    return ${status}
 }
 
-ges_getGitBranch()
+getGitBranch()
 {
    git branch | grep '*' | awk '{print $2}'
    return 0
 }
 
-ges_make_miniconda()
+make_miniconda()
 {
    local path quest
    path=${1}
 
    # look for a conda installation. Is conda in PATH?
-   echo    "miniconda: 'yes' would approve the '3-clause BSD License'!" # > ${TTY}
+   echo -e "\nminiconda2: 'yes' would approve the '3-clause BSD License'!" # > ${TTY}
 
    local isRead
 
    while : ; do
-     read -p "  <yes: in ${path}/miniconda, r: read license, [no]>: " \
+     read -p "  <yes: in ${path}/miniconda2, r: read license, [no]>: " \
           quest # 2> ${TTY}
 
      case $quest in
@@ -523,22 +525,22 @@ ges_make_miniconda()
 
      if [ ! -f Miniconda-latest-Linux-x86_64.sh ] ; then
        wget --timeout=${WGET_TOUT} -l1 -N -np \
-          https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh
+          https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
      fi
 
      if [ ${isRead:-f} = t ] ; then
-       #bash Miniconda-latest-Linux-x86_64.sh  > ${TTY} << EOF
-       bash Miniconda-latest-Linux-x86_64.sh << EOF
+       #bash Miniconda2-latest-Linux-x86_64.sh  > ${TTY} << EOF
+       bash Miniconda2-latest-Linux-x86_64.sh << EOF
 
 no
 EOF
        continue
      fi
 
-     if ! bash Miniconda-latest-Linux-x86_64.sh -b -p ${path} \
+     if ! bash Miniconda2-latest-Linux-x86_64.sh -b -p ${path}/miniconda2  \
            &> /dev/null ; then
 
-         err[${#err[*]}]="failed bash Miniconda-latest-Linux-x86_64.sh -b -p ${CONDA_CMOR_ENV}/miniconda"
+         err[${#err[*]}]="failed bash Miniconda2-latest-Linux-x86_64.sh -b -p $path/moiniconda2"
          return 41
      fi
 
@@ -548,7 +550,7 @@ EOF
    return 0
 }
 
-ges_xlsx2csv()
+xlsx2csv()
 {
    local xc=$QA_TABLES/xlsx2csv/xlsx2csv.py
 
@@ -574,65 +576,147 @@ ges_xlsx2csv()
    return 0
 }
 
-# main
-declare -a err
-declare -a ges_currFile
-declare -a ges_last
+update_CONDA_env()
+{
+  local conda_name=$1      # is always defined
+  local conda_channels=$2  # is always defined
+  local conda_path=$3      # is always defined
+  local conda_env=${4##*/} # could be empty
+  local action=$5          # could be empty
 
-while getopts hP:-: option
-do
-  case $option in
-    h)  ;;
-    P)  prj=${OPTARG} ;;
-    -) if [ ${OPTARG%=*} = 'config_file' ] ; then
-         CONFIG_FILE=${OPTARG#*=}
-       elif [ ${OPTARG} = 'debug' ] ; then
-         set -x
-       elif [ ${OPTARG} = 'force-update' ] ; then
-         forceUpdate=t
-       elif [ ${OPTARG} = 'no-w-perm' ] ; then
-         w_perm=f
-       elif [ ${OPTARG} == 'update' ] ; then
-         isUpdate=t
-       elif [ ${OPTARG} == 'update-cmor' ] ; then
-         isUpdateCMOR=t
-       elif [ ${OPTARG%=*} = "qa-tables" -o ${OPTARG%=*} = "qa-home" ] ; then
-         QA_TABLES=${OPTARG#*=}
-       elif [ ${OPTARG%=*} = "qa-src" ] ; then
-         QA_SRC=${OPTARG##*=}
+  test ${conda_env:-none} = none && conda_env=cmor
+  test ! ${action} && action=update
+
+  test ! ${NET} && return
+  test "${conda_env}" = '-n ' && conda_env=
+
+  if [ ! -w "${QA_SRC}" ] ; then
+    return
+    #echo "no write-permission for ${QA_SRC}"
+    #exit 1
+  elif [ ${action} = update ] ; then
+    # look for a new conda-built package
+    echo "searching ${conda_name} updates" # > ${TTY}
+
+    if [ ! ${isNoPW} ] ; then
+      progress_wheel &
+      job_id=$!
+    fi
+
+    set -f
+    ${conda_path} ${action} ${conda_env:+-n ${conda_env}} \
+                       ${conda_channels//,/ } \
+                       ${conda_name} &> /dev/null << EOF
+y
+EOF
+
+    test ! ${isNoPW} && kill -TERM $job_id
+
+    set +f
+  else
+    # only CMOR could here be created
+    ${conda_path} ${action} ${conda_env:+-n ${conda_env}} \
+            ${CONDA_CMOR_CHANNELS//,/ } ${CONDA_CMOR_NAME} # > ${TTY}
+
+    if [ $? -eq 0 ] ; then
+      if [ ${CONDA_CMOR_ENV} ] ; then
+        PrePARE=${CONDA_CMOR_ENV}/bin/PrePARE
+        . $QA_SRC/scripts/parseConfigFile PrePARE=${PrePARE}
+      fi
+    fi
+  fi
+
+  return 0
+}
+
+main()
+{
+  # main
+  local err currFile last prj status currPWD
+  local isForce w_perm
+  local QA_TABLES QA_SRC CONFIG_FILE
+  local args
+
+  declare -a err args currFile last
+  args=( $* )
+
+  local OPTARG OPTIND
+
+  while getopts hP:-: option ${args[*]}
+  do
+    case $option in
+      h)  ;;
+      P)  prj=${OPTARG} ;;
+      -) if [ ${OPTARG%=*} = 'config_file' ] ; then
+           CONFIG_FILE=${OPTARG#*=}
+         elif [ ${OPTARG} = 'debug' ] ; then
+           set -x
+         elif [ ${OPTARG} = 'force' ] ; then
+           isForce=t
+           isUpCmorConda=t
+           isUpCMOR=t
+           isUpTables=t
+         elif [ ${OPTARG} = 'no-w-perm' ] ; then
+           w_perm=f
+         elif [ ${OPTARG%%=*} = 'update' ] ; then
+            OPTARG=${OPTARG#*=}
+            if [ "${OPTARG/force/}" != "${OPTARG}" ] ; then
+              isUpCMOR=t
+              isUpTables=t
+            else
+               if [ "${OPTARG/cmor/}" != "${OPTARG}" ] ; then
+                 isUpCMOR=t
+               elif [ "${OPTARG/tables/}" != "${OPTARG}" ] ; then
+                 isUpTables=t
+               fi
+            fi
+         elif [ ${OPTARG%=*} = "qa-tables" -o ${OPTARG%=*} = "qa-home" ] ; then
+           QA_TABLES=${OPTARG#*=}
+         elif [ ${OPTARG%=*} = "qa-src" ] ; then
+           QA_SRC=${OPTARG##*=}
+         fi
+         ;;
+     \?) echo "get_externalSources: undefined option $option"
+         return 41 ;;
+    esac
+  done
+
+  if [ ! ${QA_TABLES} ] ; then
+    echo "QA_TABLES not specified in $HOME/.qa-dkrz/config.txt?"
+    return 41
+  fi
+
+  currPWD=$(pwd)
+  cd $QA_TABLES &> /dev/null
+
+  status=0
+  # note that LAST_${prj}_UPDATE checks whether there was ever a download,
+  #
+
+  if [ "$prj" = CF ] ; then
+     # always CF for any other project
+     if . $QA_SRC/scripts/parseConfigFile LAST_CF_UPDATE || [ ${isForce} ] ; then
+       if cf ; then
+          . $QA_SRC/scripts/parseConfigFile LAST_CF_UPDATE=$(date '+%Y%m%d')
+       else
+         cd ${currPWD} &> /dev/null
+         status 41
        fi
-       ;;
-   \?) echo "get_externalSources: undefined option $option"
-       return 41 ;;
-  esac
-done
-
-if [ ! ${QA_TABLES} ] ; then
-  echo "QA_TABLES not specified in $HOME/.qa-dkrz/config.txt?"
-  return 41
-fi
-
-currPWD=$(pwd)
-cd $QA_TABLES &> /dev/null
-
-# Note that CF may-be stand-alone or together with another project
-status=0
-if ! . $QA_SRC/scripts/parseConfigFile NEXT_CF_UPDATE --inquire \
-        || [ ${forceUpdate:-f} = t ] ; then
-   if ! ges_cf ; then
-     cd ${currPWD} &> /dev/null
-     status 41
-   fi
-elif ! . $QA_SRC/scripts/parseConfigFile NEXT_${prj}_UPDATE --inquire \
-       && [ ${forceUpdate:-f} = f ] ; then
+     fi
+  fi
 
   if [ "$prj" = CORDEX ] ; then
-    if ! ges_cordex ; then
-      status=$?
+    if . $QA_SRC/scripts/parseConfigFile LAST_${prj}_UPDATE  || [ ${isForce} ] ; then
+      if ! cordex ; then
+        status=$?
+      fi
     fi
+
   elif [ "$prj" = CMIP6 ] ; then
-    if ! ges_cmip6 ; then
-      status=$?
+    if . $QA_SRC/scripts/parseConfigFile LAST_${prj}_UPDATE  || [ ${isForce} ] ; then
+      if ! cmip6 ; then
+        status=41
+      fi
     fi
   fi
 
@@ -644,10 +728,18 @@ elif ! . $QA_SRC/scripts/parseConfigFile NEXT_${prj}_UPDATE --inquire \
      status=41
   fi
 
+  # get former value in global scope
   test ${status} -eq 0 && \
-     . $QA_SRC/scripts/parseConfigFile NEXT_${prj}_UPDATE
-fi
+     . $QA_SRC/scripts/parseConfigFile LAST_${prj}_UPDATE=$(date '+%Y%m%d')
 
-cd ${currPWD} &> /dev/null
+  cd ${currPWD} &> /dev/null
 
-return ${status}
+  return ${status}
+}
+
+main $*
+geS_retVal=$?
+
+test ${isDebug} && echo "return: get_externalSources" > /dev/null
+
+return $geS_retVal

@@ -48,7 +48,7 @@ descript()
   echo "  --compile         Force recompilation, even for a conda repository."
   echo "  --debug[=script]  Display execution commands. If the name of a script"
   echo "                    is assigned, then debug only this one."
-  echo "  --force           Force update of the given project."
+  echo "  --force           Force update of tables (if any) of the given project."
   echo "  --help            Display usage and exit."
   echo "  --home=path       Same as --qa-tables."
   echo "  --lcf=path        Location of .qa-dkrz/config.txt [~]."
@@ -64,21 +64,19 @@ descript()
   echo "  --show-inst       Display properties of the current installation."
   echo "  --
   See ReadTheDocs:installation."
-  echo "  --up[date]        Update external packages/tables from respective repository."
+  echo "  --up[=str]        Update external packages/tables from respective repositories"
+  echo "                    with str of comma-separated-values:"
+  echo "                       tables: only tables [by default],"
+  echo "                       QA:    the QA-DKRZ package from GitHUB,"
+  echo "                       CMOR:  the CMOR conda packages for project CMIP6,"
+  echo "                       force: QA,CMOR,tables."
+  echo "                    Note: conda itself has to be updated manually."
+  echo "                    Note: missing write-permission is silently caught."
   echo "                    Note: not for netCDF, HDF5, udunits2 or zlib."
-  echo "  --up              Update the qa-dkrz package when installed by conda."
-  echo "  --update-frequency=num"
-  echo "                    --uf and any --uXXX_FYYY is valid; num in days with default [1]"
   echo ""
   echo '  projects-name(s)   At present CF, CMIP5/6, [CORDEX] and HAPPI.'
 
   return
-}
-
-exit_fnct()
-{
-   test $1 -gt ${exitVal:-0} && exitVal=$1
-   exit $exitVal
 }
 
 getSrcPath()
@@ -129,7 +127,12 @@ getSrcPath()
 
    test ${p0##*/} = 'script' && p0=${p0%/script}
 
-   export QA_SRC=${p0%QA-DKRZ*}QA-DKRZ
+   if [ -f ${p0}/scripts/qa-dkrz ] ; then
+      export QA_SRC=$p0
+   fi
+
+#   export QA_SRC=${p0}QA-DKRZ
+#   export QA_SRC=${p0%QA-DKRZ*}QA-DKRZ
 
    return
 }
@@ -198,12 +201,12 @@ ship()
 
     if [ ! ${pth} ] ; then
       echo "--ship requires a path"
-      exit_fnct 41
+      exit 41
     fi
 
     if ! mkdir -p $pth ; then
       echo "--ship=${pth}: could not mkdir/open path"
-      exit_fnct 41
+      exit 41
     fi
 
     if [ ${pth} ] ; then
@@ -212,7 +215,7 @@ ship()
 
         # conda  or github repo
         if [ ${isCondaInstance} ] ; then
-          local bp=${CONDA_PATH%/bin/conda}
+          local bp=${CONDA_PATH_QA%/bin/conda}
           cd ${bp%/*} &> /dev/null
           echo  "tar cf ${pth}/QA-DKRZ.tar ${bp##*/} "
           if [ ! ${isNoPW} ] ; then
@@ -272,7 +275,7 @@ syncTables()
    if [ ${w_perm} ] ; then
      if ! mkdir -p ${QA_TABLES}/tables  ; then
        echo "failure: mkdir -p ${QA_TABLES}/tables"
-       exit_fnct 1
+       exit 1
      fi
 
      rsync -auz --exclude '*~' $QA_SRC/tables ${QA_TABLES} &> /dev/null
@@ -362,102 +365,27 @@ unship()
 
 update()
 {
+  test ! ${isUpdate} && return
+
   local prj
 
   local prjs
   declare -a prjs
   prjs=( $* )
-  test ${#prjs[*]} -gt 0 && prjs[${#prjs[*]}]=CF
 
-  for prj in $* ; do
-    if ! . ${QA_SRC}/scripts/inqRunEnv ${prj} ; then
-      isUp=t  # incomplete
-    elif . ${QA_SRC}/scripts/parseConfigFile AUTO_UPDATE ; then
-      isUp=t
-    fi
-
-    test ${isUp} && eval isUp_${prj}=t
-  done
-  test ${DEBUG} && end_of_inq=t  # just a mark for debugging
-
-  if [ ${upQA:-f} = t -a ${w_perm:-f} = t ] ; then
+  if [ ${isUpdate} ] && [ ${w_perm} ] ; then
+    if [ ${isUpdate/QA/} != ${isUpdate} ] ; then
       if [ -d ${QA_SRC}/.git ] ; then
          update_QA_SRC
-#      else
-#         echo "no git repository; no update"
-#         return
       fi
+    fi
   fi
 
-  if [ ${isUp} ] ; then
+  if [ ${isUpdate} != QA ] ; then
      # now for project related tables and programs
      for prj in $* ; do
-        eval isPRJ=isUp_${prj}
-        if [ ${isPRJ} ] ; then
-           update_external $prj
-        fi
-      done
-  fi
-
-  return 0
-}
-
-update_CONDA_env()
-{
-  local conda_name=$1      # is always defined
-  local conda_channels=$2  # is always defined
-  local conda_path=$3      # is always defined
-  local conda_env=${4##*/} # could be empty
-  local action=$5          # could be empty
-
-  test ${conda_env:-none} = none && conda_env=cmor
-  test ! ${action} && action=update
-
-  test ! ${NET} && return
-  test "${conda_env}" = '-n ' && conda_env=
-
-  if [ ! -w "${QA_SRC}" ] ; then
-    return
-    #echo "no write-permission for ${QA_SRC}"
-    #exit_fnct 1
-  elif [ ${action} = update ] ; then
-    # look for a new conda-built package
-    echo "searching ${conda_name} updates" # > ${TTY}
-
-    if [ ! ${isNoPW} ] ; then
-      progress_wheel &
-      job_id=$!
-    fi
-
-    set -f
-    ${conda_path} ${action} ${conda_env:+-n ${conda_env}} \
-                       ${conda_channels//,/ } \
-                       ${conda_name} &> /dev/null << EOF
-y
-EOF
-
-    test ! ${isNoPW} && kill -TERM $job_id
-
-    set +f
-  else
-    # only CMOR could here be created
-    ${conda_path} ${action} ${conda_env:+-n ${conda_env}} \
-            ${CONDA_CMOR_CHANNELS//,/ } ${CONDA_CMOR_NAME} # > ${TTY}
-
-    if [ $? -eq 0 ] ; then
-      if [ ${CONDA_CMOR_ENV} ] ; then
-        PrePARE=${conda_path}/envs/${CONDA_CMOR_ENV}/bin/PrePARE
-        . $QA_SRC/scripts/parseConfigFile CONDA_CMOR_ENV=${conda_env}
-      else
-        PrePARE=${conda_path}/bin/PrePARE
-        . $QA_SRC/scripts/parseConfigFile CONDA_CMOR_ENV=none
-      fi
-
-      . $QA_SRC/scripts/parseConfigFile \
-         PrePARE=${conda_path}/envs/cmor/bin/PrePARE
-
-      echo "Please, note that activation/deactivation is not required in this place." # > $TTY
-    fi
+        update_external $prj ${isUpdate:+--update=${isUpdate}}
+     done
   fi
 
   return 0
@@ -468,66 +396,38 @@ update_external()
   test ! ${NET} && return 0
 
   local prj=$1
+  shift
+
   test ${PROJECT_VIRT} && prj=${PROJECT_VIRT}
 
-  # check it here in order to prevent an update of the config-file in case
-  # that the installation failed or was terminated.
-
-  local isUp
-  if [ $isForce ] ; then
-    isUp=t
-  elif ! . ${QA_SRC}/scripts/parseConfigFile NEXT_${prj}_UPDATE --inquire ; then
-    isUp=t
-  fi
-
-  local retVal=0
-
-  if [ $isUp ] ; then
-     . ${QA_SRC}/scripts/get_externalSources \
+  . ${QA_SRC}/scripts/get_externalSources \
          -P $prj --qa-src=${QA_SRC} \
          --qa-tables=${QA_TABLES} --config_file=${CONFIG_FILE} \
-         ${isUpdate:+--update} ${isForce:+--force-update} \
-         ${w_perm:---no-w-perm} ${upCMOR:+--update-cmor}
+         $*
 
-     if [ $? -gt 0 ] ; then
-        echo "could not make install.update_external for $prj"
-        exit_fnct 1
-     fi
-
-     local nextUpdate
-     eval nextUpdate=\$NEXT_${prj}_UPDATE
-
-     . ${QA_SRC}/scripts/parseConfigFile NEXT_${prj}_UPDATE ${isForce:+--force}
-
-     v=$( python ${QA_SRC}/python/qa-dkrz/qa_version.py -P $prj )
-      . ${QA_SRC}/scripts/parseConfigFile ${prj}_VERSION=$v
-
-     retVal=1
+  if [ $? -gt 0 ] ; then
+     echo "could not make install.update_external for $prj"
+     exit 1
   fi
 
-  return $retVal
+  local v=$( python ${QA_SRC}/python/qa-dkrz/qa_version.py -P $prj )
+  . ${QA_SRC}/scripts/parseConfigFile ${prj}_VERSION=$v
+
+  return 0
 }
 
 update_QA_SRC()
 {
   if [ ${NET} ] ; then
-    if [ ${isForce:-f} = t ] || \
-           ! . ${QA_SRC}/scripts/parseConfigFile NEXT_QA_UPDATE --inquire
-    then
-      if [ ! -f ${QA_SRC}/.ignore_GitHub ] ; then
+     if [ ! -f ${QA_SRC}/.ignore_GitHub ] ; then
         cd ${QA_SRC}
 
         local md5_0_inst
         md5_0_inst=$( md5sum ${QA_SRC}/install | awk '{print $1}' )
-        local md5_0_inq
-        md5_0_inq=$( md5sum ${QA_SRC}/scripts/inqRunEnv | awk '{print $1}' )
 
         # is qa-dkrz going to change?
-        local date_i=$(ls -l \
+        local date_inst=$(ls -l \
              --time-style=+'%s' ${QA_SRC}/install \
-             | awk '{print $6}' 2> /dev/null )
-        local date_inq=$(ls -l \
-             --time-style=+'%s' ${QA_SRC}/scripts/inqRunEnv \
              | awk '{print $6}' 2> /dev/null )
 
         # always from master
@@ -544,27 +444,18 @@ update_QA_SRC()
           return 1
         fi
 
-        local isRestart=0
-        if [ ${date_i} != $( ls -l \
-             --time-style=+'%s' ${QA_SRC}/install \
-             | awk '{print $6}' 2> /dev/null ) ] ; then
-          isRestart=1
-        elif [ ${date_inq} != $( ls -l \
-               --time-style=+'%s' ${QA_SRC}/scripts/inqRunEnv \
-               | awk '{print $6}' 2> /dev/null ) ] ; then
-            isRestart=1
+        local md5_1_inst
+        md5_1_inst=$( md5sum ${QA_SRC}/install | awk '{print $1}' )
+
+        if [ ${md5_0_inst} != ${md5_1_inst} ] ; then
+           . ${QA_SRC}/scripts/parseConfigFile LAST_QA_UPDATE=$(date '+%Y%m%d')
+
+           QA_VERSION=$( python ${QA_SRC}/python/qa-dkrz/qa_version.py --qa )
+           . ${QA_SRC}/scripts/parseConfigFile QA_VERSION=$QA_VERSION
+
+           exec ${QA_SRC}/install ${initialArgs[*]}
         fi
-
-        test ${isRestart} -eq 1 && exec ${QA_SRC}/install ${initialArgs[*]}
-
-        . ${QA_SRC}/scripts/parseConfigFile NEXT_QA_UPDATE ${isForce:+--force}
-
-         QA_VERSION=$( python ${QA_SRC}/python/qa-dkrz/qa_version.py --qa )
-         . ${QA_SRC}/scripts/parseConfigFile QA_VERSION=$QA_VERSION
-
-        . ${QA_SRC}/scripts/parseConfigFile --read
-      fi
-    fi
+     fi
   fi
 
   return 0
@@ -586,9 +477,6 @@ done
 # resolve symbolic links and realtive paths
 getSrcPath
 
-# is it in a conda built?
-. ${QA_SRC}/scripts/getCondaPath
-
 if [ $# -gt 0 ] ; then
   # safe arguments
   sArgs=($*)
@@ -600,9 +488,7 @@ if [ $# -gt 0 ] ; then
 #    tr_option A
     A=$( echo "${A/% /}" | tr "[:lower:]" "[:upper:]" )
 
-    if [ "${A:0:5}" = AUTO_ ] ; then
-      sArgs[${i}]=--${sArgs[${i}]}
-    elif [ "${A:0:5}" = DEBUG ] ; then
+    if [ "${A:0:5}" = DEBUG ] ; then
       sArgs[${i}]=--${sArgs[${i}]}
     elif [ "${A}" = FORCE ] ; then
       sArgs[${i}]=--${sArgs[${i}]}
@@ -632,12 +518,11 @@ do
         OPTNAME=${UOPTARG%%=*}
         test ${OPTVAL} = ${OPTARG%%=*} && OPTVAL=
 
-        if [ "${OPTNAME}" = CONFIG_FILE ] ; then
+        if [ "${OPTNAME}" = CONFIG_FILE -o "${OPTNAME}" = CF ] ; then
           CONFIG_FILE=${OPTVAL}
-        elif [ "${OPTNAME}" = CF ] ; then
-            CONFIG_FILE=${OPTVAL}
         elif [ ${UOPTARG:0:5} = DEBUG -o ${UOPTARG} = 'DEBUG=INSTALL' ] ; then
           export DEBUG='--debug'
+          export isDebug=t
           # set -x  # already set before
         elif [ "${OPTNAME}" = HOME ] ; then
           export QA_TABLES=${OPTVAL}
@@ -651,32 +536,24 @@ do
   esac
 done
 
+. ${QA_SRC}/scripts/getConfigFile
+
+# is it in a conda built?
+. ${QA_SRC}/scripts/getCondaPath
+
+. ${QA_SRC}/scripts/parseConfigFile --read-all
+
 if [ -w $QA_SRC ] ; then
    w_perm=t
 
-   if [ ! -f ~/.qa-dkrz/config.txt ] ; then
-      mkdir -p ~/.qa-dkrz
-      touch ~/.qa-dkrz/config.txt
-   fi
-else
-   if [ ! -d ~/.qa-dkrz ] ; then
-      cp -r $QA_SRC/.qa-dkrz ~
-   fi
+   # delete obsolete config-options
+   obsolete_conf=( QA_REVISION DEFAULT_PROJECT )
+   obsolete_conf+=( $( grep NEXT_ ${CONFIG_FILE} ) )
+
+   for oc in ${obsolete_conf[*]} ; do
+     . ${QA_SRC}/scripts/parseConfigFile ${oc%%=*}=delete
+   done
 fi
-CONFIG_FILE=~/.qa-dkrz/config.txt
-
-. ${QA_SRC}/scripts/parseConfigFile UPDATE
-CFG_UPDATE=$UPDATE
-
-# convert UPDATE=auto --> UPDATE=daily
-if [ "${CFG_UPDATE}" = auto ] ; then
-    . ${QA_SRC}/scripts/parseConfigFile UPDATE=daily
-    CFG_UPDATE=daily
-fi
-
-# delete obsolete config-options
-. ${QA_SRC}/scripts/parseConfigFile QA_REVISION=delete
-. ${QA_SRC}/scripts/parseConfigFile DEFAULT_PROJECT=delete
 
 # unset for command-line usage
 UPDATE=
@@ -692,20 +569,13 @@ do
     B)  coll[${#coll[*]}]=-B ;;
     d)  coll[${#coll[*]}]=-d ;;
     h)  descript
-        exit_fnct 41 ;;
+        exit 41 ;;
     T)  TTY="${OPTARG}" ;;
     -)  OPTVAL=${OPTARG#*=}
         OPTNAME=${UOPTARG%%=*}
         test ${OPTARG/=/} = ${OPTARG} && OPTVAL=''
 
-        if [ "${OPTNAME:0:4}" = AUTO ] ; then
-          if [ "${OPTVAL:0:1}" = D -o "${OPTVAL:0:1}" = d ] ; then
-            . ${QA_SRC}/scripts/parseConfigFile AUTO_UPDATE=delete
-          else
-            AUTO_UPDATE=enabled
-            . ${QA_SRC}/scripts/parseConfigFile AUTO_UPDATE=${AUTO_UPDATE}
-          fi
-        elif [ "${OPTNAME}" = BUILD ] ; then
+        if [ "${OPTNAME}" = BUILD ] ; then
           isBuild=t
         elif [ "${OPTNAME}" = COMPILE ] ; then
           FORCE_COMPILE=-B
@@ -716,17 +586,20 @@ do
           export CONDA_CMOR_PATH=${OPTVAL}
           . ${QA_SRC}/scripts/parseConfigFile CONDA_CMOR_PATH=${OPTVAL}
 
-        elif [ "${OPTNAME}" = CONDA_PATH -o "${OPTNAME}" = CQP ] ; then
-          export CONDA_PATH=${OPTVAL}
-          . ${QA_SRC}/scripts/parseConfigFile CONDA_PATH=${OPTVAL}
+        elif [ "${OPTNAME}" = CONDA_PATH_QA -o "${OPTNAME}" = CQP ] ; then
+          export CONDA_PATH_QA=${OPTVAL}
+          . ${QA_SRC}/scripts/parseConfigFile CONDA_PATH_QA=${OPTVAL}
 
+        elif [ "${OPTNAME}" = CONFIG_FILE ] ; then
+          : # previously set
         elif [ "${OPTNAME}" = FORCE ] ; then
           isForce=t
+          isUpdate="${isUpdate:+${isUpdate},}force"
         elif [ "${OPTNAME}" = HELP ] ; then
           descript
-          exit_fnct 41
+          exit 41
         elif [ "${OPTNAME}" = HOME ] ; then
-          continue
+          : # previously set
         elif [ "${UOPTARG:0:4}" = LINK ] ; then
           isLink=t
         elif [ "${OPTNAME}" = NET ] ; then
@@ -744,10 +617,7 @@ do
         elif [ "${OPTNAME}" = QA_SRC ] ; then
           export QA_SRC=${OPTVAL}
         elif [ "${OPTNAME}" = QA_TABLES ] ; then
-          continue
-#       elif [ "${OPTNAME}" = SET_DEFAULT_PROJECT ] ; then
-#         test "${OPTVAL}" && . ${QA_SRC}/scripts/parseConfigFile DEFAULT_PROJECT=${OPTVAL}
-#         continue
+          : # previously set
         elif [ "${OPTNAME}" = SHIP ] ; then
           shipOpt=${OPTVAL}
           isShip=t
@@ -755,33 +625,12 @@ do
           :  # for backward compatibilty
         elif [ "${OPTNAME}" = UNSHIP ] ; then
           unship  # function
-          exit_fnct 0
+          exit 0
         elif [ "${OPTNAME:0:2}" = UP ] ; then
-          isUpdate=t
-
-          for opts in ${OPTVAL//,/ } ; do
-            if [ "${opts}" = auto ] ; then
-               . ${QA_SRC}/scripts/parseConfigFile AUTO_UPDATE=${AUTO_UPDATE}
-               . ${QA_SRC}/scripts/parseConfigFile UPDATE=daily
-            elif [ "${opts}" = QA ] ; then
-               upQA=t
-            elif [ "${opts}" = CMOR ] ; then
-               upCMOR=t
-            fi
-          done
-
-          continue
-        elif [ "${OPTNAME:0:1}" = U ] ; then
-          name_0=${OPTNAME%%_*}
-          name_1=${OPTNAME#*_}
-
-          if [ "${OPTNAME:0:2}" = UF \
-               -o \( "${name_0:0:1}" = U -a "${name_1:0:1}" = F \) ] ; then
-            next_update_cycle=( ${next_update_cycle[*]} ${OPTVAL//,/ } )
-            continue
-          fi
+          test "${OPTVAL}" = t && OPTVAL=tables
+          isUpdate="${isUpdate:+${isUpdate},}${OPTVAL}"
         elif [ "${OPTNAME}" = WORK ] ; then
-          continue
+          : # previously set
         elif [ "${OPTNAME}" = HDF5 ] ; then
           hdf5=${OPTVAL}
         elif [ "${OPTNAME}" = NETCDF ] ; then
@@ -795,18 +644,12 @@ do
         # collect options, which have not been processed above
         coll[${#coll[*]}]=--${UOPTARG}
         ;;
-   \?)  # indicate that there is something left for a regular check
-        exitVal=25;;
+   \?)  echo "unknown option $option"
+        exit 1;;
   esac
 done
 
 shift $(( $OPTIND - 1 ))
-
-if [ ! ${isUpdate} ] ; then
-  if . ${QA_SRC}/scripts/parseConfigFile AUTO_UPDATE ; then
-     test ${NET} && isUpdate=t
-  fi
-fi
 
 #if [ ! "${TTY}" ] ; then
 #  if tty -s ; then TTY=$(tty) ; fi
@@ -843,7 +686,7 @@ for pck in $* ; do
   fi
 done
 
-# make all by default
+# make all projects by default
 if [ ${#projects[*]} -eq 0 ] ; then
    projects=( ${valid_projects[*]} )
    coll[${#coll[*]}]="${projects[*]}"
@@ -856,36 +699,10 @@ if [ ! ${isCondaBuild} ] ; then
   fi
 fi
 
-if [ ${isUpdate} ] ; then
-  # also ensures that all names in the config.files are defined in this program
-  if [ ! ${isCondaBuild} ] ; then
-    if [ ! ${isBuild} ] ; then
-      update ${projects[*]}
-    fi
+. ${QA_SRC}/scripts/check_configuration  # depends on projects
 
-    if [ ${#next_update_cycle[*]} -gt 0 ] ; then
-      NEXT_U_CYCLE=(QA CMOR)
-      for(( i=0 ; i < ${#projects[*]} ; ++i )) ; do
-        NEXT_U_CYCLE[${#NEXT_U_CYCLE[*]}]=${projects[i]}
-      done
-
-      if [ ${#next_update_cycle[*]} = 1 -a ${next_update_cycle[0]} = ${next_update_cycle[0]//=/} ] ; then
-         for nv in ${NEXT_U_CYCLE[*]} ; do
-           # apply to all
-           . ${QA_SRC}/scripts/parseConfigFile NEXT_${nv}_UPDATE --set_frequency=${next_update_cycle[0]}
-         done
-      else
-        # individual settings
-        for dn in ${next_update_cycle[*]} ; do
-          for nv in ${NEXT_U_CYCLE[*]} ; do
-            if [ ${dn%=*} = ${nv} ] ; then
-               . ${QA_SRC}/scripts/parseConfigFile NEXT_${nv}_UPDATE --set_frequency=${dn#*=}
-            fi
-          done
-        done
-      fi
-    fi
-  fi
+if [ ! ${isCondaBuild} ] && [ ! ${isBuild} ] ; then
+   update ${projects[*]}
 fi
 
 if [ ${isShip} ] ; then
@@ -907,20 +724,17 @@ if [ ${isShip} ] ; then
   fi
 
    ship ${shipOpt}
-   exit_fnct 41
+   exit 41
 fi
 
-if [ ! ${w_perm} ] ; then
-   . ${QA_SRC}/scripts/parseConfigFile QA_VERSION
-   exit 0
-fi
+test ! ${w_perm} && exit 0
 
 # conda ?
 test ${zeroArg/\/envs\/qa-dkrz\/opt\//} != ${zeroArg} && exit 0
 
 if [ ${isBuild:-f} = t -a ${isLink:-f} = t ] ; then
   echo "scripts/install.sh: options --build and --link exclude each other"
-  exit_fnct 1
+  exit 1
 elif [ ${isBuild:-f} = t -o ${isLink:-f} = t ] ; then
   pcks="--zlib=$zlib --hdf5=$hdf5 --netcdf=$netcdf --udunits=$udunits"
   log ${initialArgs[*]}
@@ -930,7 +744,7 @@ fi
 
 if [ ${#projects[*]} -eq 0 ] ; then
    echo "$0 ${initialArgs[*]}:  at least one PROJECT name is required"
-   exit_fnct 1
+   exit 1
 fi
 
 exec ${QA_SRC}/scripts/install.sh ${debug} --pack=${package} \

@@ -1,0 +1,102 @@
+check_config_()
+{
+  local retVal=0
+
+  check_config_general
+
+  local p opts
+  test ${w_perm:-f} = f && opts=--no-w-perm
+
+  for p in CF $* ; do  # usually a single one
+     # no external sources
+     # test $p = HAPPI && check_config_HAPPI ${opts}
+     # test $p = CMIP5 && check_config_CMIP5 ${opts}
+
+     if [ $p = CF ] ; then
+         check_config_CF ${opts}
+     elif [ $p = CMIP6 ] ; then
+         check_config_CMIP6 ${opts}
+     elif [ $p = CORDEX ] ; then
+         check_config_CORDEX ${opts}
+     fi
+
+     test $? -gt 0 && retVal=1
+  done
+
+  return $retVal
+}
+
+check_config_general()
+{
+   # update for QA is checked in install
+
+   if [ ! ${QA_TABLES} ] ; then
+      . ${QA_SRC}/scripts/getTablesPath
+      . $QA_SRC/scripts/parseConfigFile QA_TABLES
+   fi
+
+   return
+}
+
+check_config_CF()
+{
+   local prj=CF
+
+   if [ ! ${LAST_CF_UPDATE} ] ; then
+      . ${QA_SRC}/scripts/get_externalSources \
+         -P $prj --qa-src=${QA_SRC} \
+         --qa-tables=${QA_TABLES} --config_file=${CONFIG_FILE} # --force
+   fi
+
+   return
+}
+
+check_config_CMIP5()
+{
+   local prj=CMIP5
+
+   # provided by QA_TABLES
+   return
+}
+
+check_config_CMIP6()
+{
+   local prj=CMIP6
+
+   if [ ! ${LAST_CMIP6_UPDATE} ] ; then
+     . ${QA_SRC}/scripts/get_externalSources \
+         -P $prj --qa-src=${QA_SRC} \
+         --qa-tables=${QA_TABLES} --config_file=${CONFIG_FILE} # --force
+   fi
+
+   return
+}
+
+check_config_CORDEX()
+{
+   local prj=CORDEX
+
+   if [ ! ${LAST_CORDEX_UPDATE} ] ; then
+      . ${QA_SRC}/scripts/get_externalSources \
+         -P $prj --qa-src=${QA_SRC} \
+         --qa-tables=${QA_TABLES} --config_file=${CONFIG_FILE} # --force
+   fi
+
+   return
+}
+
+check_config_HAPPI()
+{
+   # provided in QA_TABLES
+   return
+}
+
+# main
+# here, only undefined config assignments are resolved.
+
+check_config_ ${projects[*]}
+cc_retVal=$?
+
+test ${isDebug} && echo "return: check_configuration" > /dev/null
+
+return $cc_retVal

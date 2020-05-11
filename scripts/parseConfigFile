@@ -6,10 +6,9 @@
 
 # return 0 for a match between provided parameter=value and config file,
 #          a enabled one.
-# return 1 for a new/updated parameter, a mismatch, disable, a set variable, not defined,
-#          or when today is older than the scheduled next time
+# return 1 for a new/updated parameter, a mismatch, disable, a set variable, not defined, or when the date is today
 
-pC_ship()
+ship()
 {
   local i j k last arr x_itm
   declare -a arr x_itm
@@ -113,52 +112,9 @@ pC_ship()
      echo "${arr[i]}" >> ${QA_SRC}/.ship-qa-config.txt
   done
 
-  pC_isShip=
+  isShip=
 
   return 0
-}
-
-isNextDate()
-{
-   # entries with time comparison in a destinct work-flow
-   if [ ! ${pC_todate} ] ; then
-      pC_todate=$(date '+%Y%m%d')
-      pC_today=$(( $(date -d ${pC_todate} '+%s') / 3600 / 24 ))
-   fi
-
-   local t_conf_day t_conf_date
-   declare -a t_config_date
-
-   if [ $# -eq 0 ] ; then
-     t_config_day=( $(( $(date -d ${pC_todate} '+%s') / 3600 / 24 - 1 )) )
-   else
-     t_config_date=( ${1//+/ } )
-
-     # convert date to 'days since 1970 '
-     t_config_day=$(( $(date -d ${t_config_date[0]} '+%s') / 3600 / 24 ))
-     t_config_day=$(( ${t_config_day} + ${t_config_date[1]:-1} ))
-   fi
-
-   local status
-
-   if [ ${pC_freq} ] ; then
-      # just adjust to the new frequency
-      param_value="${t_config_date[0]}+${pC_freq}"
-      param="${param_name}=${param_value}"
-      status=0
-   else
-     if [ ${pC_today} -lt ${t_config_day} ] ; then
-        status=0  # means a match
-     elif [ ${pC_read_only} = t ] ; then
-        status=1
-     else
-        param_value="${pC_todate}+${t_config_date[1]:-1}"
-        param="${param_name}=${param_value}"
-        status=1
-     fi
-   fi
-
-   return ${status}
 }
 
 readCF()
@@ -260,7 +216,6 @@ updateConfFile()
    fi
 
    local i
-   local nextDate
    local status=0
 
    # find a match between config.txt lines and current param_name
@@ -280,16 +235,12 @@ updateConfFile()
    done
 
    if [ $i -lt ${#uCF_lines[*]} ] ; then
-     if [ ${param_name:0:5} = NEXT_ ] ; then
-        # now >= limit: param_value is set
+     if [ ${param_name:0:5} = LAST_ ] ; then
         local line=${uCF_lines[i]}
-        if [ "${line}" = "${line#*=}" ] ; then
-          line=${pC_todate}
-        fi
+        local today=$(date '+%Y%m%d')
+        local last="${uCF_lines[i]#*=}"
 
-        if ! isNextDate ${line#*=} ; then
-          status=1
-        fi
+        test ${today} = "${last}" && status=1
      fi
 
      if [ "${param}" = "${param_name}" ] ; then
@@ -314,7 +265,7 @@ updateConfFile()
          eval ${param_name}=t
        fi
        # else: match
-     elif [ ${pC_read_only:-f} = f ] ; then
+     elif [ ! ${read_only} ] ; then
         if [ ${#param_value} -gt 0 ] ; then
            if [ ${param_value} = delete ] ; then
              isDelete=t
@@ -327,15 +278,11 @@ updateConfFile()
            status=1
         fi
      fi
-
-     test ${status:-0} -eq 1 && status=1
    else
      # current param not found in config.txt, yet
      status=1
      if [ "${param_value}" != delete ] ; then
-       test ${param_name:0:5} = NEXT_ && isNextDate
-
-       if [ ${#param_value} -gt 0 -a ${pC_read_only:-f} = f ] ; then
+       if [ ${#param_value} -gt 0 ] && [ ! ${read_only} ] ; then
          # new
          sed -i "${uCF_blkEnd} a${param}" $CONFIG_FILE &> /dev/null
 
@@ -349,12 +296,12 @@ updateConfFile()
    return $status
 }
 
-pC_voidX()
+voidX()
 {
   # toggle between set -x and set +x in a way that
   # restores the original setting after calling twice
 
-  test ${isNoToggleX} && return
+  test ${pC_isNoToggleX} && return
 
   if [ ${isSetX:-t} = t ] ; then
     test "$(set -o |grep xtrace | awk '{print $2}')" = off && return
@@ -376,73 +323,95 @@ pC_voidX()
 }
 
 # main
+main()
+{
+   test $# -eq 0 && return 1
 
-declare -a pC_Args
-pC_Args=()
-pC_freq=
-pC_read_only=f
+   local arg args read_only no_path isReadAll freq isShip
+   local retVal
 
-pC_voidX
+   declare -a args
+   args=()
 
-for arg in $* ; do
-  if [ "${arg}" = '--debug' ] ; then
-    pC_debug=t
-  elif [ "${arg}" = '--inquire' ] ; then
-    pC_read_only=t
-  elif [ "${arg}" = '--no-path' ] ; then
-    pC_no_path=t
-  elif [ "${arg}" = '--read' ] ; then
-    unset uCF_lines
-    unset uCF_blkBeg
-  elif [ "${arg:0:15}" = '--set_frequency' ] ; then
-    test ${arg#*=} != ${arg} && pC_freq=${arg#*=}
-  elif [ "${arg:0:6}" = '--ship' ] ; then
-    pC_isShip=t
-  else
-    pC_Args[${#pC_Args[*]}]="$arg"
-  fi
-done
+   for arg in $* ; do
+     if [ "${arg}" = '--no-path' ] ; then
+       no_path=t
+     elif [ "${arg}" = '--read' ] ; then
+       unset uCF_lines
+       unset uCF_blkBeg
+     elif [ "${arg}" = '--read-all' ] ; then
+       unset uCF_lines
+       unset uCF_blkBeg
+       isReadAll=t
+     elif [ "${arg:0:6}" = '--ship' ] ; then
+       isShip=t
+     else
+       args+="$arg"
+     fi
+   done
 
-if [ ${CONFIG_READ_ONLY} ] ; then
-    pC_read_only=t
-elif [ ! -w ${CONFIG_FILE} ] ; then
-    pC_read_only=t
-fi
+   if [ ${CONFIG_READ_ONLY} ] ; then
+       read_only=t
+   elif [ ! -w ${CONFIG_FILE} ] ; then
+       read_only=t
+   fi
 
-if [ "${CONFIG_FILE}" ] ; then
-  if [ ! $/pC_read_only} ] ; then
-    if [ ! -f "${CONFIG_FILE}" ] ; then
-      mkdir -p ${CONFIG_FILE%/*}
-      touch ${CONFIG_FILE}
-    fi
-  fi
-else
-  pC_voidX
-  return 1 # no config file
-fi
+   if [ "${CONFIG_FILE}" ] ; then
+     if [ ! ${read_only} ] ; then
+       if [ ! -f "${CONFIG_FILE}" ] ; then
+         mkdir -p ${CONFIG_FILE%/*}
+         touch ${CONFIG_FILE}
+       fi
+     fi
+   else
+     return 2 # no config file
+   fi
 
-if [ ${#uCF_lines[*]} -eq 0 ] ; then
-  unset uCF_line_0
-  unset uCF_blkBeg
-  readCF
-fi
+   if [ ${#uCF_lines[*]} -eq 0 ] ; then
+     unset uCF_line_0
+     unset uCF_blkBeg
+     readCF
+   fi
 
-if [ ${pC_isShip:-f} = t ] ; then
-  pC_ship
-  pC_voidX
-  return 0
-fi
+   if [ ${isShip:-f} = t ] ; then
+     ship
+     return 0
+   fi
 
+   if [ ${isReadAll} ] ; then
+      retVal=1
+      local i name val
+      for(( i=0 ; i < ${#uCF_lines[*]} ; ++i )) ; do
+         # read value from the config file and set variable
+         name=${uCF_lines[i]%%=*}
+         val="${uCF_lines[i]#*=}"
+         val="${val//|/\\|}"
 
-if [ ${#pC_Args[*]} -eq 0 ] ; then
-  pC_voidX
-  return 0
-fi
+         eval ${name}="${val}"
+         retVal=0
+      done
 
+      # ok also for nothing read at all
+      return $retVal
+   fi
+
+   test ${#args[*]} -eq 0 && return 0
+
+   retVal=$?
+   updateConfFile ${args[*]}
+   retVal=$?
+
+   return $retVal
+}
+
+#pC_isNoToggleX=t
+voidX
+
+main $*
 pC_retVal=$?
-updateConfFile ${pC_Args[*]}
-pC_retVal=$?
 
-pC_voidX
+voidX
+
+test ${isDebug} && echo "return: parseConfigFile" > /dev/null
 
 return $pC_retVal

@@ -1,28 +1,38 @@
 
-gCF_run()
+get_config_file()
 {
    local p=${QA_SRC}
    if [ ! ${QA_SRC} ] ; then
       p=${0%/scripts/qa-dkrz}
    fi
 
-   if [ -w ${p} ] ; then
+   if [ -w $p ] ; then
       # QA_SRC is writable: create/use config.txt in HOME
       CONFIG_FILE=${HOME}/.qa-dkrz/config.txt
-   else
-      if [ -r $p/.qa-dkrz/config.txt ] ; then
-         # use external configuration
-         CONFIG_FILE=$p/.qa-dkrz/config.txt
-         CONFIG_READ_ONLY=t
+
+      if [ ! -f ~/.qa-dkrz/config.txt ] ; then
+        mkdir -p ~/.qa-dkrz
+        touch ~/.qa-dkrz/config.txt
       fi
+
+   elif [ -r $p/.qa-dkrz/config.txt ] ; then
+      # use external configuration
+      CONFIG_FILE=$p/.qa-dkrz/config.txt
+      CONFIG_READ_ONLY=t
+
+   else
+      echo "no access to any qa-dkrz config.txt file;"
+      echo -e "\nplease, ask your admin for a copy in ${QA
+_SRC}."
+      exit 41
    fi
 
    gCF_retVal=0
 
    if [ ! -s ${CONFIG_FILE} ] ; then
-      if [ ${0##*/} = 'qa-dkrz' ] ; then
-        echo "please, run ./install [opts]"
-        exit
+      if [ ${0##*/} != 'install' ] ; then
+        echo "please, run ${QA_SRC}/install [opts]"
+        exit 41
       fi
    fi
 
@@ -31,4 +41,6 @@ gCF_run()
    return
 }
 
-gCF_run $*
+get_config_file $*
+
+test ${isDebug} && echo "return: locateConfigFile" > /dev/null
