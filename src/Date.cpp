@@ -14,7 +14,7 @@ Date::Date( std::string iso, std::string cal)
 Date::~Date()
 {
   if( regularMonthDays )
-    delete regularMonthDays ;
+    delete[] regularMonthDays ;
 }
 
 Date::Date(
