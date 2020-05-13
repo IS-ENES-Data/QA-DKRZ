@@ -661,6 +661,7 @@ main()
          elif [ ${OPTARG%%=*} = 'update' ] ; then
             OPTARG=${OPTARG#*=}
             if [ "${OPTARG/force/}" != "${OPTARG}" ] ; then
+              isForce=t
               isUpCMOR=t
               isUpTables=t
             else
@@ -692,6 +693,9 @@ main()
   status=0
   # note that LAST_${prj}_UPDATE checks whether there was ever a download,
   #
+  if [ ! ${isForce} ] && [ ${isTables} ] ; then
+     isForce=t
+  fi
 
   if [ "$prj" = CF ] ; then
      # always CF for any other project
