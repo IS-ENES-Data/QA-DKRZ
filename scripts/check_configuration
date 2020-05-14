@@ -55,7 +55,7 @@ check_config_CF()
 
    if [ ! ${LAST_CF_UPDATE} ] || [ ${isForce} ] ; then
       . ${QA_SRC}/scripts/get_externalSources \
-         -P $prj --qa-src=${QA_SRC} \
+         -P $prj --qa-src=${QA_SRC} ${isForce:+--force} \
          --qa-tables=${QA_TABLES} --config_file=${CONFIG_FILE}
    fi
 
@@ -76,7 +76,7 @@ check_config_CMIP6()
 
    if [ ! ${LAST_CMIP6_UPDATE} || [ ${isForce} ] ; then
      . ${QA_SRC}/scripts/get_externalSources \
-         -P $prj --qa-src=${QA_SRC} \
+         -P $prj --qa-src=${QA_SRC} ${isForce:+--force} \
          --qa-tables=${QA_TABLES} --config_file=${CONFIG_FILE}
    fi
 
@@ -89,7 +89,7 @@ check_config_CORDEX()
 
    if [ ! ${LAST_CORDEX_UPDATE} || [ ${isForce} ] ; then
       . ${QA_SRC}/scripts/get_externalSources \
-         -P $prj --qa-src=${QA_SRC} \
+         -P $prj --qa-src=${QA_SRC}  ${isForce:+--force} \
          --qa-tables=${QA_TABLES} --config_file=${CONFIG_FILE}
    fi
 
