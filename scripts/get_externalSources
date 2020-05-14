@@ -171,6 +171,8 @@ checkDate()
      fi
 
      return 1
+   else
+     currFile[${#currFile[*]}]=$1
    fi
 
    # find index of currFile for $1, i.e. the filename

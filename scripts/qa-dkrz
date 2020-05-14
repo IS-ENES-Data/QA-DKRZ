@@ -2260,7 +2260,7 @@ getNextVariable()
 
   # a fixed variable?
   if [ $status -eq 4 ] ; then
-    if [ ${#qa_fl} -gt 0 -o "${CHECK_MODE}" = 'time' -o "${CHECK_MODE}" = 'TIME'] ; then
+    if [ ${#qa_fl} -gt 0 -o "${CHECK_MODE}" = 'time' -o "${CHECK_MODE}" = 'TIME' ] ; then
        # already processed?
 #      if [ ${PROGRESS_BAR} ] ; then
         # get number of data files for progress estimation
