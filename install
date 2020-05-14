@@ -374,7 +374,7 @@ update()
   prjs=( $* )
 
   if [ ${isUpdate} ] && [ ${w_perm} ] ; then
-    if [ ${isUpdate/QA/} != ${isUpdate} ] ; then
+    if [ "${isUpdate/QA/}" != "${isUpdate}" ] ; then
       if [ -d ${QA_SRC}/.git ] ; then
          update_QA_SRC
       fi
@@ -384,7 +384,8 @@ update()
   if [ ${isUpdate} != QA ] ; then
      # now for project related tables and programs
      for prj in $* ; do
-        update_external $prj ${isUpdate:+--update=${isUpdate}}
+        update_external $prj ${isUpdate:+--update=${isUpdate}} \
+           ${w_perm:+--no-w-perm}
      done
   fi
 
