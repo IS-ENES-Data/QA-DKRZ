@@ -4,10 +4,21 @@ check_config_()
 
   check_config_general
 
-  local p opts
-  test ${w_perm:-f} = f && opts=--no-w-perm
+  local arg args isForce p opts
+  declare -a args
 
-  for p in CF $* ; do  # usually a single one
+
+  for arg in $* ; do
+     if [ ${arg} = '--force' ] ; then
+        isForce=t
+     else
+        args+=( "$arg" )
+     fi
+  done
+
+  test ! -w $QA_SRC && opts=--no-w-perm
+
+  for p in CF ${args[*]} ; do  # usually a single one
      # no external sources
      # test $p = HAPPI && check_config_HAPPI ${opts}
      # test $p = CMIP5 && check_config_CMIP5 ${opts}
@@ -43,9 +54,9 @@ check_config_CF()
    local prj=CF
 
    if [ ! ${LAST_CF_UPDATE} ] ; then
-      . ${QA_SRC}/scripts/get_externalSources \
+      . ${QA_SRC}/scripts/get_externalSources  ${isForce:+--force} \
          -P $prj --qa-src=${QA_SRC} \
-         --qa-tables=${QA_TABLES} --config_file=${CONFIG_FILE} # --force
+         --qa-tables=${QA_TABLES} --config_file=${CONFIG_FILE}
    fi
 
    return
@@ -65,8 +76,8 @@ check_config_CMIP6()
 
    if [ ! ${LAST_CMIP6_UPDATE} ] ; then
      . ${QA_SRC}/scripts/get_externalSources \
-         -P $prj --qa-src=${QA_SRC} \
-         --qa-tables=${QA_TABLES} --config_file=${CONFIG_FILE} # --force
+         -P $prj --qa-src=${QA_SRC}  ${isForce:+--force} \
+         --qa-tables=${QA_TABLES} --config_file=${CONFIG_FILE}
    fi
 
    return
@@ -78,8 +89,8 @@ check_config_CORDEX()
 
    if [ ! ${LAST_CORDEX_UPDATE} ] ; then
       . ${QA_SRC}/scripts/get_externalSources \
-         -P $prj --qa-src=${QA_SRC} \
-         --qa-tables=${QA_TABLES} --config_file=${CONFIG_FILE} # --force
+         -P $prj --qa-src=${QA_SRC}  ${isForce:+--force} \
+         --qa-tables=${QA_TABLES} --config_file=${CONFIG_FILE}
    fi
 
    return
@@ -94,9 +105,4 @@ check_config_HAPPI()
 # main
 # here, only undefined config assignments are resolved.
 
-check_config_ ${projects[*]}
-cc_retVal=$?
-
-test ${isDebug} && echo "return: check_configuration" > /dev/null
-
-return $cc_retVal
+check_config_ $*

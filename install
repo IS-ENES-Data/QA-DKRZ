@@ -700,7 +700,9 @@ if [ ! ${isCondaBuild} ] ; then
   fi
 fi
 
-. ${QA_SRC}/scripts/check_configuration  # depends on projects
+# check correct settings in HOME/.qa-dkrz/config.txt depending on projects
+. ${QA_SRC}/scripts/check_configuration \
+      ${isForce:+--force} ${projects[*]}
 
 if [ ! ${isCondaBuild} ] && [ ! ${isBuild} ] ; then
    update ${projects[*]}
