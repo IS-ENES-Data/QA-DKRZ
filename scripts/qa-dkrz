@@ -753,7 +753,7 @@ check()
 checkClosedMessages()
 {
   # qaExecutors have added locked or closed files for finished runs
-  local expName f fs ffs ff g
+  local expName f fs ffs ff g count
   declare -a ffs fs
   local retVal=1
 
@@ -782,8 +782,16 @@ checkClosedMessages()
 #         tryCom \
          cat "$ff" >> $LOG_FNAME_DIR/${expName}.log
 
-#         tryCom \
-         \rm -f "$ff"
+         while [ -f $ff ] ; do
+#           tryCom \
+               \rm -f "$ff"
+               sleep 1
+
+            if [ $(( count++ )) -eq 5 ] ; then
+               count=
+               break
+            fi
+         done
 
          retVal=0
 #         isAnythingDone=t
@@ -809,7 +817,17 @@ checkClosedMessages()
 
              echo "$line" >> $LOG_FNAME_DIR/${expName}.time
            done < $ff
-           \rm -f "$ff"
+
+           while [ -f $ff ] ; do
+#             tryCom \
+                 \rm -f "$ff"
+                 sleep 1
+
+              if [ $(( count++ )) -eq 5 ] ; then
+                 count=
+                 break
+              fi
+           done
         fi
       done
     fi
@@ -821,7 +839,17 @@ checkClosedMessages()
          tryCom get_status \
          test -s $ff  ; then
          cat $ff >> $SESSION_LOGDIR/session.log
-         \rm -f "$ff"
+
+         while [ -f $ff ] ; do
+#           tryCom \
+               \rm -f "$ff"
+               sleep 1
+
+            if [ $(( count++ )) -eq 5 ] ; then
+               count=
+               break
+            fi
+         done
       fi
     done
 
