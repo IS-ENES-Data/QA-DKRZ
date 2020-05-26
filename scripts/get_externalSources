@@ -8,6 +8,7 @@ cf()
      mkdir -p $1
      return 41
   fi
+
   cd $QA_TABLES/tables/projects/CF
 
   # htmnl page containing access to cf related tables
@@ -190,8 +191,6 @@ checkDate()
 
 cmip6()
 {
-   test ! ${w_perm} && return 1
-
    local status=0
    local isCMIP6=t
 
@@ -211,12 +210,12 @@ cmip6()
       status=$?
    fi
 
-   if ! cmip6_cmor ; then
-      status=$?
-   fi
-
    if ! cmip6_tables_II ; then
      status=$?
+   fi
+
+   if ! cmip6_cmor ; then
+      status=$?
    fi
 
    return $status
@@ -257,7 +256,12 @@ cmip6_tables_II()
 
 cmip6_cmor()
 {
-  test ! ${isUpCmorConda} && return 1
+  if [ ! -w ${QA_SRC} ] ; then
+     echo "no write permission, please call admin."
+     return 41
+  fi
+
+  test ! ${isUpCMOR} && return 1
 
   local conda_env cmp
   local action isNewConda
@@ -354,17 +358,25 @@ cmip6_cmor()
      local prompt_text
      echo -e "\nCMIP6 requires conda for running CMOR; ~5GB." # > ${TTY}
 
-     prompt_text=" <yes: path where to install, [cancel]>: "
-     local p_quest
+     # check entries in HOME/.qa-dkrz/conf.txt
+     if check_config ; then
+        return
+     fi
+
+     local p_default=${HOME}/.qa-dkrz
+
+     prompt_text=" <path for CMOR installation [def: ${p_default}]>, <c[ancel]>: "
+
+     local quest
 
      while : ; do
        read -p "${prompt_text}"  quest # 2> ${TTY}
 
-       case ${p_quest:0:1} in
-         ( c |  '') exit 41  ;;
-         *) if [ ${p_quest:0:1} != '/' ] ; then
-              echo "Please, provide absolute path" # > ${TTY}
-              continue
+       case ${quest:0:1} in
+         c) exit 41  ;;
+         ('') quest=$p_default  ;;
+         *) if [ ${quest:0:1} != '/' ] ; then
+              quest=${PWD}/$quest
             fi
             ;;
        esac
@@ -373,9 +385,9 @@ cmip6_cmor()
        break
      done
 
-     if [ ${p_quest} ] ; then
-       if make_miniconda ${p_quest} ; then
-         CONDA_PATH_CMOR=${CONDA_PATH_CMOR}/miniconda2/bin/conda
+     if [ ${quest} ] ; then
+       if make_miniconda ${quest} ; then
+         CONDA_PATH_CMOR=${quest}/miniconda2/bin/conda
          . $QA_SRC/scripts/parseConfigFile CONDA_PATH_CMOR=${CONDA_PATH_CMOR}
          CONDA_CMOR_ENV=${CONDA_PATH_CMOR%/bin/conda}/envs/cmor
        fi
@@ -392,6 +404,86 @@ cmip6_cmor()
   fi
 
   return 41
+}
+
+check_config()
+{
+   # look for entries in config.txt
+   local X CPC CCE P UXP
+
+   declare -a X CPC CCE P UXP
+
+   local TN=4  # number of targets
+
+   # get sections
+   local IFS=$'\n'
+   local l l_num sum range
+   declare -a l_num
+   l_num=( $(grep -n ':$' $CONFIG_FILE | awk '{print $1}'))
+   l_num+=( $(wc -l $CONFIG_FILE | awk '{print $1}'))
+
+   # extract the numbers
+   l_num=(${l_num[*]%%:*})
+
+   for(( l=0 ; l < $(( ${#l_num[*]} -1 )) ; ++l )) ; do
+      range="${l_num[l]},${l_num[$((l+1))]}"
+      X+=(   $(sed -n "${range} {/XLSX2CSV=/p}"          $CONFIG_FILE) )
+      CPC+=( $(sed -n "${range} {/CONDA_PATH_CMOR=/p}"   $CONFIG_FILE) )
+      CCE+=( $(sed -n "${range} {/CONDA_CMOR_ENV=/p}"    $CONFIG_FILE) )
+      P+=(   $(sed -n "${range} {/PrePARE=/p}"           $CONFIG_FILE) )
+      UXP+=( $(sed -n "${range} {/UDUNITS2_XML_PATH=/p}" $CONFIG_FILE) )
+
+      sum=0
+      test ${#X[l]}   -gt 0 && sum=$(( sum +1 ))
+      test ${#CPC[l]} -gt 0 && sum=$(( sum +1 ))
+      test ${#CCE[l]} -gt 0 && sum=$(( sum +1 ))
+      test ${#P[l]}   -gt 0 && sum=$(( sum +1 ))
+      test ${#UXP[l]} -gt 0 && sum=$(( sum +1 ))
+
+      if [ ${sum} -eq ${TN} ] ; then
+         test ! -f ${X[l]#*=}   && return 1
+         test ! -f ${CPC[l]#*=} && return 1
+         test ! -d ${CCE[l]#*=} && return 1
+         test ! -f ${P[l]#*=}   && return 1
+         test ! -f ${UXP[l]#*=} && return 1
+
+         break
+      fi
+   done
+
+   if [ ${sum} -lt ${TN} ] ; then
+      # found incomplete set
+      return 1
+   fi
+
+   while : ; do
+       local pt="\nFound paths in ${HOME}/.qa-dkrz/config.txt:"
+       pt="${pt}\n ${X[l]},\n ${CPC[l]},\n ${CCE[l]},\n ${P[l]},\n ${UXP[l]}."
+       pt="${pt}\n ${X[l]},\n ${CPC[l]},\n ${CCE[l]},\n ${P[l]}."
+       echo -e "${pt}"
+
+       pt="<yes> use them, <[new]> get new ones, <cancel>"
+       read -p "${pt}"  q # 2> ${TTY}
+
+       case ${q:0:1} in
+         ( c |  '') exit ;;
+           y)       break ;;
+           n)  return 1 ;;
+           *)  continue ;;
+       esac
+
+       echo ''  # just for a newline
+       break
+   done
+
+
+   . $QA_SRC/scripts/parseConfigFile ${X[l]}
+   . $QA_SRC/scripts/parseConfigFile ${CPC[l]}
+   . $QA_SRC/scripts/parseConfigFile ${CCE[l]}
+   . $QA_SRC/scripts/parseConfigFile ${P[l]}
+   . $QA_SRC/scripts/parseConfigFile ${UXP[l]}
+
+   return 0
 }
 
 cmip6_tables_I()
@@ -502,6 +594,8 @@ make_miniconda()
 {
    local path quest
    path=${1}
+
+   test -d $path/miniconda2 && return 0
 
    # look for a conda installation. Is conda in PATH?
    echo -e "\nminiconda2: 'yes' would approve the '3-clause BSD License'!" # > ${TTY}
@@ -635,7 +729,7 @@ main()
 {
   # main
   local err currFile last prj status currPWD
-  local isForce w_perm
+  local isForce
   local QA_TABLES QA_SRC CONFIG_FILE
   local args
 
@@ -655,12 +749,9 @@ main()
            set -x
          elif [ ${OPTARG} = 'force' ] ; then
            isForce=t
-           isUpCmorConda=t
            isUpCMOR=t
            isUpTables=t
-         elif [ ${OPTARG} = 'no-w-perm' ] ; then
-           w_perm=f
-         elif [ ${OPTARG%%=*} = 'update' ] ; then
+         elif [ ${OPTARG:0:2} = 'up' -o ${OPTARG:0:2} = 'UP' ] ; then
             OPTARG=${OPTARG#*=}
             if [ "${OPTARG/force/}" != "${OPTARG}" ] ; then
               isForce=t
@@ -668,6 +759,7 @@ main()
               isUpTables=t
             else
                if [ "${OPTARG/cmor/}" != "${OPTARG}" ] ; then
+                 isForce=t
                  isUpCMOR=t
                elif [ "${OPTARG/tables/}" != "${OPTARG}" ] ; then
                  isUpTables=t
@@ -689,11 +781,8 @@ main()
     return 41
   fi
 
-  currPWD=$(pwd)
-  cd $QA_TABLES &> /dev/null
-
   status=0
-  # note that LAST_${prj}_UPDATE checks whether there was ever a download,
+  # note that LAST_${prj}_UPDATE checks whether there was ever any download,
   #
   if [ ! ${isForce} ] && [ ${isTables} ] ; then
      isForce=t
@@ -705,8 +794,7 @@ main()
        if cf ; then
           . $QA_SRC/scripts/parseConfigFile LAST_CF_UPDATE=$(date '+%Y%m%d')
        else
-         cd ${currPWD} &> /dev/null
-         status 41
+         status=$?
        fi
      fi
   fi
@@ -721,7 +809,7 @@ main()
   elif [ "$prj" = CMIP6 ] ; then
     if . $QA_SRC/scripts/parseConfigFile LAST_${prj}_UPDATE  || [ ${isForce} ] ; then
       if ! cmip6 ; then
-        status=41
+        status=$?
       fi
     fi
   fi

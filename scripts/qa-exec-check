@@ -1127,7 +1127,8 @@ run_PrePARE()
     export PATH=${PrePARE%/*}:${PATH}
 
     if [ ! ${PrePARE} ] ; then
-      echo "could not activate/find PrePARE"
+      echo "Path to PrePARE is missing in $CONFIG_FILE"
+      echo "Please, run 'install'"
       signalParent TERM
       exit 1
     fi

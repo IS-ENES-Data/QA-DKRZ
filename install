@@ -365,7 +365,7 @@ unship()
 
 update()
 {
-  test ! ${isUpdate} && return
+  test ! ${update_arg} && return
 
   local prj
 
@@ -373,21 +373,21 @@ update()
   declare -a prjs
   prjs=( $* )
 
-  if [ ${isUpdate} ] && [ ${w_perm} ] ; then
-    if [ "${isUpdate/QA/}" != "${isUpdate}" ] ; then
+  if [ ${update_arg} ] && [ ${w_perm} ] ; then
+    if [ "${update_arg/QA/}" != "${update_arg}" ] ; then
       if [ -d ${QA_SRC}/.git ] ; then
          update_QA_SRC
       fi
     fi
   fi
 
-  if [ ${isUpdate} != QA ] ; then
-     # now for project related tables and programs
-     for prj in $* ; do
-        update_external $prj ${isUpdate:+--update=${isUpdate}} \
-           ${w_perm:+--no-w-perm}
-     done
-  fi
+#  if [ ${update_arg} != QA ] ; then
+#     # now for project related tables and programs
+#     for prj in $* ; do
+#        update_external $prj ${update_arg:+--update=${update_arg}} \
+#           ${w_perm:+--no-w-perm}
+#     done
+#  fi
 
   return 0
 }
@@ -595,7 +595,7 @@ do
           : # previously set
         elif [ "${OPTNAME}" = FORCE ] ; then
           isForce=t
-          isUpdate="${isUpdate:+${isUpdate},}force"
+          update_arg="${update_arg:+${update_arg},}force"
         elif [ "${OPTNAME}" = HELP ] ; then
           descript
           exit 41
@@ -629,7 +629,7 @@ do
           exit 0
         elif [ "${OPTNAME:0:2}" = UP ] ; then
           test "${OPTVAL}" = t && OPTVAL=tables
-          isUpdate="${isUpdate:+${isUpdate},}${OPTVAL}"
+          update_arg="${update_arg:+${update_arg},}${OPTVAL}"
         elif [ "${OPTNAME}" = WORK ] ; then
           : # previously set
         elif [ "${OPTNAME}" = HDF5 ] ; then
@@ -701,11 +701,28 @@ if [ ! ${isCondaBuild} ] ; then
 fi
 
 # check correct settings in HOME/.qa-dkrz/config.txt depending on projects
-. ${QA_SRC}/scripts/check_configuration \
-      ${isForce:+--force} ${projects[*]}
-
 if [ ! ${isCondaBuild} ] && [ ! ${isBuild} ] ; then
+   . ${QA_SRC}/scripts/check_configuration \
+      ${isForce:+--force} ${update_arg:+--up=${update_arg}} ${projects[*]}
+
    update ${projects[*]}
+
+   if [ -f $HOME/.qa-dkrz/config.txt ] ; then
+     if [ -f $QA_SRC/.qa-dkrz/config.txt ] ; then
+       local md5_0 md5_1
+       md5_0=$( md5sum ${QA_SRC}/.qa-dkrz/config.txt | awk '{print $1}' )
+       md5_1=$( md5sum ${HOME}/.qa-dkrz/config.txt | awk '{print $1}' )
+       test ${md5_0} != ${md5_1} &&
+          cp ${HOME}/.qa-dkrz/config.txt ${QA_SRC}/.qa-dkrz
+     else
+        if ! mkdir -p ${QA_SRC}/.qa-dkrz 2> /dev/null ; then
+           echo "could not mkdir ${QA_SRC}/.qa-dkrz; missing permission?"
+           exit 41
+        fi
+
+        cp ${HOME}/.qa-dkrz/config.txt ${QA_SRC}/.qa-dkrz
+     fi
+   fi
 fi
 
 if [ ${isShip} ] ; then

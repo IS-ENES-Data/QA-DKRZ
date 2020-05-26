@@ -13,30 +13,30 @@ getTablesPath_()
      return 0
   fi
 
-  local p_tables
+  local p_def_tables
 
   if try_other_sections ; then
-     QA_TABLES=$p_tables
+     QA_TABLES=$p_def_tables # set in the fct
   else
-     p_tables=${HOME}/.qa-dkrz/QA_TABLES
+     p_def_tables=${HOME}/.qa-dkrz/QA_TABLES
 
      local i
      while : ; do
         echo -e -n "\nPlease, specify a new spot for project tables "
-        read -p "[default: ${p_tables}], <cancel>: " QA_TABLES
+        read -p "[default: ${p_def_tables}], <cancel>: " QA_TABLES
+
+        case $quest in
+          ( '' ) QA_TABLES=$p_def_tables  ;;
+          c) exit 41 ;;
+          *) continue ;;
+        esac
 
         if mkdir -p ${QA_TABLES} &> /dev/null ; then
            break
         fi
 
-        echo "Could not mkdir ${QA_TABLES} (missing permission?)."
-        echo "Note that you need permissions because external table will be downloaded."
-
-        i=$(( i + 1 ))
-        if [ ${i} = 3 ] ; then
-          echo "Sorry, too many attempts. Exit"
-          exit 41
-        fi
+        echo "could not mkdir ${QA_TABLES} (missing write permission?);"
+        echo "permissions are required for downloading external tables."
      done
   fi
 
@@ -119,7 +119,7 @@ try_other_sections()
 
   fi
 
-  p_tables="${qts[ix]}"
+  p_def_tables="${qts[ix]}"
 
   return 0
 }

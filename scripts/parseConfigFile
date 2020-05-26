@@ -202,7 +202,7 @@ updateConfFile()
 {
    # check items
    local param=$1
-   local param_name=${param%=*}
+   local param_name=${param%%=*}
    local param_value=${param#*=}
 
    if [ "${param_value}" = f ] ; then
@@ -325,6 +325,11 @@ voidX()
 # main
 main()
 {
+   if [ ! ${QA_SRC} ] ; then
+      echo "no such variable QA_SRC"
+      exit -1
+   fi
+
    test $# -eq 0 && return 1
 
    local arg args read_only no_path isReadAll freq isShip
