@@ -25,10 +25,11 @@ getTablesPath_()
         echo -e -n "\nPlease, specify a new spot for project tables "
         read -p "[default: ${p_def_tables}], <cancel>: " QA_TABLES
 
-        case $quest in
+        case ${QA_TABLES:0:1} in
           ( '' ) QA_TABLES=$p_def_tables  ;;
           c) exit 41 ;;
-          *) continue ;;
+          *) test ${QA_TABLES:0:1} != '/' && continue
+             ;;
         esac
 
         if mkdir -p ${QA_TABLES} &> /dev/null ; then
