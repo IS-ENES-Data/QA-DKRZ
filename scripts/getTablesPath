@@ -22,7 +22,7 @@ getTablesPath_()
 
      local i
      while : ; do
-        echo -e -n "\nPlease, specify a new spot for project tables "
+        echo -e "\nA path to project tables is required."
         read -p "[default: ${p_def_tables}], <cancel>: " QA_TABLES
 
         case ${QA_TABLES:0:1} in
