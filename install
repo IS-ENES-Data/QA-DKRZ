@@ -709,7 +709,6 @@ if [ ! ${isCondaBuild} ] && [ ! ${isBuild} ] ; then
 
    if [ -f $HOME/.qa-dkrz/config.txt ] ; then
      if [ -f $QA_SRC/.qa-dkrz/config.txt ] ; then
-       local md5_0 md5_1
        md5_0=$( md5sum ${QA_SRC}/.qa-dkrz/config.txt | awk '{print $1}' )
        md5_1=$( md5sum ${HOME}/.qa-dkrz/config.txt | awk '{print $1}' )
        test ${md5_0} != ${md5_1} &&

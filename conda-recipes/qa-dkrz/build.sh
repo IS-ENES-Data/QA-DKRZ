@@ -40,7 +40,7 @@ else
   QA_TABLES=/hdh/local/QA_Tables
 fi
 
-./install --debug --force --conda-build --net=no --cf --qa-src=$QA_SRC --qa-tables="$QA_TABLES" CF CMIP5 CMIP6 CORDEX # 2> /hdh/hdh/QA-DKRZ/test/asdf
+./install --debug --force --conda-build --net=no --cf --qa-src=$QA_SRC --qa-tables="$QA_TABLES" CF CMIP5 CMIP6 CORDEX  2> ${QA_SRC}/conda-recipes/qa-dkrz/install.log
 
 # copy generated files to opt/qa-dkrz
 #cp -r ./bin ${QA_SRC}
