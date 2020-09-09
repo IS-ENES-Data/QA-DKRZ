@@ -60,12 +60,14 @@ get_config_file()
       fi
    fi
 
-   mkdir -p $cfg_dir
-   touch $cfg_dir/config.txt
+   if [ ! -e $cfg_dir/config.txt ] ; then
+      mkdir -p $cfg_dir
+      touch $cfg_dir/config.txt
+   fi
 
    export CONFIG_FILE=$cfg_dir/config.txt
 
-   return
+   return 0
 }
 
 get_config_file $*
