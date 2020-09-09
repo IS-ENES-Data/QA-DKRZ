@@ -58,6 +58,9 @@ get_config_file()
       fi
    fi
 
+   mkdir -p $cfg_dir
+   touch $cfg_dir/config.txt
+
    export CONFIG_FILE=$cfg_dir/config.txt
 
    return
