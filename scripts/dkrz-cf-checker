@@ -28,31 +28,27 @@ descript()
 
 checkInstallation()
 {
-  if ! . ${QA_SRC}/scripts/getConfigFile ] ; then
+  . ${QA_SRC}/scripts/getConfigFile
+
+  if ! grep -q CF_VERSION ${CONFIG_FILE} ; then
     ${QA_SRC}/install CF
   fi
 
   # sets: QA_TABLES, CONFIG_FILE
-  if [ -f ${QA_SRC}/.qa-config.txt ] ; then
-     # is it frozen?
-     export CONFIG_FILE=${QA_SRC}/.qa-config.txt
-     . ${QA_SRC}/scripts/getTablesPath
-     return
-  elif [ -f ~/.qa-dkrz/config.txt ] ; then
-     export CONFIG_FILE=~/.qa-dkrz/config.txt
+  if [ -f ~/.qa-dkrz/config.txt ] ; then
      . ${QA_SRC}/scripts/getTablesPath
   fi
 
-  if ! . $QA_SRC/scripts/inqRunEnv --read-only CF ; then
-      # get the state of the current installation: read config-file
-        local installArg="--install=force${prj:+,${prj}}"
+#  if ! . $QA_SRC/scripts/inqRunEnv --read-only CF ; then
+#      # get the state of the current installation: read config-file
+#        local installArg="--install=force${prj:+,${prj}}"
 
-        echo -e "\nMissing external tables/executables."
-        prg=${0%/*}
-        prg=${prg%/*}/install
-        echo "Please, run: $prg --up CF"
-        exit 1
-  fi
+#        echo -e "\nMissing external tables/executables."
+#        prg=${0%/*}
+#        prg=${prg%/*}/install
+#        echo "Please, run: $prg --up CF"
+#        exit 1
+#  fi
 
   return
 }
