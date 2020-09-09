@@ -1,42 +1,64 @@
 
 get_config_file()
 {
-   local p=${QA_SRC}
-   if [ ! ${QA_SRC} ] ; then
-      p=${0%/scripts/qa-dkrz}
+   local cfg_dir
+   local home_dir=${HOME}/.qa-dkrz
+   local p_dir=$QA_SRC/.qa-dkrz
+
+   if [ -f $home_dir/config.txt ] ; then
+      local hasSection=t
+      if ! grep -q ${QA_SRC} $home_dir/config.txt ; then
+         hasSection=
+      fi
    fi
 
-   if [ -w $p ] ; then
-      # QA_SRC is writable: create/use config.txt in HOME
-      CONFIG_FILE=${HOME}/.qa-dkrz/config.txt
+   local not_installed
 
-      if [ ! -f ~/.qa-dkrz/config.txt ] ; then
-        mkdir -p ~/.qa-dkrz
-        touch ~/.qa-dkrz/config.txt
+   if [ ${CONDA_QA_PATH} ] ; then
+      if [ -s $p_dir/config.txt ] ; then
+         # operational mode with conda
+         cfg_dir=$p_dir
+      else
+         not_installed=t
       fi
-
-   elif [ -r $p/.qa-dkrz/config.txt ] ; then
-      # use external configuration
-      CONFIG_FILE=$p/.qa-dkrz/config.txt
-      CONFIG_READ_ONLY=t
-
+   elif [ ${hasSection} ] ; then
+      # operational mode with bash script
+      cfg_dir=$home_dir
    else
-      echo "no access to any qa-dkrz config.txt file;"
-      echo -e "\nplease, ask your admin for a copy in ${QA
-_SRC}."
-      exit 41
-   fi
+      if [ -f $p_dir/config.txt ] ; then
+         if [ -r $p_dir/config.txt ] ; then
+            # operational mode with bash script for users without -w perm
+            CONFIG_READ_ONLY=t
+         else
+            echo "no read permission for $p_dir/config.txt; ask your admin"
+            exit 41
+         fi
 
-   gCF_retVal=0
+         cfg_dir=$p_dir
+      elif [ -d ${QA_SRC} ] ; then
+         if [ -w ${QA_SRC} ] ; then
+            # installation mode for bash script usage
+            cfg_dir=$home_dir
 
-   if [ ! -s ${CONFIG_FILE} ] ; then
-      if [ ${0##*/} != 'install' ] ; then
-        echo "please, run ${QA_SRC}/install [opts]"
-        exit 41
+            test ! -s ${QA_SRC}/install_configure && not_installed=t
+         fi
+      else
+         not_installed=t
       fi
    fi
 
-   export CONFIG_FILE
+   if [ ${not_installed} ] ; then
+      if [ ${0##*/} != 'install' ] ; then
+         if [ ! -s ${QA_SRC}/install_configure ] ; then
+            echo "edit ${QA_SRC}/install_configure. Then, \n"
+         fi
+
+         echo "run '[qa-dkrz] ${QA_SRC}/install' for configuration"
+         exit 1
+      fi
+   fi
+
+   export CONFIG_FILE=$cfg_dir/config.txt
 
    return
 }

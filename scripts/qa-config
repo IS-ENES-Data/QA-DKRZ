@@ -402,7 +402,7 @@ findQAConfSeq()
     if [ ${qaConfFileSeq[i1]:0:2} = './' ] ; then
       qaConfFileSeq[i]=${qaConfFileSeq[i]:2}
     elif [ ${qaConfFileSeq[i]:0:3} = '../' ] ; then
-      item=$(pwd)
+      item=${PWD}
       item=${item%/*}
       qaConfFileSeq[i]=${item}/${qaConfFileSeq[i]:3}
     fi
@@ -434,7 +434,7 @@ findQAConfSeq()
      pName=${PROJECT}
   fi
 
-  pDir[0]=$(pwd)  # local path
+  pDir[0]=${PWD}  # local path
   if [ ${PROJECT_AS} ] ; then
     pDir[${#pDir[*]}]=${QA_TABLES}/tables/$prj_virt/$vName
     pDir[${#pDir[*]}]=${QA_TABLES}/tables/$prj_virt/$pName
@@ -590,7 +590,7 @@ initSession()
   return
 }
 
-loadSetting()
+proceed()
 {
   local tmp
 
@@ -608,39 +608,19 @@ loadSetting()
     exit 1
   fi
 
-  if [ "${PROJECT_DATA}" ] ; then
-     tmp=(${PROJECT_DATA[*]//,/ })
-     tmp=(${tmp[*]%/})  # rm trailing '/'
-
-     # completion of relative paths
-     for(( i=0 ; i < ${#tmp[*]} ; ++i )) do
-       test ${tmp[i]:0:1} = '/' && continue
-
-       if [ ${tmp[i]:0:1} = '.'  ] ; then
-         tmp[${i}]=$(pwd)${tmp[i]:1}
-       elif [ ${tmp[i]:0:2} = '..'  ] ; then
-         myPwd=$(pwd)
-         tmp[${i}]=${myPwd%/*}${tmp[i]:2}
-       else
-         tmp[${i}]=$(pwd)/${tmp[i]}
-       fi
-     done
-
-     tmp="${tmp[*]}"
-     PROJECT_DATA=${tmp// /,}
-  fi
+  PROJECT_DATA=( ${PROJECT_DATA[*]//,/ } )
 
   QA_SRC=${QA_SRC%/}  # rm trailing '/'
 
   QA_RESULTS=${QA_RESULTS%/}  # rm trailing '/'
   if [ ${QA_RESULTS:0:1} != '/' ] ; then
     if [ ${QA_RESULTS:0:2} = './'  ] ; then
-      QA_RESULTS=$(pwd)${QA_RESULTS:1}
+      QA_RESULTS=${PWD}${QA_RESULTS:1}
     elif [ ${QA_RESULTS:0:3} = '../'  ] ; then
-      myPwd=$(pwd)
+      myPwd=${PWD}
       QA_RESULTS=${myPwd%/*}${QA_RESULTS:2}
     else
-      QA_RESULTS=$(pwd)/${QA_RESULTS}
+      QA_RESULTS=${PWD}/${QA_RESULTS}
     fi
   fi
 
@@ -658,32 +638,7 @@ loadSetting()
       std_out flush
       exit 1
     fi
-
   done
-
-
-  #if [ ! ${PROJECT_DATA} ]  ; then
-  #  local isRoot=t
-  #  for(( i=0 ; i < ${#pathList[*]} ; ++i )) ; do
-  #    test ${pathList[i]:0:1} != '/' && isRoot=f && break
-  #  done
-
-  #  if [ ${isRoot} = t ] ; then
-  #    # get it from SELECT with absolute path
-  #    for(( i=0 ; i < ${#pathList[*]} ; ++i )) ; do
-  #      test ${PROJECT_DATA} && PROJECT_DATA="${PROJECT_DATA},"
-
-  #      PROJECT_DATA="${PROJECT_DATA}${pathList[i]%/*}"
-  #      pathList[i]=${pathList[i]##*/}
-  #    done
-
-  #    setKWL PROJECT_DATA=${PROJECT_DATA}
-  #  else
-  #    std_out "missing PROJECT_DATA assignment."
-  #    std_out flush
-  #    exit 1
-  #  fi
-  #fi
 
   # Naming and placement of the base dirs in QA_RESULTS.
   # Inits also session-logs
@@ -749,36 +704,30 @@ parseConfigurationFile()
     test $isBlockBeg = f && continue
 
     # special: SELECT and LOCK syntax
-    if [ "${block:0:6}" = 'LOCK+=' ] ; then
-       sel_lock L ${block:4}
-       continue
-    elif [ "${block:0:5}" = 'LOCK=' ] ; then
-       sel_lock L ${block:4}
-       continue
-    elif [ "${block:0:4}" = LOCK ] ; then
+    if [ "${block:0:6}" = 'SELECT' ] ; then
+      if [ "${block:0:8}" = 'SELECT+=' ] ; then
+         sel_lock S ${block:6}
+      elif [ "${block:0:7}" = 'SELECT=' ] ; then
+         sel_lock S ${block:6}
+      else   #if [ "${block:0:6}" = SELECT ] ; then
        # compatibility: multiple of such assignments are added
-       if [ ${#pathList[*]} -eq 0 ] ; then
-         sel_lock L =${block:4}
-       else
-         sel_lock L +=${block:4}
-       fi
-       continue
+        sel_lock S +=${block:6}
+      fi
+
+      continue
     fi
 
-    if [ "${block:0:8}" = 'SELECT+=' ] ; then
-       sel_lock S ${block:6}
-       continue
-    elif [ "${block:0:7}" = 'SELECT=' ] ; then
-       sel_lock S ${block:6}
-       continue
-    elif [ "${block:0:6}" = SELECT ] ; then
-       # compatibility: multiple of such assignments are added
-       if [ ${#pathList[*]} -eq 0 ] ; then
-         sel_lock S =${block:6}
-       else
-         sel_lock S +=${block:6}
-       fi
-       continue
+    if [ "${block:0:4}" = 'LOCK' ] ; then
+      if [ "${block:0:6}" = 'LOCK+=' ] ; then
+         sel_lock L ${block:4}
+      elif [ "${block:0:5}" = 'LOCK=' ] ; then
+         sel_lock L ${block:4}
+      else  # if [ "${block:0:4}" = LOCK ] ; then
+         # compatibility: multiple of such assignments are added
+         sel_lock L +=${block:4}
+      fi
+
+      continue
     fi
 
     # assignment (blocks) are parsed
@@ -856,36 +805,6 @@ output()
   # selection on the command-line cancels any selection in config-files
   local i j
 
-  if [ ${sl_args} ] ; then
-    local saved_pL curr_sl
-    declare -a saved_pL=( ${pathList[*]} )
-    declare -a curr_sls
-    pathList=
-    varList=
-
-    for(( i=0 ; i < ${#sl_args[*]} ; ++i )) ; do
-      curr_sls=()
-
-      if [ ${sl_args[i]:0:1} = '/' ] ; then
-        # rule: if absolute path on cmd-line, then cancel any previous
-        unsetKWL PROJECT_DATA
-        curr_sls[0]=${sl_args[i]}
-      else
-        if [ ${sl_args[i]/=/} = ${sl_args[i]} ] ; then
-          # only variables; no path components
-          for(( j=0 ; j < ${#saved_pL[*]} ; ++j )) ; do
-             curr_sls[${#curr_sls[*]}]=${saved_pL[j]}=${sl_args[i]}
-          done
-
-          curr_sl="${curr_sls[*]}"
-        fi
-      fi
-
-
-      sel_lock S ${curr_sl// /,}
-    done
-  fi
-
   # NOTE: arrays of experiments and parameters are provided
   #       by the file LOGIDR/cache_request_SESSION.txt
 
@@ -906,8 +825,6 @@ output()
   #       thus, the leading blank in the "" expression is required.
   keyWordList=( $(echo -e " ${keyWordList[*]/%/\\n}" | sort -b | uniq ) )
 
-  test ${unset_PD:-f} = t && unsetKWL PROJECT_DATA
-
   # Prepare the settings as key=val, where val could also be an array.
   array=()
   for key in ${keyWordList[*]} ; do
@@ -924,16 +841,12 @@ output()
   varList=( ${varList[*]//,/ } )
   for(( i=0 ; i < ${#pathList[*]} -1 ; ++i )) ; do
     for(( j=i+1 ; j < ${#pathList[*]} ; ++j )) ; do
-      if [ "${varList[i]}" = "${varList[j]}" ] ; then
         if [ "${pathList[i]}" = "${pathList[j]}" ] ; then
-          unset pathList[$j]
-          unset varList[$j]
+          pathList[$j]=''
         fi
-      fi
     done
   done
   pathList=( ${pathList[*]} )
-  varList=( ${varList[*]} )
 
   # special treatmeant to preserve regExp
   if [ ${pathList} ] ; then
@@ -1173,11 +1086,19 @@ sel_lock()
 
   # this is very special: a fully qualified file
   if [ -f $2 ] ; then
-    z=${2%/*}=${2##*/}
-  elif [ -f ${2:1} ] ; then
-    z=${2%/*}=${2##*/}
+    if [ "$2" = "${2##*/}" ] ; then
+      z=${PWD}=$2
+    elif [ "${2:0:2}" = './' ] ; then
+      z=${PWD}${2:1}
+      z=${z%/*}=${z##*/}
+    elif [ "${2:3:2}" = '../' ] ; then
+      z=${2:2}
+      z=${z%/*}=${z##*/}
+    else
+      z=${2%/*}=${2##*/}
+    fi
   else
-    z=$2
+    z=$2  # regular case
   fi
 
   while : ; do
@@ -1243,7 +1164,7 @@ sel_lock()
   # path and variable
 
   # multiple, comma-separated paths?
-  local j pp vv
+  local i j pp vv
   declare -a pp vv
 
   pp=( ${p//,/ } )
@@ -1253,19 +1174,21 @@ sel_lock()
 
   for(( i=0 ; i < ${#pp[*]} ; ++i )) ; do
     for(( j=0 ; j < ${#vv[*]} ; ++j )) ; do
-      p[${#p[*]}]=${pp[i]}
-      v[${#v[*]}]=${vv[j]}
+      p+=(${pp[i]})
+      v+=(${vv[j]})
     done
   done
 
   # selection or a lock?
-  if [ $1 = 'S' ] ; then
-    pathList=( ${pathList[*]} ${p[*]} )
-    varList=( ${varList[*]} ${v[*]} )
-  elif [ $1 = 'L' ] ; then
-    lockPathList=( ${lockPathList[*]} ${p[*]} )
-    lockVarList=( ${lockVarList[*]} ${v[*]} )
-  fi
+  for(( i=0 ; i < ${#p[*]} ; ++i )) ; do
+    if [ $1 = 'S' ] ; then
+      pathList+=( "${p[i]}" )
+      varList+=( "${v[i]}" )
+    elif [ $1 = 'L' ] ; then
+      lockPathList+=( "${p[i]}" )
+      lockVarList+=( "${v[i]}" )
+    fi
+  done
 
   return
 }
@@ -1290,34 +1213,6 @@ $sendText
 
   return
 }
-
-sendInitEMail()
-{
-  # activate backslash escaped chars
-  sendText="$( echo -e $sendText )"
-
-  eval ${MAIL} -s "$sendSubject"  ${EMAIL_TO[*]} <<!
-$sendText
-
-Configuration File Setting:
-$( echo -e $confLine )
-
-Command-line parameters:
-$( echo "${comLine[*]}" )
-
-Current Paths:
-Source directory: $QA_SRC
-QA data directory: $QA_RESULTS/data
-FS data directory: ${PROJECT_DATA[*]}
-!
-
-  # this is required at some places
-  sendText=
-  sendSubject=
-
-  return
-}
-
 
 ##//! Convert assignment literals to Bash variables.
 
@@ -1954,14 +1849,17 @@ do
         ;;
     h)  # already done
         exit 1  ;;
-    L)  sel_lock L ${OPTARG}
-        set +f
+    L)  for opt in ${OPTARG//,/ } ; do
+           sel_lock L "${opt}"
+        done
         ;;
     m)  setKWL SIMPLE_STATUS_LINE=t ;;
     P)  setKWL PROJECT=$OPTARG ;;
     Q)  setKWL NO_STATUS=t ;;
     q)  setKWL QUIET=t ;;
-    S)  sl_args=( ${OPTARG//,/ } )
+    S)  for opt in ${OPTARG//,/ } ; do
+           sel_lock S "${opt}"
+        done
         ;;
     s)  setKWL SESSION_DATE=${OPTARG} ;;
     T)  ;; # already caught
@@ -2039,19 +1937,13 @@ done
 shift $(( $OPTIND - 1 ))
 
 for p_f in $* ; do
-   test ! "${PROVIDED_FILES[0]}" && PROVIDED_FILES=()
    if [ ${p_f##*.} = nc ] ; then
-     PROVIDED_FILES+=($p_f)
+     sel_lock S $p_f
    else
      # a project for passing to install
      installArgs="${installArgs},$p_f"
    fi
 done
-
-if [ ${#PROVIDED_FILES[*]} -gt 0 ] ; then
-   PROVIDED_FILES="${PROVIDED_FILES[*]}"
-   setKWL PROVIDED_FILES=${PROVIDED_FILES// /,}
-fi
 
 if [ ${isInstall:-f} = t -a ${#installArgs[*]} -gt 0 ] ; then
    test ${DEBUG_CONF} && installArgs="--debug,${installArgs}"
@@ -2060,26 +1952,11 @@ fi
 
 # for downward compatibility
 test ${QA_DATA_ROOT} && setKWL QA_RESULTS=${QA_DATA_ROOT}
-test ${DATA_ROOT_FS} && setKWL PROJECT_DATA=${DATA_ROOT_FS}
-
-if [ $# -gt 0 ] ; then
-  # any valid files specified on the command-line
-  for f in $* ; do
-     if [ -f ${f} ] ; then
-       if [ ${f:0:1} = '/' ] ; then
-          sl_args[${#sl_args[*]}]=${f}
-       else
-          # just a (relative) filename on the command-line
-          sl_args[${#sl_args[*]}]=$(pwd)/${f}
-       fi
-     fi
-  done
-fi
+test ${DATA_ROOT_FS} && setKWL PROJECT_DATA="${DATA_ROOT_FS}"
 
 set +f
 
-# almost everything is done here
-loadSetting
+proceed
 
 output
 

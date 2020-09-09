@@ -2403,6 +2403,9 @@ getNextVariable()
 #    return 0
 #  fi
 
+  # if not fixed, but time is missing, then remove a trailing part
+  nextFile=( ${nextFile[*]%%:*} )
+
   return 1
 }
 
@@ -2923,9 +2926,9 @@ getSrcPath()
    # only the directory
    p0=${p0%/*}
 
-   test ${p0##*/} = 'script' && p0=${p0%/script}
+   test ${p0##*/} = 'scripts' && p0=${p0%/scripts}
 
-   export QA_SRC=${p0%QA-DKRZ*}QA-DKRZ
+   export QA_SRC=${p0}
 
    return
 }
@@ -5402,11 +5405,11 @@ done
 
 test ${#args[*]} -eq 0 && args[0]='--help'
 
-# HOME/.qa-dkrz/config.txt by default
-. ${QA_SRC}/scripts/getConfigFile
-
 # is this in a conda built?
 . ${QA_SRC}/scripts/getCondaPath
+
+# HOME/.qa-dkrz/config.txt by default
+. ${QA_SRC}/scripts/getConfigFile
 
 init ${args[*]}
 
