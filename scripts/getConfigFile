@@ -28,13 +28,15 @@ get_config_file()
       if [ -f $p_dir/config.txt ] ; then
          if [ -r $p_dir/config.txt ] ; then
             # operational mode with bash script for users without -w perm
+            mkdir -p ~/.qa-dkrz
+            cp $p_dir/config.txt ~/.qa-dkrz
+
+            cfg_dir=$p_dir
             CONFIG_READ_ONLY=t
          else
             echo "no read permission for $p_dir/config.txt; ask your admin"
             exit 41
          fi
-
-         cfg_dir=$p_dir
       elif [ -d ${QA_SRC} ] ; then
          if [ -w ${QA_SRC} ] ; then
             # installation mode for bash script usage
