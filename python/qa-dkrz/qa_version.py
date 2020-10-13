@@ -32,7 +32,7 @@ class GetVersion(object):
         self.opts["QA_SRC"] = self.opts["SECTION"]
 
         home = os.path.join( os.environ['HOME'], '.qa-dkrz')
-        self.cfg_file=os.path.join(home, 'qa.cfg')
+        self.cfg_file=os.path.join(home, 'config.txt')
         self.cfg = CfgFile(self)
         self.cfg.read_file( self.cfg_file, section=self.opts["SECTION"])
         self.opts.update( self.cfg.getOpts() )
