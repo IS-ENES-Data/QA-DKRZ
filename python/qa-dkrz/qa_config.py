@@ -22,7 +22,7 @@ class QaConfig(object):
     classdocs
     '''
 
-    def __init__(self, qa_src, argv=[]):
+    def __init__(self, qa_src, isConda=False, argv=[]):
         '''
         Constructor
         '''
@@ -32,6 +32,7 @@ class QaConfig(object):
             self.argv=sys.argv[1:]
 
         self.qa_src = qa_src
+        self.isConda=isConda
 
         # dictionary for the final result
 
@@ -60,6 +61,9 @@ class QaConfig(object):
         self.ldOpts=[] # free mem
         self.lSelect=[]
         self.lLock=[]
+
+        if isConda:
+           self.addOpt("CONDA", True)
 
         self.addOpt("CURR_DIR", self.curr_dir)
 
@@ -512,27 +516,51 @@ class QaConfig(object):
         return True
 
 
-    def getCFG_opts(self, qa_src):
+    def getCFG_opts(self):
         # read the config file; may also convert an old plain text file;
         # cfg assignments are also appended to qaConf
-        #self.ldOpts.append( self.cfg.getOpts() )
+        self.get_config_file()
 
+        #self.ldOpts.append( self.cfg.getOpts() )
         return self.cfg.getOpts()
 
 
     def get_config_file(self):
-        # if self.qa_src has write permission, then use the config file in home.
-        # else: config-file in qa_src is read-only. A fault, if not existing.
+        home_dir=os.path.join( os.environ['HOME'], '.qa-dkrz')
+        home_cfg=os.path.join( home_dir, 'config.txt')
 
-        if os.access(self.qa_src, os.W_OK):
-           self.home = os.path.join( os.environ['HOME'], '.qa-dkrz')
-           self.cfg_file = os.path.join( os.environ['HOME'], '.qa-dkrz', 'config.txt')
+        self.home = os.path.join( self.qa_src, '.qa-dkrz')
+        cfg_in_src=os.path.join(self.home, 'config.txt')
+
+        self.cfg_file = home_cfg
+
+        if os.path.isfile(home_cfg):
+            try:
+               subprocess.check_call('grep', '-q', self.qa_src, home_cfg)
+            except:
+               hasSection=False
+            else:
+               hasSection=True
+
+        if self.isConda:
+            if not hasSection:
+               if os.path.isfile(cfg_in_src):
+                  self.home=os.path.join(self.qa_src, '.qa-dkrz')
+                  self.cfg_file = cfg_in_src
+               else:
+                  print "run 'qa-dkrz install' for configuration"
+                  sys.exit(1)
+
+        elif os.access(self.qa_src, os.W_OK):
+            self.home = home_dir
+            self.cfg_file = home_cfg
         else:
-           self.cfg_file = os.path.join( self.qa_src, '.qa-dkrz', 'config.txt')
-           if os.access(self.cfg_file, os.R_OK):
-              self.cfg_file_RONLY = True
-           else:
-              self.cfg_file_RONLY = False
+            self.home=os.path.join(self.qa_src, '.qa-dkrz')
+            self.cfg_file = cfg_in_src
+            if os.access(cfg_in_src, os.R_OK):
+               self.cfg_file_RONLY = True
+            else:
+               self.cfg_file_RONLY = False
 
         # config-file has to be installed previously
         try:
@@ -667,6 +695,9 @@ class QaConfig(object):
                 return val
             elif type(val) == StringType:
                if len(val) > 0 and not val == 'f':
+                  return True
+            elif isinstance(val, list):
+               if len(val):
                   return True
             else:
                return True
@@ -833,9 +864,8 @@ class QaConfig(object):
         cLO = self.commandLineOpts( self.create_parser() )
 
         self.curr_dir = os.getcwd()
-        self.get_config_file()
 
-        self.cfg_opts = self.getCFG_opts(self.qa_src) # (multiple) ..._qa.conf files
+        self.cfg_opts = self.getCFG_opts()
 
         # concatenate dictionaries with precedence: high --> low
         if len(cLO):
@@ -848,7 +878,8 @@ class QaConfig(object):
 
         if self.isOpt("QA_TABLES", dct=self.cfg_opts):
             self.getOpt("QA_TABLES", dct=self.cfg_opts)
-            self.readQA_CONF_files()
+
+        self.readQA_CONF_files()
 
         self.setDefault()
 
@@ -1080,7 +1111,7 @@ class CfgFile(object):
 
           # as long as installation/update stuff is done by bash scripts,
           # the old config file format has precedence
-          old = os.path.join(path, 'config.txt' )
+          old = self.file
           if os.path.isfile(old):
             isConvert=True
             isOld=True

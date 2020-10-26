@@ -296,23 +296,21 @@ def add_unique(arg, lst):
 
     return
 
-def cat( srcs, dest, append=False):
+def cat( srcs, dest):
     # convert a string into a list
     if type(srcs) == StringType:
         dsrcs=[srcs]
-    else:
-        dsrcs = copy.deepcopy(srcs)
+    #else:
+    #    dsrcs = copy.deepcopy(srcs)
 
-    origDest=dest
-    dest += '.' + repr(os.getpid())
-
-    if append:
-        dsrcs.insert(0, origDest)
+    tmp_dest = dest + '.' + repr(os.getpid())
+    if not os.path.isfile(dest):
+       shutil.copy(dest, tmp_dest)
 
     is_incomplete = False
 
     try:
-        with open(dest, 'w') as fd:
+        with open(tmp_dest, 'a') as fd:
             for src in dsrcs:
                 try:
                     with open(src) as r:
@@ -320,17 +318,17 @@ def cat( srcs, dest, append=False):
                             fd.write(line)
                 except:
                     # appending to a new destination file is ok
-                    if not (append and origDest == src):
-                        is_incomplete = True
-                        break
+                    is_incomplete = True
+                    break
     except:
         is_incomplete = True
 
     if is_incomplete:
-        os.remove(dest)
-        return False
+       if os.path.isfile(tmp_dest):
+           os.remove(tmp_dest)
+           return False
 
-    os.rename(dest, origDest)
+    os.rename(tmp_dest, dest)
 
     return True
 

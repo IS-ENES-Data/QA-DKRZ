@@ -699,10 +699,8 @@ if __name__ == '__main__':
 
     (isCONDA, QA_SRC) = qa_util.get_QA_SRC(sys.argv[0])
 
-    qa_init.run_install(QA_SRC)  # exit after processing, if any
-
     # for options on the command-line as well as in configuration files
-    qaConf=QaConfig(QA_SRC)
+    qaConf=QaConfig(QA_SRC, isCONDA)
 
     g_vars = GlobalVariables()
     t_vars = ThreadVariables()
@@ -714,9 +712,6 @@ if __name__ == '__main__':
 
     if 'QA_EXAMPLE' in qaConf.dOpts:
         qaConf = prepareExample(qaConf)
-
-    if isCONDA:
-        qaConf.addOpt('CONDA', True)
 
     log = Log(qaConf.dOpts)
 

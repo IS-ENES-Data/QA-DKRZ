@@ -80,12 +80,14 @@ def convert_CMOR_output(lines):
                     # there is at least one period somewhere in the line
                     if last == pos:
                         # current line ends with a period
-                        annot[ix].append(phrase + line[pos0:pos+1])
+                        phrase=phrase + line[pos0:pos+1]
+                        # annot[ix].append(phrase + line[pos0:pos+1])
                         phrase=''
                         break
                     elif line[pos+1] == ' ':
                         # current line contains a period terminating the current annot
-                        annot[ix].append(phrase + line[pos0:pos+1])
+                        phrase=phrase + line[pos0:pos+1]
+                        #annot[ix].append(phrase + line[pos0:pos+1])
                         phrase=''
                         pos += 1
                     else:
@@ -93,7 +95,15 @@ def convert_CMOR_output(lines):
 
                     pos0 = pos+1
 
+
         if len(phrase):
+            # harmonise: 'The entry "varname" could not be found in CMOR table'
+            if phrase.find('could not be found in CMOR table') > -1:
+               words=phrase.split()
+               if words[0] == 'The':
+                  if words[1] == 'entry':
+                     phrase=phrase.replace(words[2], '<*>')
+
             annot[ix].append(phrase)
 
     for ix in range(len(annot)):

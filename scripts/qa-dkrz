@@ -1941,7 +1941,6 @@ getHost()
 #         fi
 
 #         if [ ! ${xx} ] ; then
-           #dead
 #           \rm -f $PROC_POOL/$line   # lost the race
 #           continue
 #         fi
@@ -2507,6 +2506,7 @@ getPaths()
 
   # filename
   pathListFile=${SESSION_LOGDIR}/path-list.txt
+  echo -n '' > $pathListFile
 
   # special: only [path/]file(s) provided
   if [ ${PROVIDED_FILES} ] ; then

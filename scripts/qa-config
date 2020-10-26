@@ -469,8 +469,8 @@ initSession()
   # (all may be omitted and substituted by '-') are written to a file.
   # Specific command-line options (SHOW_*)
   # will write 'test_session', i.e. set RESUME_SESSION=f.
-  # A session is definded by conf and task files given
-  # in array QA_CONF.
+  # A session is definded by optional conf and task files given in
+  # array QA_CONF as well as the parameters of the command-line.
   # When all checkums of the current files are found in a previous session,
   # then the latter is resumed, i.e. RESUME_SESSION=t.
   # Explicit RESUME_SESSION=f disables.
@@ -502,13 +502,36 @@ initSession()
   declare -a curr_md5
   local currDate=$( date +'%F_%T' )
 
+  local cLargs=( ${comLine[*]} )
+  local cL=( "${cLargs[*]}" )
+
+  for(( i=0 ; i < ${#cLargs[*]} ; ++i )) ; do
+     if [ ${cLargs[i]} = '-T' ] ; then
+        unset cLargs[$(( i + 1 ))]
+        unset cLargs[i]
+        cL=( "${cLargs[*]}" )
+        cLargs=( $( echo -e "${cLargs[*]/#/\\n}" | sort ) )
+        break
+     fi
+  done
+
   local qaC qaCs
   declare -a qaCs
-  qaCs=( ${QA_CONFS[*]//,/ } )
+  local ix=0
+  local isReSwap
 
-  if [ ${#qaCs[*]} -gt 0 ] ; then
-    for qaC in ${qaCs[*]}  ; do
-      curr_md5=( ${curr_md5[*]} $( md5sum $qaC | awk '{print $1}') )
+  if [ "${cLargs}" ] ; then
+     curr_md5=( $(echo "${cLargs[*]}" | md5sum  | awk '{print $1}') )
+     qaCs=( $curr_md5 )
+     ix=1
+     isReSwap=t
+  fi
+
+  qaCs+=( ${QA_CONFS[*]//,/ } )
+
+  if [ ${#qaCs[*]} -gt ${ix} ] ; then
+    for(( ; ix < ${#qaCs[*]} ; ++ix ))  ; do
+      curr_md5+=( $( md5sum ${qaCs[ix]} | awk '{print $1}') )
     done
   else
     curr_md5=( '-' )
@@ -527,6 +550,7 @@ initSession()
                 ${QA_RESULTS}/session_logs/sess_md5.txt 2> /dev/null \
                 | awk '{print $1}' ) )
 
+      # filter corresponding dates
       for(( k=1 ; k < ${#qaCs[*]} ; ++k )) ; do
         dates1=( $(grep "${curr_md5[k]}" \
                  ${QA_RESULTS}/session_logs/sess_md5.txt 2> /dev/null \
@@ -570,14 +594,21 @@ initSession()
   # session date wasn't set externally.
   if [ ! "${LOG_FNAMES}" ] ; then
     if [ ${RESUME_SESSION} = f -a ${testCase:-f} = f ] ; then
+
       for(( k=0 ; k < ${#qaCs[*]} ; ++k )) ; do
         # write a new entry for each conf/task file
         echo -e -n "${currDate}\t" \
                >> ${QA_RESULTS}/session_logs/sess_md5.txt
         echo -e -n "${curr_md5[k]}\t" \
                >> ${QA_RESULTS}/session_logs/sess_md5.txt
-        echo       "${qaCs[k]}" \
+
+        if [ $k -eq 0 -a ${isReSwap} ] ; then
+          echo     'command-line' \
                >> ${QA_RESULTS}/session_logs/sess_md5.txt
+        else
+          echo     "${qaCs[k]}" \
+               >> ${QA_RESULTS}/session_logs/sess_md5.txt
+        fi
       done
 
       setKWL SESSION=${currDate}
@@ -836,17 +867,17 @@ output()
     test ${val} &&  array+=( ${key}=${val[*]} )
   done
 
-  # remove duplicates
-  pathList=( ${pathList[*]//,/ } )
-  varList=( ${varList[*]//,/ } )
-  for(( i=0 ; i < ${#pathList[*]} -1 ; ++i )) ; do
-    for(( j=i+1 ; j < ${#pathList[*]} ; ++j )) ; do
-        if [ "${pathList[i]}" = "${pathList[j]}" ] ; then
-          pathList[$j]=''
-        fi
-    done
-  done
-  pathList=( ${pathList[*]} )
+#  # remove duplicates
+#  pathList=( ${pathList[*]//,/ } )
+#  varList=( ${varList[*]//,/ } )
+#  for(( i=0 ; i < ${#pathList[*]} -1 ; ++i )) ; do
+#    for(( j=i+1 ; j < ${#pathList[*]} ; ++j )) ; do
+#        if [ "${pathList[i]}" = "${pathList[j]}" ] ; then
+#          pathList[$j]=''
+#        fi
+#    done
+#  done
+#  pathList=( ${pathList[*]} )
 
   # special treatmeant to preserve regExp
   if [ ${pathList} ] ; then
@@ -1103,15 +1134,34 @@ sel_lock()
 
   while : ; do
     if [ ${z:0:1} = '=' ] ; then
+      z="${z:1}"
+
+      # two modes: only vars from task-file, or later used -S [path=]var
+
       if [ $1 = S ] ; then
-        pathList=
-        varList=
+        if [ "${z/=/}" = "$z" ] ; then
+           # without path
+           if [ "${#pathList[*]}" -gt 0 ] ; then
+              # after having read the task file
+              z=${pathList[0]}=${z}
+           fi
+         fi
+
+        pathList=()
+        varList=()
       elif [ $1 = L ] ; then
-        lockPathList=
-        lockVarList=
+        if [ "${z/=/}" = "$z" ] ; then
+           # without path
+           if [ "${#lockPathList[*]}" -gt 0 ] ; then
+              # after having read the task file
+              z=${lockPathList[0]}=${z}
+           fi
+        fi
+
+        lockPathList=()
+        lockVarList=()
       fi
 
-      z="${z:1}"
     elif [ ${z:0:2} = '+=' ] ; then
       z=${z:2}
     elif [ ${z//=/} = ${z} -a ${z//\//} != ${z} ] ; then
@@ -1122,14 +1172,14 @@ sel_lock()
         # only variable, no path
         if [ ${#pathList[*]} -gt 0 -a "${z//=/}" = "${z}" ] ; then
           z="${pathList[$((${#pathList[*]} -1 ))]}=${z}"
-          pathList=
-          varList=
+          pathList=()
+          varList=()
         fi
       elif [ $1 = L ] ; then
         if [ ${#lockPathList[*]} -gt 0 -a "${z//=/}" = "${z}" ] ; then
           z="${lockPathList[$((${#lockPathList[*]} -1 ))]}=${z}"
-          lockPathList=
-          lockVarList=
+          lockPathList=()
+          lockVarList=()
         fi
       fi
     fi
@@ -1172,21 +1222,25 @@ sel_lock()
   p=()
   v=()
 
-  for(( i=0 ; i < ${#pp[*]} ; ++i )) ; do
-    for(( j=0 ; j < ${#vv[*]} ; ++j )) ; do
-      p+=(${pp[i]})
-      v+=(${vv[j]})
-    done
-  done
+  # for more vars than paths; then only the first path is multifolded
+  if [ ${#pp[*]} -lt ${#vv[*]} ] ; then
+    if [ ${#pp[*]} -gt 0 ] ; then
+      for(( j=1 ; j < ${#vv[*]} ; ++j )) ; do
+        pp+=(${pp[0]})
+      done
+    else
+      echo "ambiguous path - variable selection" > $TTY
+    fi
+  fi
 
   # selection or a lock?
-  for(( i=0 ; i < ${#p[*]} ; ++i )) ; do
+  for(( i=0 ; i < ${#pp[*]} ; ++i )) ; do
     if [ $1 = 'S' ] ; then
-      pathList+=( "${p[i]}" )
-      varList+=( "${v[i]}" )
+      pathList+=( "${pp[i]}" )
+      varList+=( "${vv[i]}" )
     elif [ $1 = 'L' ] ; then
-      lockPathList+=( "${p[i]}" )
-      lockVarList+=( "${v[i]}" )
+      lockPathList+=( "${pp[i]}" )
+      lockVarList+=( "${vv[i]}" )
     fi
   done
 
@@ -1654,6 +1708,9 @@ umask 002
 declare -a arg
 prev_opt=none
 
+# command-line overwrites configuration file assignments
+comLine=( $* ) # for e-mail and initSession
+
 for(( i=1 ; i <= $# ; ++i )) ; do
   item=${!i}
   ITEM=${item}
@@ -1790,9 +1847,6 @@ for(( i=${#qaConfFileSeq[*]}-1 ; i > -1 ; --i )) ; do
   parseConfigurationFile ${qaConfFileSeq[i]}
 done
 
-# command-line overwrites configuration file assignments
-comLine=( $* ) # for e-mail and initSession
-
 # now names are changed:
 if [ ${PROJECT_AS} ] ; then
    prj=${PROJECT_AS}
@@ -1849,17 +1903,13 @@ do
         ;;
     h)  # already done
         exit 1  ;;
-    L)  for opt in ${OPTARG//,/ } ; do
-           sel_lock L "${opt}"
-        done
+    L)  sel_lock L "=${lockPathList[0]}=${OPTARG}"
         ;;
     m)  setKWL SIMPLE_STATUS_LINE=t ;;
     P)  setKWL PROJECT=$OPTARG ;;
     Q)  setKWL NO_STATUS=t ;;
     q)  setKWL QUIET=t ;;
-    S)  for opt in ${OPTARG//,/ } ; do
-           sel_lock S "${opt}"
-        done
+    S)  sel_lock S "=${pathList[0]}=${OPTARG}"
         ;;
     s)  setKWL SESSION_DATE=${OPTARG} ;;
     T)  ;; # already caught

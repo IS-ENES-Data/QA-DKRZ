@@ -66,8 +66,7 @@ def cpTables(key, fTable, tTable, tTable_path, qaConf, prj_from, prj_to, pDir):
                         print 'qa_init.cpTables(): could not rename(tmp, dest)'
                     else:
                         # the file of PROJECT_VIRT first
-                        d = [src, dest]
-                        qa_util.cat(d, dest)
+                        qa_util.cat([src], dest)
 
                     # exchange properties of a corresponding project file
                     qaConf.addOpt(key, fTable)
@@ -375,29 +374,5 @@ def run(log, g_vars, qaConf):
         sys.exit(1)
 
     g_vars.anyProgress = False
-
-    return
-
-
-def run_install(qa_src):
-
-    if not ( sys.argv[1] == 'install' or sys.argv[1] == '--install'):
-        return
-
-    p = os.path.join(qa_src, 'install --no-progress-wheel')
-
-    for pa in sys.argv[2:]:
-        if len(pa):
-            p += ' ' + pa
-
-    try:
-        subprocess.check_call(p, shell=True)
-    except subprocess.CalledProcessError as e:
-        if e.returncode == 41:
-            sys.exit(41)
-
-        print '\ncould not run install.'
-
-    sys.exit(0)
 
     return
