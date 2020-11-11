@@ -664,17 +664,17 @@ QA_Time::initRelativeTime(std::string &units)
        std::string freq( pQA->qaExp.getFrequency() );
        if( freq.size() && refDate.getUnits() == "day" )
        {
-         if( freq == "1hr" )
+         if( freq.find("1hr") < std::string::npos )
            refTimeStep = 1./24. ;
-         else if( freq == "3hr" )
+         else if( freq.find("3hr") < std::string::npos )
            refTimeStep = 1./8. ;
-         else if( freq == "6hr" )
+         else if( freq.find("6hr") < std::string::npos )
            refTimeStep = 1./4. ;
-         else if( freq == "day" )
+         else if( freq.find("day") < std::string::npos )
            refTimeStep = 1. ;
-         else if( freq == "mon" )
+         else if( freq.find("mon") < std::string::npos )
            refTimeStep = 30. ;
-         else if( freq == "yr" )
+         else if( freq.find("yr") < std::string::npos )
          {
            if( refDate.getCalendar() == "equal_month" )
              refTimeStep = 360. ;
